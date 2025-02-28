@@ -1,3 +1,5 @@
+import { CommandApdu, ResponseApdu } from "smartcardx";
+
 /**
  * Platform manager for SmartCard R/W
  */
@@ -255,98 +257,6 @@ export abstract class SmartCard {
 
 type Atr = Uint8Array;
 
-export class CommandApdu {
-  constructor(
-    public readonly cla: Byte,
-    public readonly ins: Byte,
-    public readonly p1p2: Short,
-    public readonly data?: Uint8Array,
-    public readonly le?: number
-  ) {
-    if (!isByte(cla) || !isByte(ins) || !isShort(p1p2)) {
-      throw new Error("Invalid APDU");
-    }
-  }
-
-  /**
-   * From Hex String
-   * Hex string can contain spaces
-   */
-  public static fromHexString(hex: string): CommandApdu {
-    const hexStr = hex.replace(/\s/g, "");
-    const bytes = new Uint8Array(hexStr.length / 2);
-    for (let i = 0; i < hexStr.length; i += 2) {
-      bytes[i / 2] = parseInt(hexStr.substr(i, 2), 16);
-    }
-    return this.fromBytes(bytes);
-  }
-
-  /**
-   * From Bytes
-   */
-  public static fromBytes(bytes: Uint8Array): CommandApdu {
-    if (bytes.length < 4) {
-      throw new Error("Invalid APDU length");
-    }
-    const cla = bytes[0];
-    const ins = bytes[1];
-    const p1 = bytes[2];
-    const p2 = bytes[3];
-    const data = bytes.length > 4 ? bytes.subarray(4) : undefined;
-    const le = data ? data[data.length - 1] : undefined;
-    return new CommandApdu(cla, ins, (p1 << 8) | p2, data, le);
-  }
-
-  /**
-   * To Bytes
-   */
-  public toBytes(): Uint8Array {
-    throw new Error("Not implemented");
-  }
-
-  // impl other necessary methods
-}
-
-export class ResponseApdu {
-  constructor(
-    public readonly data: Uint8Array, // Data field. If empty, set []
-    public readonly sw1: Byte,
-    public readonly sw2: Byte
-  ) {
-    if (!isByte(sw1) || !isByte(sw2)) {
-      throw new Error("Invalid APDU");
-    }
-  }
-
-  /**
-   * To Bytes
-   */
-  public toBytes(): Uint8Array {
-    throw new Error("Not implemented");
-  }
-
-  public isSuccess() {
-    return this.sw1 === 0x90 && this.sw2 === 0x00;
-  }
-  // impl other necessary methods
-}
-
-type Byte = number;
-function isByte(value: unknown): value is Byte {
-  return (
-    typeof value === "number" && value % 1 === 0 && value >= 0 && value <= 255
-  );
-}
-
-type Short = number;
-function isShort(value: unknown): value is Short {
-  // check it is not a floating point number
-  // and it is within 0 to 65535
-  return (
-    typeof value === "number" && value % 1 === 0 && value >= 0 && value <= 65535
-  );
-}
-
 export abstract class EmulatedCard {
   /**
    * @constructor
@@ -367,7 +277,7 @@ export abstract class EmulatedCard {
 
   public abstract setStateChangeHandler(
     handler: (state: EmulatedCardState) => void
-  ): Promise<void>;
+  ): Promise<void>; // todo: consider using event emitter
 
   /**
    * Release the session
@@ -382,4 +292,4 @@ export abstract class EmulatedCard {
   }
 }
 
-type EmulatedCardState = "disconnected";
+type EmulatedCardState = "disconnected" | string; // todo: def
