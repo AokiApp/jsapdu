@@ -23,7 +23,7 @@ export abstract class SmartCardPlatform {
   /**
    * @constructor
    */
-  private constructor() {}
+  protected constructor() {}
 
   /**
    * Initialize the platform
@@ -79,7 +79,7 @@ export abstract class SmartCardPlatform {
 }
 
 export abstract class SmartCardDeviceInfo {
-  private constructor() {}
+  protected constructor() {}
 
   /**
    * Identifier of the device
@@ -178,7 +178,7 @@ export abstract class SmartCardDevice {
   /**
    * @constructor
    */
-  private constructor(
+  protected constructor(
     private parentPlatform: SmartCardPlatform,
     private deviceInfo: SmartCardDeviceInfo
   ) {}
@@ -225,7 +225,7 @@ export abstract class SmartCard {
   /**
    * @constructor
    */
-  private constructor(private parentDevice: SmartCardDevice) {}
+  protected constructor(private parentDevice: SmartCardDevice) {}
 
   /**
    * Get ATR (Answer To Reset) or equivalent such as ATS (Answer To Select)
@@ -261,7 +261,7 @@ export abstract class EmulatedCard {
   /**
    * @constructor
    */
-  private constructor(private parentDevice: SmartCardDevice) {}
+  protected constructor(private parentDevice: SmartCardDevice) {}
 
   /**
    * Whether acquired device session is active or not
