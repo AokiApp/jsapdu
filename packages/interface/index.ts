@@ -179,8 +179,8 @@ export abstract class SmartCardDevice {
    * @constructor
    */
   protected constructor(
-    private parentPlatform: SmartCardPlatform,
-    private deviceInfo: SmartCardDeviceInfo
+    protected parentPlatform: SmartCardPlatform,
+    protected deviceInfo: SmartCardDeviceInfo,
   ) {}
 
   /**
@@ -206,7 +206,7 @@ export abstract class SmartCardDevice {
   /**
    * Start HCE session
    */
-  public abstract startHceSession(): Promise<EmulatedCard>;
+  // public abstract startHceSession(): Promise<EmulatedCard>;
 
   /**
    * Release the device
@@ -225,7 +225,7 @@ export abstract class SmartCard {
   /**
    * @constructor
    */
-  protected constructor(private parentDevice: SmartCardDevice) {}
+  protected constructor(protected parentDevice: SmartCardDevice) {}
 
   /**
    * Get ATR (Answer To Reset) or equivalent such as ATS (Answer To Select)
@@ -272,11 +272,11 @@ export abstract class EmulatedCard {
    * Set APDU handler
    */
   public abstract setApduHandler(
-    handler: (command: CommandApdu) => Promise<ResponseApdu>
+    handler: (command: CommandApdu) => Promise<ResponseApdu>,
   ): Promise<void>;
 
   public abstract setStateChangeHandler(
-    handler: (state: EmulatedCardState) => void
+    handler: (state: EmulatedCardState) => void,
   ): Promise<void>; // todo: consider using event emitter
 
   /**
