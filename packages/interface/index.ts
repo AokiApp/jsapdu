@@ -1,5 +1,3 @@
-import { CommandApdu, ResponseApdu } from "smartcardx";
-
 /**
  * Platform manager for SmartCard R/W
  */
@@ -235,7 +233,7 @@ export abstract class SmartCard {
   /**
    * Transmit APDU command to the card
    */
-  public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  public abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
 
   /**
    * Reset the card
@@ -272,7 +270,7 @@ export abstract class EmulatedCard {
    * Set APDU handler
    */
   public abstract setApduHandler(
-    handler: (command: CommandApdu) => Promise<ResponseApdu>,
+    handler: (command: Uint8Array) => Promise<Uint8Array>,
   ): Promise<void>;
 
   public abstract setStateChangeHandler(
