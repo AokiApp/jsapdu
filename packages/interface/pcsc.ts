@@ -213,7 +213,7 @@ export class Pcsc extends SmartCard {
           if (err) {
             reject(err);
           } else {
-            resolve(res);
+            resolve(Uint8Array.from(res));
           }
         },
       );
