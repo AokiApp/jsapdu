@@ -1,5 +1,3 @@
-import { KENHOJO_AP, INS } from "./constant";
-
 /**
  * The CommandApdu class is for constructing and parsing APDU commands (standard and extended).
  * This class works in both Node.js and browser environments.

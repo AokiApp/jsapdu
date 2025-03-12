@@ -183,6 +183,12 @@ export class Pcsc extends SmartCard {
     this.connected = true;
   }
 
+  /**
+   * Returns the ATR (Answer To Reset) of the card.
+   * ATR contains information about the card's capabilities and communication parameters.
+   * @returns Promise resolving to Uint8Array containing the ATR
+   * @throws Error if the operation fails or ATR is undefined
+   */
   public async getAtr(): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
       this.device.reader.get_status((err, state, atr) => {
@@ -199,6 +205,12 @@ export class Pcsc extends SmartCard {
     });
   }
 
+  /**
+   * Transmits APDU commands to the card and returns the response.
+   * @param data APDU command as Uint8Array to be sent to the card
+   * @returns Promise resolving to Uint8Array containing the card's response
+   * @throws Error if card is not connected or transmission fails
+   */
   public async transmit(data: Uint8Array): Promise<Uint8Array> {
     if (!this.connected) {
       throw new Error("A card not connected");
@@ -220,6 +232,12 @@ export class Pcsc extends SmartCard {
     });
   }
 
+  /**
+   * Resets the card by disconnecting with the RESET flag.
+   * This performs a warm reset of the card which reinitializes it.
+   * @returns Promise resolving when reset completes
+   * @throws Error if reset operation fails
+   */
   public async reset(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.device.reader.disconnect(
