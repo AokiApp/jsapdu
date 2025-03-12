@@ -223,6 +223,7 @@ class CommandApdu {
       index += lc;
 
       if (byteArray.length === index) {
+        // Case 4 Extended: CLA, INS, P1, P2, 00, Data
         return new CommandApdu(cla, ins, p1, p2, data, null);
       }
 
@@ -269,22 +270,44 @@ class CommandApdu {
     return this.toHexString();
   }
 }
+function toUint8Array(data: Uint8Array | number[] | string): Uint8Array {
+  if (typeof data === "string") {
+    return new Uint8Array(
+      data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
+    );
+  }
+  return data instanceof Uint8Array ? data : Uint8Array.from(data);
+}
 
 export function select(
   p1: number,
   p2: number,
-  data: Uint8Array | number[],
+  data: Uint8Array | number[] | string,
   le: number | null = null,
 ): CommandApdu {
   if ((p2 & 0x0c) === 0x0c && le !== null) {
-    throw new Error("Invalid P2 and Le combination.");
+    throw new Error("Invalid P2 and Le combination for SELECT.");
   }
+  return new CommandApdu(0x00, 0xa4, p1, p2, toUint8Array(data), le);
+}
 
-  if (data instanceof Uint8Array) {
-    const apdu = new CommandApdu(0x00, 0xa4, p1, p2, data, le);
-    return apdu;
+export function selectDf(
+  data: Uint8Array | number[] | string,
+  fciRequested: boolean = false,
+): CommandApdu {
+  const dfData = toUint8Array(data);
+  if (dfData.length < 1 || dfData.length > 16) {
+    throw new Error("Invalid DF identifier.");
   }
+  return fciRequested
+    ? select(0x04, 0x00, dfData, 0x00)
+    : select(0x04, 0x0c, dfData, null);
+}
 
-  const apdu = new CommandApdu(0x00, 0xa4, p1, p2, new Uint8Array(data), le);
-  return apdu;
+export function selectEf(data: Uint8Array | number[] | string): CommandApdu {
+  const efData = toUint8Array(data);
+  if (efData.length !== 2) {
+    throw new Error("Invalid EF identifier.");
+  }
+  return select(0x02, 0x0c, efData, null);
 }
