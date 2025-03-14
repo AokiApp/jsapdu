@@ -3,7 +3,7 @@
  * This class works in both Node.js and browser environments.
  */
 
-class CommandApdu {
+export class CommandApdu {
   public readonly cla: number;
   public readonly ins: number;
   public readonly p1: number;
@@ -312,11 +312,6 @@ export function selectEf(data: Uint8Array | number[] | string): CommandApdu {
   return select(0x02, 0x0c, efData, null);
 }
 
-export interface VerifyOptions {
-  ef?: number | string;
-  isCurrent?: boolean;
-}
-
 /**
  * Construct a VERIFY command APDU
  * @param data - PIN data (1 to 16 bytes)
@@ -326,7 +321,10 @@ export interface VerifyOptions {
  */
 export function verify(
   data: Uint8Array | number[] | string,
-  options: VerifyOptions,
+  options: {
+    ef?: number | string;
+    isCurrent?: boolean;
+  },
 ): CommandApdu {
   let p2: number = 0x80; // デフォルトはカレントDF用
   let ef: number = 0x00;
@@ -359,4 +357,49 @@ export function verify(
   }
 
   return new CommandApdu(0x00, 0x20, 0x00, p2, pinData);
+}
+
+export function readBinary(
+  offset: number,
+  length: number,
+  isExtended = false,
+  useMaxLe = false,
+  options?: {
+    isCurrentEF?: boolean;
+    shortEfId?: number;
+    useRelativeAddress15Bit?: boolean;
+    useRelativeAddress8Bit?: boolean;
+  },
+): CommandApdu {
+  if (
+    (isExtended && (offset > 0xffff || length > 0xffff)) ||
+    (!isExtended && (offset > 0xffff || length > 0xff))
+  ) {
+    throw new Error(
+      `Offset or length is out of range for ${
+        isExtended ? "extended" : "standard"
+      } APDU.`,
+    );
+  }
+
+  const leValue = useMaxLe ? (isExtended ? 65536 : 256) : length;
+  let p1 = (offset >>> 8) & 0xff;
+  let p2 = offset & 0xff;
+
+  if (options) {
+    if (options.isCurrentEF) p2 = 0x00;
+    if (options.shortEfId !== undefined) {
+      p1 = 0;
+      p2 = 0x80 | (options.shortEfId & 0x1f);
+    }
+    if (options.useRelativeAddress15Bit) {
+      p1 = (offset >>> 8) & 0x7f;
+    }
+    if (options.useRelativeAddress8Bit) {
+      p1 = 0;
+      p2 = offset & 0xff;
+    }
+  }
+
+  return new CommandApdu(0x00, 0xb0, p1, p2, null, leValue);
 }
