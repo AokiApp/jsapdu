@@ -50,8 +50,8 @@ export interface CardReader extends EventEmitter {
   name: string;
   state: number;
   connected: boolean;
-  on(type: "error", listener: (this: CardReader, error: any) => void): this;
-  once(type: "error", listener: (this: CardReader, error: any) => void): this;
+  on(type: "error", listener: (this: CardReader, error: Error) => void): this;
+  once(type: "error", listener: (this: CardReader, error: Error) => void): this;
   on(type: "end", listener: (this: CardReader) => void): this;
   once(type: "end", listener: (this: CardReader) => void): this;
   on(
