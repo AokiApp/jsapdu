@@ -311,3 +311,52 @@ export function selectEf(data: Uint8Array | number[] | string): CommandApdu {
   }
   return select(0x02, 0x0c, efData, null);
 }
+
+export interface VerifyOptions {
+  ef?: number | string;
+  isCurrent?: boolean;
+}
+
+/**
+ * Construct a VERIFY command APDU
+ * @param data - PIN data (1 to 16 bytes)
+ * @param options - Options for VERIFY command
+ * @returns {CommandApdu} VERIFY command APDU
+ * @throws {Error} If EF identifier is invalid or if PIN data string is not numeric
+ */
+export function verify(
+  data: Uint8Array | number[] | string,
+  options: VerifyOptions,
+): CommandApdu {
+  let p2: number = 0x80; // デフォルトはカレントDF用
+  let ef: number = 0x00;
+
+  if (options.ef !== undefined) {
+    if (typeof options.ef === "string") {
+      ef = parseInt(options.ef, 10);
+    } else {
+      ef = options.ef;
+    }
+    if (ef > 0x1e) {
+      throw new Error("Invalid EF identifier.");
+    }
+
+    p2 = 0x80 + ef;
+  } else if (options.isCurrent) {
+    p2 = 0x80;
+  }
+
+  let pinData: Uint8Array;
+  if (typeof data === "string") {
+    if (!/^\d+$/.test(data)) {
+      throw new Error("PIN data string must contain only digits.");
+    }
+    pinData = Uint8Array.from(
+      data.split("").map((digit) => digit.charCodeAt(0)),
+    );
+  } else {
+    pinData = toUint8Array(data);
+  }
+
+  return new CommandApdu(0x00, 0x20, 0x00, p2, pinData);
+}
