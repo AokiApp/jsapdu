@@ -243,7 +243,7 @@ describe("READ BINARY commands", () => {
 
   test("should create READ BINARY command with short EF identifier", () => {
     const EXPECTED_READ_BINARY = Uint8Array.from([
-      0x00, 0xb0, 0x00, 0x85, 0x00,
+      0x00, 0xb0, 0x85, 0x00, 0x00,
     ]);
     const command = readBinary(0, 256, true, false, { shortEfId: 0x05 });
     expect(command.toUint8Array()).toEqual(EXPECTED_READ_BINARY);

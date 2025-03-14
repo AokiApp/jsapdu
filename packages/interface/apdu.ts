@@ -382,8 +382,8 @@ export function readBinary(
   if (options) {
     if (options.isCurrentEF) p2 = 0x00;
     if (options.shortEfId !== undefined) {
-      p1 = 0;
-      p2 = 0x80 | (options.shortEfId & 0x1f);
+      p1 = 0x80 | (options.shortEfId & 0x1f);
+      p2 = 0;
     }
     if (options.useRelativeAddress15Bit) {
       p1 = (offset >>> 8) & 0x7f;
