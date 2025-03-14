@@ -102,6 +102,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
     const endOffset = this.offset + length;
 
     if (schema.fields && schema.fields.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const obj: any = {};
       for (const field of schema.fields) {
         if (!field.name) {
@@ -199,7 +200,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
 
   // Read length field (supports short and long form)
   private readLength(): number {
-    let lengthByte = this.view.getUint8(this.offset);
+    const lengthByte = this.view.getUint8(this.offset);
     this.offset += 1;
     if (lengthByte & 0x80) {
       const numBytes = lengthByte & 0x7f;
