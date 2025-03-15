@@ -72,9 +72,9 @@ export class TLVParser<S extends TLVSchema | null = null> {
     this.schema = schema;
   }
 
-  public parse<T extends TLVSchema>(
+  public parse(
     buffer: ArrayBuffer | Uint8Array,
-  ): ParsedResult<T> | TLVResult {
+  ): S extends TLVSchema ? ParsedResult<S> : TLVResult {
     if (buffer instanceof ArrayBuffer) {
       this.buffer = new Uint8Array(buffer);
     } else {
@@ -88,9 +88,11 @@ export class TLVParser<S extends TLVSchema | null = null> {
     this.offset = 0;
 
     if (this.schema) {
-      return this.parseWithSchema(this.schema) as ParsedResult<T>;
+      return this.parseWithSchema(this.schema) as S extends TLVSchema
+        ? ParsedResult<S>
+        : TLVResult;
     }
-    return this.parseTLV();
+    return this.parseTLV() as S extends TLVSchema ? ParsedResult<S> : TLVResult;
   }
 
   private parseWithSchema<T extends TLVSchema>(schema: T): ParsedResult<T> {
