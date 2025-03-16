@@ -1,3 +1,4 @@
+import { INS } from "./constant";
 import { toUint8Array } from "./utils";
 
 /**
@@ -281,7 +282,7 @@ export function select(
   if ((p2 & 0x0c) === 0x0c && le !== null) {
     throw new Error("Invalid P2 and Le combination for SELECT.");
   }
-  return new CommandApdu(0x00, 0xa4, p1, p2, toUint8Array(data), le);
+  return new CommandApdu(0x00, INS.SELECT, p1, p2, toUint8Array(data), le);
 }
 
 export function selectDf(
@@ -394,5 +395,17 @@ export function readBinary(
     }
   }
 
-  return new CommandApdu(0x00, 0xb0, p1, p2, null, leValue);
+  return new CommandApdu(0x00, INS.READ_BINARY, p1, p2, null, leValue);
+}
+
+export function readEfBinaryFull(shortEfId: number): CommandApdu {
+  if (shortEfId < 0 || shortEfId > 0x1f) {
+    throw new Error("Invalid short EF identifier.");
+  }
+  const p1 = 0x80 | shortEfId;
+  return new CommandApdu(0x00, INS.READ_BINARY, p1, 0x00, null, 65536);
+}
+
+export function readCurrentEfBinaryFull(): CommandApdu {
+  return new CommandApdu(0x00, INS.READ_BINARY, 0x00, 0x00, null, 65536);
 }
