@@ -67,10 +67,10 @@ export const schemaKenhojoMyNumber = {
   encode(buffer) {
     return new TextDecoder("utf-8").decode(buffer);
   },
-} as const satisfies TLVRootSchema;
+} as const satisfies TLVRootSchema<string>;
 
-export const schemaKenhojoAttributes = {
-  name: "kenhojoAttributes",
+export const schemaKenhojoBasicFour = {
+  name: "kenhojoBasicFour",
   tagClass: "Private",
   constructed: true,
   tagNumber: 0x20,
@@ -164,6 +164,34 @@ export const schemaKenkakuBirth = {
       tagClass: "Private",
       tagNumber: 0x32,
       constructed: false,
+      async encode(buffer) {
+        const certificate_raw = new Uint8Array(buffer, 0, buffer.byteLength);
+        const e = new TLVParser();
+        const e_parsed = await e.parse(certificate_raw);
+
+        const n = new TLVParser();
+        const n_parsed = await n.parse(
+          new Uint8Array(
+            buffer,
+            e_parsed.endOffset,
+            buffer.byteLength - e_parsed.endOffset,
+          ),
+        );
+        const public_key = await crypto.subtle.importKey(
+          "jwk",
+          {
+            kty: "RSA",
+            e: arrayBufferToBase64url(e_parsed.value),
+            n: arrayBufferToBase64url(n_parsed.value),
+            key_ops: ["verify"],
+            ext: true,
+          },
+          { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+          true,
+          ["verify"],
+        );
+        return public_key;
+      },
     },
     {
       name: "thisSignature",
@@ -209,6 +237,34 @@ export const schemaKenkakuEntries = {
       tagClass: "Private",
       tagNumber: 0x24,
       constructed: false,
+      async encode(buffer) {
+        const certificate_raw = new Uint8Array(buffer, 0, buffer.byteLength);
+        const e = new TLVParser();
+        const e_parsed = await e.parse(certificate_raw);
+
+        const n = new TLVParser();
+        const n_parsed = await n.parse(
+          new Uint8Array(
+            buffer,
+            e_parsed.endOffset,
+            buffer.byteLength - e_parsed.endOffset,
+          ),
+        );
+        const public_key = await crypto.subtle.importKey(
+          "jwk",
+          {
+            kty: "RSA",
+            e: arrayBufferToBase64url(e_parsed.value),
+            n: arrayBufferToBase64url(n_parsed.value),
+            key_ops: ["verify"],
+            ext: true,
+          },
+          { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+          true,
+          ["verify"],
+        );
+        return public_key;
+      },
     },
     {
       name: "namePng",
@@ -269,6 +325,34 @@ export const schemaKenkakuMyNumber = {
       tagClass: "Private",
       tagNumber: 0x42,
       constructed: false,
+      async encode(buffer) {
+        const certificate_raw = new Uint8Array(buffer, 0, buffer.byteLength);
+        const e = new TLVParser();
+        const e_parsed = await e.parse(certificate_raw);
+
+        const n = new TLVParser();
+        const n_parsed = await n.parse(
+          new Uint8Array(
+            buffer,
+            e_parsed.endOffset,
+            buffer.byteLength - e_parsed.endOffset,
+          ),
+        );
+        const public_key = await crypto.subtle.importKey(
+          "jwk",
+          {
+            kty: "RSA",
+            e: arrayBufferToBase64url(e_parsed.value),
+            n: arrayBufferToBase64url(n_parsed.value),
+            key_ops: ["verify"],
+            ext: true,
+          },
+          { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+          true,
+          ["verify"],
+        );
+        return public_key;
+      },
     },
     {
       name: "thisSignature",

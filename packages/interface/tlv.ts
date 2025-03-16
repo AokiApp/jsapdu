@@ -36,8 +36,8 @@ export interface TLVRootSchema<EncodedType = Uint8Array>
   readonly name?: string; // optional
 }
 
-// Union type including both (for backward compatibility)
-type TLVSchema = TLVRootSchema<unknown> | TLVFieldSchema<unknown>;
+// Union type including both
+type TLVSchema<T = unknown> = TLVRootSchema<T> | TLVFieldSchema<T>;
 
 type FieldsResult<F extends readonly TLVFieldSchema<unknown>[]> = {
   [Field in F[number] as Field["name"]]: ParsedResult<Field>;
