@@ -1,4 +1,5 @@
-import { TLVRootSchema } from "@aokiapp/interface/tlv";
+import { TLVParser, TLVRootSchema } from "@aokiapp/interface/tlv";
+import { arrayBufferToBase64url } from "@aokiapp/interface/utils";
 
 export const schemaCertificate = {
   name: "certificate",
@@ -7,10 +8,47 @@ export const schemaCertificate = {
   tagNumber: 0x21,
   fields: [
     {
-      name: "certificate",
+      name: "contents",
       tagClass: "Application",
       tagNumber: 0x4e,
-      constructed: false,
+      async encode(buffer) {
+        const issuer = new Uint8Array(buffer, 0, 16);
+        const subject = new Uint8Array(buffer, 16, 16);
+        const certificate_raw = new Uint8Array(
+          buffer,
+          32,
+          buffer.byteLength - 32,
+        );
+        const e = new TLVParser();
+        const e_parsed = await e.parse(certificate_raw);
+
+        const n = new TLVParser();
+        const n_parsed = await n.parse(
+          new Uint8Array(
+            buffer,
+            32 + e_parsed.endOffset,
+            buffer.byteLength - (32 + e_parsed.endOffset),
+          ),
+        );
+        const public_key = await crypto.subtle.importKey(
+          "jwk",
+          {
+            kty: "RSA",
+            e: arrayBufferToBase64url(e_parsed.value),
+            n: arrayBufferToBase64url(n_parsed.value),
+            key_ops: ["verify"],
+            ext: true,
+          },
+          { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+          true,
+          ["verify"],
+        );
+        return {
+          issuer,
+          subject,
+          public_key,
+        };
+      },
     },
     {
       name: "thisSignature",
