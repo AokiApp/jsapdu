@@ -1,5 +1,12 @@
 import { expect, test, describe } from "vitest";
-import { CommandApdu, readBinary, selectDf, selectEf, verify } from "./apdu";
+import {
+  CommandApdu,
+  readBinary,
+  readEfBinaryFull,
+  selectDf,
+  selectEf,
+  verify,
+} from "./apdu";
 import { JPKI_AP } from "./constant";
 
 describe("CommandApdu class", () => {
@@ -409,5 +416,12 @@ describe("READ BINARY command", () => {
     ]);
     const command = new CommandApdu(0x00, 0xb0, 0x84, 0x00, null, 65536);
     expect(command.toUint8Array()).toEqual(EXPECTED_READ_BINARY);
+  });
+
+  test("readEfBinaryFull", () => {
+    const command = readEfBinaryFull(0x01);
+    expect(command.toUint8Array()).toEqual(
+      Uint8Array.from([0x00, 0xb0, 0x81, 0x00, 0x00, 0x00, 0x00]),
+    );
   });
 });
