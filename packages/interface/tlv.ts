@@ -18,12 +18,13 @@ interface TagInfo {
  * Base interface for common schema properties
  */
 interface TLVSchemaBase {
-  readonly encode?: string;
-  readonly fields?: readonly TLVFieldSchema[];
-  // Tag information validation fields (all optional)
   readonly tagClass?: TagClass;
   readonly constructed?: boolean;
   readonly tagNumber?: number;
+  readonly fields?: readonly TLVFieldSchema[];
+  readonly encode?:
+    | string
+    | ((buffer: ArrayBuffer) => unknown | Promise<unknown>);
 }
 
 /**
@@ -43,28 +44,32 @@ export interface TLVRootSchema extends TLVSchemaBase {
 // Union type including both (for backward compatibility)
 type TLVSchema = TLVRootSchema | TLVFieldSchema;
 
+type FieldsResult<F extends readonly TLVFieldSchema[]> = {
+  [Field in F[number] as Field["name"]]: ParsedResult<Field>;
+};
+
+type EncodingResult<E> = E extends string
+  ? string
+  : E extends (buffer: ArrayBuffer) => infer R
+    ? Awaited<R>
+    : Uint8Array;
+
 type ParsedResult<S extends TLVSchema> =
-  // Check if 'fields' is an array of TLVFieldSchema
   S["fields"] extends readonly TLVFieldSchema[]
-    ? // If true, create an object with field names as keys and recursively apply ParsedResult
-      { [F in S["fields"][number] as F["name"]]: ParsedResult<F> }
-    : // If 'fields' is not present, check if 'encode' is a string
-      S["encode"] extends string
-      ? // If true, return string type
-        string
-      : // Otherwise, return Uint8Array type
-        Uint8Array;
+    ? FieldsResult<S["fields"]>
+    : EncodingResult<S["encode"]>;
 
 // Parse result type when no schema is specified (includes tag info, length, and value)
 interface TLVResult {
   tag: TagInfo;
   length: number;
   value: ArrayBuffer;
+  endOffset: number;
 }
 
 export class TLVParser<S extends TLVSchema | null = null> {
   schema: S;
-  buffer!: Uint8Array;
+  buffer!: Uint8Array<ArrayBuffer>;
   view!: DataView;
   offset = 0;
 
@@ -72,14 +77,10 @@ export class TLVParser<S extends TLVSchema | null = null> {
     this.schema = schema;
   }
 
-  public parse(
-    buffer: ArrayBuffer | Uint8Array,
-  ): S extends TLVSchema ? ParsedResult<S> : TLVResult {
-    if (buffer instanceof ArrayBuffer) {
-      this.buffer = new Uint8Array(buffer);
-    } else {
-      this.buffer = buffer;
-    }
+  public async parse(
+    buffer: Uint8Array<ArrayBuffer>,
+  ): Promise<S extends TLVSchema ? ParsedResult<S> : TLVResult> {
+    this.buffer = buffer;
     this.view = new DataView(
       this.buffer.buffer,
       this.buffer.byteOffset,
@@ -88,14 +89,16 @@ export class TLVParser<S extends TLVSchema | null = null> {
     this.offset = 0;
 
     if (this.schema) {
-      return this.parseWithSchema(this.schema) as S extends TLVSchema
+      return (await this.parseWithSchema(this.schema)) as S extends TLVSchema
         ? ParsedResult<S>
         : TLVResult;
     }
     return this.parseTLV() as S extends TLVSchema ? ParsedResult<S> : TLVResult;
   }
 
-  private parseWithSchema<T extends TLVSchema>(schema: T): ParsedResult<T> {
+  private async parseWithSchema<T extends TLVSchema>(
+    schema: T,
+  ): Promise<ParsedResult<T>> {
     const tagInfo = this.readTagInfo();
 
     this.validateTagInfo(tagInfo, schema);
@@ -112,16 +115,24 @@ export class TLVParser<S extends TLVSchema | null = null> {
         }
         const subBuffer = this.buffer.slice(this.offset, endOffset);
         const fieldParser = new TLVParser(field);
-        obj[field.name] = fieldParser.parse(subBuffer);
+        obj[field.name] = await fieldParser.parse(subBuffer);
         this.offset += fieldParser.offset;
       }
       return obj as ParsedResult<T>;
     } else {
       const rawValue = this.readValue(length);
       if (schema.encode) {
-        return new TextDecoder(schema.encode).decode(
-          rawValue,
-        ) as ParsedResult<T>;
+        if (typeof schema.encode === "string") {
+          if (schema.encode === "utf-8" || schema.encode === "utf8") {
+            return new TextDecoder(schema.encode).decode(
+              rawValue,
+            ) as ParsedResult<T>;
+          } else {
+            throw new Error(`Unsupported encoding: ${schema.encode}`);
+          }
+        } else {
+          return (await schema.encode(rawValue)) as ParsedResult<T>;
+        }
       }
       return new Uint8Array(rawValue) as ParsedResult<T>;
     }
@@ -161,7 +172,8 @@ export class TLVParser<S extends TLVSchema | null = null> {
     const tagInfo = this.readTagInfo();
     const length = this.readLength();
     const value = this.readValue(length);
-    return { tag: tagInfo, length, value };
+    const endOffset = this.offset;
+    return { tag: tagInfo, length, value, endOffset };
   }
 
   // Read tag information (supports single byte or long form)
@@ -221,8 +233,9 @@ export class TLVParser<S extends TLVSchema | null = null> {
     const chunk = this.buffer.subarray(this.offset, this.offset + length);
     this.offset += length;
     // Create a new ArrayBuffer to ensure the correct type
-    const result = new ArrayBuffer(chunk.byteLength);
-    new Uint8Array(result).set(chunk);
-    return result;
+    return chunk.buffer.slice(
+      chunk.byteOffset,
+      chunk.byteOffset + chunk.byteLength,
+    );
   }
 }
