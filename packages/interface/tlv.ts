@@ -1,12 +1,7 @@
 /**
  * Literal type representing tag class
  */
-type TagClass =
-  | "Universal"
-  | "Application"
-  | "Context-specific"
-  | "Private"
-  | "Unknown";
+type TagClass = "Universal" | "Application" | "Context-specific" | "Private";
 
 interface TagInfo {
   tagClass: TagClass;
@@ -22,9 +17,7 @@ interface TLVSchemaBase {
   readonly constructed?: boolean;
   readonly tagNumber?: number;
   readonly fields?: readonly TLVFieldSchema[];
-  readonly encode?:
-    | string
-    | ((buffer: ArrayBuffer) => unknown | Promise<unknown>);
+  readonly encode?: (buffer: ArrayBuffer) => unknown | Promise<unknown>;
 }
 
 /**
@@ -48,11 +41,9 @@ type FieldsResult<F extends readonly TLVFieldSchema[]> = {
   [Field in F[number] as Field["name"]]: ParsedResult<Field>;
 };
 
-type EncodingResult<E> = E extends string
-  ? string
-  : E extends (buffer: ArrayBuffer) => infer R
-    ? Awaited<R>
-    : Uint8Array;
+type EncodingResult<E> = E extends (buffer: ArrayBuffer) => infer R
+  ? Awaited<R>
+  : Uint8Array;
 
 type ParsedResult<S extends TLVSchema> =
   S["fields"] extends readonly TLVFieldSchema[]
@@ -99,6 +90,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
   private async parseWithSchema<T extends TLVSchema>(
     schema: T,
   ): Promise<ParsedResult<T>> {
+    const startOffset = this.offset;
     const tagInfo = this.readTagInfo();
 
     this.validateTagInfo(tagInfo, schema);
@@ -110,31 +102,30 @@ export class TLVParser<S extends TLVSchema | null = null> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const obj: any = {};
       for (const field of schema.fields) {
-        if (!field.name) {
-          throw new Error("Nested field must have a name");
-        }
         const subBuffer = this.buffer.slice(this.offset, endOffset);
         const fieldParser = new TLVParser(field);
         obj[field.name] = await fieldParser.parse(subBuffer);
         this.offset += fieldParser.offset;
       }
+      obj._buffer = this.buffer.slice(startOffset, endOffset);
       return obj as ParsedResult<T>;
     } else {
       const rawValue = this.readValue(length);
-      if (schema.encode) {
-        if (typeof schema.encode === "string") {
-          if (schema.encode === "utf-8" || schema.encode === "utf8") {
-            return new TextDecoder(schema.encode).decode(
-              rawValue,
-            ) as ParsedResult<T>;
-          } else {
-            throw new Error(`Unsupported encoding: ${schema.encode}`);
-          }
-        } else {
-          return (await schema.encode(rawValue)) as ParsedResult<T>;
-        }
+      if (schema.encode !== undefined) {
+        return (await schema.encode(rawValue)) as ParsedResult<T>;
       }
       return new Uint8Array(rawValue) as ParsedResult<T>;
+    }
+  }
+
+  /**
+   * Ensure that the specified number of bytes is available in the buffer
+   */
+  private ensureAvailable(bytes: number): void {
+    if (this.offset + bytes > this.buffer.length) {
+      throw new Error(
+        `Buffer underflow: ${bytes} bytes required, but only ${this.buffer.length - this.offset} bytes available`,
+      );
     }
   }
 
@@ -178,6 +169,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
 
   // Read tag information (supports single byte or long form)
   private readTagInfo(): TagInfo {
+    this.ensureAvailable(1);
     const firstByte = this.view.getUint8(this.offset);
     this.offset += 1;
     const tagClassBits = (firstByte & 0xc0) >> 6;
@@ -208,16 +200,21 @@ export class TLVParser<S extends TLVSchema | null = null> {
       case 3:
         return "Private";
       default:
-        return "Unknown";
+        throw new Error(`Invalid tag class bits: ${bits}`);
     }
   }
 
-  // Read length field (supports short and long form)
+  /**
+   * Read length field (supports short form and long form)
+   * @returns Length of the TLV value
+   */
   private readLength(): number {
+    this.ensureAvailable(1);
     const lengthByte = this.view.getUint8(this.offset);
     this.offset += 1;
     if (lengthByte & 0x80) {
       const numBytes = lengthByte & 0x7f;
+      this.ensureAvailable(numBytes);
       let length = 0;
       for (let i = 0; i < numBytes; i++) {
         length = (length << 8) | this.view.getUint8(this.offset);
@@ -230,6 +227,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
 
   // Read value part and return as ArrayBuffer
   private readValue(length: number): ArrayBuffer {
+    this.ensureAvailable(length);
     const chunk = this.buffer.subarray(this.offset, this.offset + length);
     this.offset += length;
     // Create a new ArrayBuffer to ensure the correct type

@@ -64,7 +64,9 @@ export const schemaKenhojoMyNumber = {
   tagClass: "Private",
   constructed: true,
   tagNumber: 0x10,
-  encode: "utf-8",
+  encode(buffer) {
+    return new TextDecoder("utf-8").decode(buffer);
+  },
 } as const satisfies TLVRootSchema;
 
 export const schemaKenhojoAttributes = {
@@ -84,28 +86,36 @@ export const schemaKenhojoAttributes = {
       tagClass: "Private",
       tagNumber: 0x22,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "address",
       tagClass: "Private",
       tagNumber: 0x23,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "birth",
       tagClass: "Private",
       tagNumber: 0x24,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "gender",
       tagClass: "Private",
       tagNumber: 0x25,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
   ],
 } as const satisfies TLVRootSchema;
@@ -154,7 +164,6 @@ export const schemaKenkakuBirth = {
       tagClass: "Private",
       tagNumber: 0x32,
       constructed: false,
-      encode: "utf-8",
     },
     {
       name: "thisSignature",
@@ -182,14 +191,18 @@ export const schemaKenkakuEntries = {
       tagClass: "Private",
       tagNumber: 0x22,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "gender",
       tagClass: "Private",
       tagNumber: 0x23,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "publicKey",
@@ -226,7 +239,9 @@ export const schemaKenkakuEntries = {
       tagClass: "Private",
       tagNumber: 0x29,
       constructed: false,
-      encode: "utf-8",
+      encode(buffer) {
+        return new TextDecoder("utf-8").decode(buffer);
+      },
     },
     {
       name: "securityCodePng",
