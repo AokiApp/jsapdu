@@ -211,12 +211,12 @@ export class Pcsc extends SmartCard {
    * @returns Promise resolving to Uint8Array containing the card's response
    * @throws Error if card is not connected or transmission fails
    */
-  public async transmit(data: Uint8Array): Promise<Uint8Array> {
+  public async transmit(data: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
     if (!this.connected) {
       throw new Error("A card not connected");
     }
 
-    return new Promise<Uint8Array>((resolve, reject) => {
+    return new Promise<Uint8Array<ArrayBuffer>>((resolve, reject) => {
       this.device.reader.transmit(
         Buffer.from(data),
         65536,
