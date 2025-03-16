@@ -12,32 +12,34 @@ interface TagInfo {
 /**
  * Base interface for common schema properties
  */
-interface TLVSchemaBase {
+interface TLVSchemaBase<EncodedType = Uint8Array> {
   readonly tagClass?: TagClass;
   readonly constructed?: boolean;
   readonly tagNumber?: number;
-  readonly fields?: readonly TLVFieldSchema[];
-  readonly encode?: (buffer: ArrayBuffer) => unknown | Promise<unknown>;
+  readonly fields?: readonly TLVFieldSchema<unknown>[];
+  readonly encode?: (buffer: ArrayBuffer) => EncodedType | Promise<EncodedType>;
 }
 
 /**
  * Field schema - for internal fields (name is required)
  */
-interface TLVFieldSchema extends TLVSchemaBase {
+export interface TLVFieldSchema<EncodedType = Uint8Array>
+  extends TLVSchemaBase<EncodedType> {
   readonly name: string; // required
 }
 
 /**
  * Root schema - for top level (name is optional)
  */
-export interface TLVRootSchema extends TLVSchemaBase {
+export interface TLVRootSchema<EncodedType = Uint8Array>
+  extends TLVSchemaBase<EncodedType> {
   readonly name?: string; // optional
 }
 
 // Union type including both (for backward compatibility)
-type TLVSchema = TLVRootSchema | TLVFieldSchema;
+type TLVSchema = TLVRootSchema<unknown> | TLVFieldSchema<unknown>;
 
-type FieldsResult<F extends readonly TLVFieldSchema[]> = {
+type FieldsResult<F extends readonly TLVFieldSchema<unknown>[]> = {
   [Field in F[number] as Field["name"]]: ParsedResult<Field>;
 };
 
@@ -46,7 +48,7 @@ type EncodingResult<E> = E extends (buffer: ArrayBuffer) => infer R
   : Uint8Array;
 
 type ParsedResult<S extends TLVSchema> =
-  S["fields"] extends readonly TLVFieldSchema[]
+  S["fields"] extends readonly TLVFieldSchema<unknown>[]
     ? FieldsResult<S["fields"]>
     : EncodingResult<S["encode"]>;
 
@@ -99,8 +101,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
     const endOffset = this.offset + length;
 
     if (schema.fields && schema.fields.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const obj: any = {};
+      const obj: Partial<FieldsResult<typeof schema.fields>> = {};
       for (const field of schema.fields) {
         const subBuffer = this.buffer.slice(this.offset, endOffset);
         const fieldParser = new TLVParser(field);
@@ -167,7 +168,10 @@ export class TLVParser<S extends TLVSchema | null = null> {
     return { tag: tagInfo, length, value, endOffset };
   }
 
-  // Read tag information (supports single byte or long form)
+  /**
+   * Read tag information (tag class, constructed flag, tag number)
+   * @returns Tag information
+   */
   private readTagInfo(): TagInfo {
     this.ensureAvailable(1);
     const firstByte = this.view.getUint8(this.offset);
