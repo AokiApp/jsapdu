@@ -62,8 +62,8 @@ interface TLVResult {
 
 export class TLVParser<S extends TLVSchema | null = null> {
   schema: S;
-  buffer!: Uint8Array<ArrayBuffer>;
-  view!: DataView;
+  buffer = new Uint8Array();
+  view = new DataView(this.buffer.buffer);
   offset = 0;
 
   constructor(schema: S = null as S) {
@@ -71,7 +71,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
   }
 
   public async parse(
-    buffer: Uint8Array<ArrayBuffer>,
+    buffer: Uint8Array,
   ): Promise<S extends TLVSchema ? ParsedResult<S> : TLVResult> {
     this.buffer = buffer;
     this.view = new DataView(
