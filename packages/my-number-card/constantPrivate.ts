@@ -20,7 +20,7 @@ export const kenhojoMyNumber = hexStringToUint8Array(
   process.env.KENHOJO_01 || "",
 );
 
-export const kenhojoAttributes = hexStringToUint8Array(
+export const kenhojoBasicFour = hexStringToUint8Array(
   process.env.KENHOJO_02 || "",
 );
 
