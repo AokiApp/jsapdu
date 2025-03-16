@@ -17,26 +17,31 @@ import {
 } from "./constantPrivate";
 
 const kenhojoMyNumberParser = new TLVParser(schemaKenhojoMyNumber);
-const kenhojoMyNumberParsed = kenhojoMyNumberParser.parse(kenhojoMyNumber);
-console.log(kenhojoMyNumberParsed);
+kenhojoMyNumberParser.parse(kenhojoMyNumber).then((parsed) => {
+  console.log(parsed);
+});
 
 const kenhojoBasicFourParser = new TLVParser(schemaKenhojoBasicFour);
-const kenhojoBasicFourParsed = kenhojoBasicFourParser.parse(kenhojoBasicFour);
-console.log(kenhojoBasicFourParsed);
+kenhojoBasicFourParser.parse(kenhojoBasicFour).then((parsed) => {
+  console.log(parsed);
+});
 
 const kenhojoSignatureParser = new TLVParser(schemaKenhojoSignature);
-const kenhojoSignatureParsed = kenhojoSignatureParser.parse(kenhojoSignature);
-console.log(kenhojoSignatureParsed);
+kenhojoSignatureParser.parse(kenhojoSignature).then((parsed) => {
+  console.log(parsed);
+});
 
 const kenhojoCertificateParser = new TLVParser(schemaCertificate);
-const kenhojoCertificateParsed =
-  kenhojoCertificateParser.parse(kenhojoCertificate);
-console.log(kenhojoCertificateParsed);
+kenhojoCertificateParser.parse(kenhojoCertificate).then((parsed) => {
+  console.log(parsed);
+});
 
 const kenkakuEntriesParser = new TLVParser(schemaKenkakuEntries);
-const kenkakuEntriesParsed = kenkakuEntriesParser.parse(kenkakuEntries);
-console.log(kenkakuEntriesParsed);
+kenkakuEntriesParser.parse(kenkakuEntries).then((parsed) => {
+  console.log(parsed);
+});
 
 const kenkakuMyNumberParser = new TLVParser(schemaKenkakuMyNumber);
-const kenkakuMyNumberParsed = kenkakuMyNumberParser.parse(kenkakuMyNumber);
-console.log(kenkakuMyNumberParsed);
+kenkakuMyNumberParser.parse(kenkakuMyNumber).then((parsed) => {
+  console.log(parsed);
+});
