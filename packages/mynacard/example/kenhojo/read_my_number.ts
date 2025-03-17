@@ -1,9 +1,9 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/interface/constant";
-import { PcscPlatformManager } from "@aokiapp/interface/pcsc";
-import { TLVParser } from "@aokiapp/interface/tlv";
-import { schemaKenkakuEntries } from "../../schema";
-import { askPassword } from "@aokiapp/interface/utils";
+import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
+import { schemaKenhojoMyNumber } from "@aokiapp/mynacard/schema";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { askPassword } from "@aokiapp/mynacard/utils";
+import { TLVParser } from "@aokiapp/tlv-parser/tlv";
 
 async function main() {
   try {
@@ -14,22 +14,22 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    await session.transmit(selectDf(KENKAKU_AP).toUint8Array());
+    await session.transmit(selectDf(KENHOJO_AP).toUint8Array());
 
-    const pin = await askPassword("Enter PIN-A: ");
+    const pin = await askPassword("Enter PIN: ");
 
     const verifyResponse = await session.transmit(
       verify(pin, {
-        ef: KENKAKU_AP_EF.PIN_A,
+        ef: KENHOJO_AP_EF.PIN,
       }).toUint8Array(),
     );
     console.log(verifyResponse);
 
     const res = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.ENTRIES).toUint8Array(),
+      readEfBinaryFull(KENHOJO_AP_EF.MY_NUMBER).toUint8Array(),
     );
 
-    const parser = new TLVParser(schemaKenkakuEntries);
+    const parser = new TLVParser(schemaKenhojoMyNumber);
     const parsed = await parser.parse(res);
 
     console.log(parsed);

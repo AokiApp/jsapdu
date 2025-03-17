@@ -23,7 +23,6 @@
     "packages/*"
   ],
   "dependencies": {
-    "asn1js": "^3.0.5",
     "pcsclite": "^1.0.1"
   }
 }

@@ -1,9 +1,9 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/interface/constant";
-import { PcscPlatformManager } from "@aokiapp/interface/pcsc";
-import { askPassword } from "@aokiapp/interface/utils";
-import { schemaKenhojoMyNumber } from "../../schema";
-import { TLVParser } from "@aokiapp/interface/tlv";
+import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
+import { schemaKenhojoBasicFour } from "@aokiapp/mynacard/schema";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { TLVParser } from "@aokiapp/tlv-parser/tlv";
+import { askPassword } from "@aokiapp/mynacard/utils";
 
 async function main() {
   try {
@@ -26,10 +26,10 @@ async function main() {
     console.log(verifyResponse);
 
     const res = await session.transmit(
-      readEfBinaryFull(KENHOJO_AP_EF.MY_NUMBER).toUint8Array(),
+      readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR).toUint8Array(),
     );
 
-    const parser = new TLVParser(schemaKenhojoMyNumber);
+    const parser = new TLVParser(schemaKenhojoBasicFour);
     const parsed = await parser.parse(res);
 
     console.log(parsed);

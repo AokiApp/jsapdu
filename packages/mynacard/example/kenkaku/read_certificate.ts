@@ -1,8 +1,8 @@
 import { readEfBinaryFull, selectDf } from "@aokiapp/interface/apdu";
-import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/interface/constant";
-import { PcscPlatformManager } from "@aokiapp/interface/pcsc";
-import { TLVParser } from "@aokiapp/interface/tlv";
-import { schemaCertificate } from "../../schema";
+import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { TLVParser } from "@aokiapp/tlv-parser/tlv";
+import { schemaCertificate } from "@aokiapp/mynacard/schema";
 
 async function main() {
   try {

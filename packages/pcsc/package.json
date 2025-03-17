@@ -1,0 +1,6 @@
+{
+  "name": "@aokiapp/pcsc",
+  "devDependencies": {
+    "@types/node": "^22.13.9"
+  }
+}

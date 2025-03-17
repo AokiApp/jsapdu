@@ -6,7 +6,5 @@
   "scripts": {
     "build": "tsc"
   },
-  "devDependencies": {
-    "@types/node": "^22.13.9"
-  }
+  "devDependencies": {}
 }

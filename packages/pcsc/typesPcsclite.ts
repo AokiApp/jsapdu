@@ -1,3 +1,8 @@
+/**
+ * @file Type definitions for the `pcsclite` package.
+ * @see https://github.com/santigimeno/node-pcsclite/blob/master/index.d.ts
+ */
+
 import { Buffer } from "node:buffer";
 import { EventEmitter } from "node:events";
 
@@ -11,7 +16,7 @@ export type Status = {
   state: number;
 };
 
-export type AnyOrNothing = any | undefined | null;
+export type ErrorOrNothing = Error | undefined | null;
 
 export interface PCSCLite extends EventEmitter {
   on(type: "error", listener: (error: Error) => void): this;
@@ -64,26 +69,29 @@ export interface CardReader extends EventEmitter {
   ): this;
   SCARD_CTL_CODE(code: number): number;
   get_status(
-    cb: (err: AnyOrNothing, state: number, atr?: Buffer) => void,
+    cb: (err: ErrorOrNothing, state: number, atr?: Buffer) => void,
   ): void;
-  connect(callback: (err: AnyOrNothing, protocol: number) => void): void;
+  connect(callback: (err: ErrorOrNothing, protocol: number) => void): void;
   connect(
     options: ConnectOptions,
-    callback: (err: AnyOrNothing, protocol: number) => void,
+    callback: (err: ErrorOrNothing, protocol: number) => void,
   ): void;
-  disconnect(callback: (err: AnyOrNothing) => void): void;
-  disconnect(disposition: number, callback: (err: AnyOrNothing) => void): void;
+  disconnect(callback: (err: ErrorOrNothing) => void): void;
+  disconnect(
+    disposition: number,
+    callback: (err: ErrorOrNothing) => void,
+  ): void;
   transmit(
     data: Buffer,
     res_len: number,
     protocol: number,
-    cb: (err: AnyOrNothing, response: Buffer) => void,
+    cb: (err: ErrorOrNothing, response: Buffer) => void,
   ): void;
   control(
     data: Buffer,
     control_code: number,
     res_len: number,
-    cb: (err: AnyOrNothing, response: Buffer) => void,
+    cb: (err: ErrorOrNothing, response: Buffer) => void,
   ): void;
   close(): void;
 }

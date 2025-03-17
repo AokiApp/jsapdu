@@ -5,8 +5,8 @@ import {
   SmartCardDeviceInfo,
   SmartCardPlatform,
   SmartCardPlatformManager,
-} from ".";
-import { PCSCLite, CardReader } from "./typesPcsclite";
+} from "@aokiapp/interface";
+import { PCSCLite, CardReader } from "@aokiapp/pcsc/typesPcsclite";
 
 export class PcscPlatformManager extends SmartCardPlatformManager {
   public getPlatform(): PcscPlatform {

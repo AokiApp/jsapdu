@@ -1,5 +1,16 @@
-import { TLVParser, TLVRootSchema } from "@aokiapp/interface/tlv";
-import { arrayBufferToBase64url } from "@aokiapp/interface/utils";
+import { TLVParser, TLVRootSchema } from "@aokiapp/tlv-parser/tlv";
+
+function arrayBufferToBase64url(buffer: ArrayBuffer): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(buffer).toString("base64url");
+  } else {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const base64 = btoa(binary);
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+}
 
 export const schemaCertificate = {
   name: "certificate",

@@ -7,7 +7,8 @@ import {
   selectEf,
   verify,
 } from "./apdu";
-import { JPKI_AP } from "./constant";
+
+const JPKI_AP = [0xd3, 0x92, 0xf0, 0x00, 0x26, 0x01, 0x00, 0x00, 0x00, 0x01];
 
 describe("CommandApdu class", () => {
   test("should create standard APDU command with data payload", () => {

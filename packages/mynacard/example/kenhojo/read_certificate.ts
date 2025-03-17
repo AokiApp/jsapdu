@@ -1,7 +1,7 @@
 import { readEfBinaryFull, selectDf } from "@aokiapp/interface/apdu";
-import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/interface/constant";
-import { PcscPlatformManager } from "@aokiapp/interface/pcsc";
-import { TLVParser } from "@aokiapp/interface/tlv";
+import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { TLVParser } from "@aokiapp/tlv-parser/tlv";
 import { schemaCertificate } from "../../schema";
 
 async function main() {
