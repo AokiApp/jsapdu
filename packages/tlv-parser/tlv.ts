@@ -62,8 +62,8 @@ interface TLVResult {
 
 export class TLVParser<S extends TLVSchema | null = null> {
   schema: S;
-  buffer = new Uint8Array();
-  view = new DataView(this.buffer.buffer);
+  buffer = new ArrayBuffer(0);
+  view = new DataView(this.buffer);
   offset = 0;
 
   constructor(schema: S = null as S) {
@@ -71,14 +71,15 @@ export class TLVParser<S extends TLVSchema | null = null> {
   }
 
   public async parse(
-    buffer: Uint8Array,
+    _buffer: ArrayBuffer | Uint8Array,
   ): Promise<S extends TLVSchema ? ParsedResult<S> : TLVResult> {
-    this.buffer = buffer;
-    this.view = new DataView(
-      this.buffer.buffer,
-      this.buffer.byteOffset,
-      this.buffer.byteLength,
-    );
+    if (_buffer instanceof Uint8Array) {
+      this.buffer = _buffer.buffer;
+    } else {
+      this.buffer = _buffer;
+    }
+
+    this.view = new DataView(this.buffer);
     this.offset = 0;
 
     if (this.schema) {
@@ -92,7 +93,7 @@ export class TLVParser<S extends TLVSchema | null = null> {
   private async parseWithSchema<T extends TLVSchema>(
     schema: T,
   ): Promise<ParsedResult<T>> {
-    const startOffset = this.offset;
+    // const startOffset = this.offset;
     const tagInfo = this.readTagInfo();
 
     this.validateTagInfo(tagInfo, schema);
@@ -108,14 +109,14 @@ export class TLVParser<S extends TLVSchema | null = null> {
         obj[field.name] = await fieldParser.parse(subBuffer);
         this.offset += fieldParser.offset;
       }
-      obj._buffer = this.buffer.slice(startOffset, endOffset);
+      // obj._buffer = this.buffer.slice(startOffset, endOffset);
       return obj as ParsedResult<T>;
     } else {
       const rawValue = this.readValue(length);
       if (schema.encode !== undefined) {
         return (await schema.encode(rawValue)) as ParsedResult<T>;
       }
-      return new Uint8Array(rawValue) as ParsedResult<T>;
+      return rawValue as ParsedResult<T>;
     }
   }
 
@@ -123,9 +124,9 @@ export class TLVParser<S extends TLVSchema | null = null> {
    * Ensure that the specified number of bytes is available in the buffer
    */
   private ensureAvailable(bytes: number): void {
-    if (this.offset + bytes > this.buffer.length) {
+    if (this.offset + bytes > this.buffer.byteLength) {
       throw new Error(
-        `Buffer underflow: ${bytes} bytes required, but only ${this.buffer.length - this.offset} bytes available`,
+        `Buffer underflow: ${bytes} bytes required, but only ${this.buffer.byteLength - this.offset} bytes available`,
       );
     }
   }
@@ -232,12 +233,8 @@ export class TLVParser<S extends TLVSchema | null = null> {
   // Read value part and return as ArrayBuffer
   private readValue(length: number): ArrayBuffer {
     this.ensureAvailable(length);
-    const chunk = this.buffer.subarray(this.offset, this.offset + length);
+    const chunk = this.buffer.slice(this.offset, this.offset + length);
     this.offset += length;
-    // Create a new ArrayBuffer to ensure the correct type
-    return chunk.buffer.slice(
-      chunk.byteOffset,
-      chunk.byteOffset + chunk.byteLength,
-    );
+    return chunk;
   }
 }
