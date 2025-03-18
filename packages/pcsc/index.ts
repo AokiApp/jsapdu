@@ -35,6 +35,7 @@ export class PcscPlatform extends SmartCardPlatform {
         clearTimeout(timeoutId);
         this.initialized = true; // 成功時のみフラグを設定
         resolve();
+        this.pcsc.removeListener("reader", readerHandler);
       };
 
       this.pcsc.on("reader", readerHandler);
