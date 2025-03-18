@@ -35,7 +35,7 @@ async function main() {
     const parser = new TLVParser(schemaKenhojoSignature);
     const parsed = await parser.parse(res);
 
-    console.log(parsed.kenhojoAttributesSignature);
+    console.log(parsed);
 
     await device.release();
     await platform.release();
