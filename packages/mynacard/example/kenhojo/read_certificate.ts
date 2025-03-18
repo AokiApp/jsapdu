@@ -13,14 +13,22 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    await session.transmit(selectDf(KENHOJO_AP).toUint8Array());
+    const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
 
-    const res = await session.transmit(
-      readEfBinaryFull(KENHOJO_AP_EF.CERTIFICATE).toUint8Array(),
+    if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
+      throw new Error("Failed to select DF");
+    }
+
+    const readBinaryResponse = await session.transmit(
+      readEfBinaryFull(KENHOJO_AP_EF.CERTIFICATE),
     );
 
+    if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
+      throw new Error("Failed to read binary");
+    }
+
     const parser = new TLVParser(schemaCertificate);
-    const parsed = await parser.parse(res);
+    const parsed = await parser.parse(readBinaryResponse.data);
 
     console.log(parsed.contents);
 

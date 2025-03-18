@@ -1,3 +1,5 @@
+import { CommandApdu, ResponseApdu } from "./apdu";
+
 /**
  * Platform manager for SmartCard R/W
  */
@@ -233,7 +235,7 @@ export abstract class SmartCard {
   /**
    * Transmit APDU command to the card
    */
-  public abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
+  public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
 
   /**
    * Reset the card

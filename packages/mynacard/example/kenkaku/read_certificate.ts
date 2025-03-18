@@ -13,16 +13,24 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    await session.transmit(selectDf(KENKAKU_AP).toUint8Array());
+    const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
 
-    const res = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE).toUint8Array(),
+    if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
+      throw new Error("Failed to select DF");
+    }
+
+    const readBinaryResponse = await session.transmit(
+      readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE),
     );
 
-    const parser = new TLVParser(schemaCertificate);
-    const parsed = await parser.parse(res);
+    if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
+      throw new Error("Failed to read binary");
+    }
 
-    console.log(parsed.contents);
+    const parser = new TLVParser(schemaCertificate);
+    const parsed = await parser.parse(readBinaryResponse.data);
+
+    console.log(parsed);
 
     await device.release();
     await platform.release();

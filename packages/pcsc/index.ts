@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import pcsclite from "pcsclite";
 import {
   SmartCard,
@@ -7,6 +9,7 @@ import {
   SmartCardPlatformManager,
 } from "@aokiapp/interface";
 import { PCSCLite, CardReader } from "@aokiapp/pcsc/typesPcsclite";
+import { CommandApdu, ResponseApdu } from "@aokiapp/interface/apdu";
 
 export class PcscPlatformManager extends SmartCardPlatformManager {
   public getPlatform(): PcscPlatform {
@@ -212,22 +215,20 @@ export class Pcsc extends SmartCard {
    * @returns Promise resolving to Uint8Array containing the card's response
    * @throws Error if card is not connected or transmission fails
    */
-  public async transmit(data: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+  public async transmit(data: CommandApdu): Promise<ResponseApdu> {
     if (!this.connected) {
       throw new Error("A card not connected");
     }
 
-    return new Promise<Uint8Array<ArrayBuffer>>((resolve, reject) => {
+    return new Promise<ResponseApdu>((resolve, reject) => {
       this.device.reader.transmit(
-        Buffer.from(data),
+        Buffer.from(data.toUint8Array()),
         65536,
         this.protocol,
         (err, res) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(Uint8Array.from(res));
-          }
+          if (!err) {
+            resolve(ResponseApdu.fromUint8Array(new Uint8Array(res)));
+          } else reject(err);
         },
       );
     });

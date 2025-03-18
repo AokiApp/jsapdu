@@ -14,23 +14,32 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    await session.transmit(selectDf(KENKAKU_AP).toUint8Array());
+    const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
+
+    if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
+      throw new Error("Failed to select DF");
+    }
 
     const pin = await askPassword("Enter PIN-A: ");
 
     const verifyResponse = await session.transmit(
-      verify(pin, {
-        ef: KENKAKU_AP_EF.PIN_A,
-      }).toUint8Array(),
+      verify(pin, { ef: KENKAKU_AP_EF.PIN_A }),
     );
-    console.log(verifyResponse);
 
-    const res = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.MY_NUMBER).toUint8Array(),
+    if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
+      throw new Error("PIN verification failed");
+    }
+
+    const readBinaryResponse = await session.transmit(
+      readEfBinaryFull(KENKAKU_AP_EF.MY_NUMBER),
     );
+
+    if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
+      throw new Error("Failed to read binary");
+    }
 
     const parser = new TLVParser(schemaKenkakuMyNumber);
-    const parsed = await parser.parse(res);
+    const parsed = await parser.parse(readBinaryResponse.data);
 
     console.log(parsed);
 
