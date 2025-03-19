@@ -2,7 +2,7 @@ import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard/schema";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { TLVParser } from "@aokiapp/tlv-parser/tlv";
+import { TLVParser } from "@aokiapp/tlv-parser";
 import { askPassword } from "@aokiapp/mynacard/utils";
 
 async function main() {

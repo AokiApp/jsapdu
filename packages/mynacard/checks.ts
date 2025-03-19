@@ -1,4 +1,4 @@
-import { TLVParser } from "@aokiapp/tlv-parser/tlv";
+import { TLVParser } from "@aokiapp/tlv-parser";
 import {
   schemaCertificate,
   schemaKenhojoBasicFour,

@@ -1,7 +1,7 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
 import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { TLVParser } from "@aokiapp/tlv-parser/tlv";
+import { TLVParser } from "@aokiapp/tlv-parser";
 import { schemaKenkakuMyNumber } from "@aokiapp/mynacard/schema";
 import { askPassword } from "@aokiapp/mynacard/utils";
 
