@@ -3,7 +3,7 @@ export const TagClass = {
   Application: 1,
   ContextSpecific: 2,
   Private: 3,
-};
+} as const;
 export type TagClass = (typeof TagClass)[keyof typeof TagClass];
 
 export interface TagInfo {

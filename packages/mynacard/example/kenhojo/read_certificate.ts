@@ -30,7 +30,7 @@ async function main() {
     const parser = new TLVParser(schemaCertificate);
     const parsed = await parser.parse(readBinaryResponse.data);
 
-    console.log(parsed.contents);
+    console.log(parsed);
 
     await device.release();
     await platform.release();
