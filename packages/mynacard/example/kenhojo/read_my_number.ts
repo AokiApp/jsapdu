@@ -39,7 +39,7 @@ async function main() {
     }
 
     const parser = new TLVParser(schemaKenhojoMyNumber);
-    const parsed = await parser.parse(readBinaryResponse.data);
+    const parsed = parser.parse(readBinaryResponse.data);
 
     console.log(parsed);
 

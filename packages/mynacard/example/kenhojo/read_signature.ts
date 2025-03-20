@@ -3,7 +3,7 @@ import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
 import { schemaKenhojoSignature } from "@aokiapp/mynacard/schema";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { askPassword } from "@aokiapp/mynacard/utils";
-import { TLVParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv-parser";
 
 async function main() {
   try {
@@ -38,8 +38,8 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new TLVParser(schemaKenhojoSignature);
-    const parsed = await parser.parse(readBinaryResponse.data);
+    const parser = new SchemaParser(schemaKenhojoSignature);
+    const parsed = parser.parse(readBinaryResponse.data.buffer);
 
     console.log(parsed);
 

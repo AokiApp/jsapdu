@@ -1,4 +1,4 @@
-import { TLVParser } from "@aokiapp/tlv-parser";
+import { SchemaParser, TLVParser } from "@aokiapp/tlv-parser";
 import {
   schemaCertificate,
   schemaKenhojoBasicFour,
@@ -21,15 +21,11 @@ kenhojoMyNumberParser.parse(kenhojoMyNumber).then((parsed) => {
   console.log(parsed);
 });
 
-const kenhojoBasicFourParser = new TLVParser(schemaKenhojoBasicFour);
-kenhojoBasicFourParser.parse(kenhojoBasicFour).then((parsed) => {
-  console.log(parsed);
-});
+const kenhojoBasicFourParser = new SchemaParser(schemaKenhojoBasicFour);
+console.log(kenhojoBasicFourParser.parse(kenhojoBasicFour.buffer));
 
-const kenhojoSignatureParser = new TLVParser(schemaKenhojoSignature);
-kenhojoSignatureParser.parse(kenhojoSignature).then((parsed) => {
-  console.log(parsed);
-});
+const kenhojoSignatureParser = new SchemaParser(schemaKenhojoSignature);
+console.log(kenhojoSignatureParser.parse(kenhojoSignature.buffer));
 
 const kenhojoCertificateParser = new TLVParser(schemaCertificate);
 kenhojoCertificateParser.parse(kenhojoCertificate).then((parsed) => {

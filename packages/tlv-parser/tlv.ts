@@ -1,18 +1,11 @@
-/**
- * Literal type representing tag class
- */
-type TagClass = "Universal" | "Application" | "Context-specific" | "Private";
+import { TagInfo, TagClass } from "./types";
 
-interface TagInfo {
-  tagClass: TagClass;
-  constructed: boolean;
-  tagNumber: number;
-}
+type DefaultEncodeType = ArrayBuffer;
 
 /**
  * Base interface for common schema properties
  */
-interface TLVSchemaBase<EncodedType = Uint8Array> {
+interface TLVSchemaBase<EncodedType = DefaultEncodeType> {
   readonly tagClass?: TagClass;
   readonly constructed?: boolean;
   readonly tagNumber?: number;
@@ -23,7 +16,7 @@ interface TLVSchemaBase<EncodedType = Uint8Array> {
 /**
  * Field schema - for internal fields (name is required)
  */
-export interface TLVFieldSchema<EncodedType = Uint8Array>
+export interface TLVFieldSchema<EncodedType = DefaultEncodeType>
   extends TLVSchemaBase<EncodedType> {
   readonly name: string; // required
 }
@@ -31,7 +24,7 @@ export interface TLVFieldSchema<EncodedType = Uint8Array>
 /**
  * Root schema - for top level (name is optional)
  */
-export interface TLVRootSchema<EncodedType = Uint8Array>
+export interface TLVRootSchema<EncodedType = DefaultEncodeType>
   extends TLVSchemaBase<EncodedType> {
   readonly name?: string; // optional
 }
@@ -197,13 +190,13 @@ export class TLVParser<S extends TLVSchema | null = null> {
   private getTagClass(bits: number): TagClass {
     switch (bits) {
       case 0:
-        return "Universal";
+        return TagClass.Universal;
       case 1:
-        return "Application";
+        return TagClass.Application;
       case 2:
-        return "Context-specific";
+        return TagClass.ContextSpecific;
       case 3:
-        return "Private";
+        return TagClass.Private;
       default:
         throw new Error(`Invalid tag class bits: ${bits}`);
     }
