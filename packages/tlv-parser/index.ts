@@ -1,6 +1,5 @@
-import { TLVParser } from "./tlv";
-
 import { BasicTLVParser } from "./basicParser";
 import { SchemaParser, Schema } from "./schemaParser";
+import { TagClass } from "./types";
 
-export { TLVParser, BasicTLVParser, SchemaParser, Schema };
+export { BasicTLVParser, SchemaParser, Schema, TagClass };

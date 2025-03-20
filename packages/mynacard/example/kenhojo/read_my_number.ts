@@ -1,9 +1,8 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
-import { schemaKenhojoMyNumber } from "@aokiapp/mynacard/schema";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { askPassword } from "@aokiapp/mynacard/utils";
-import { TLVParser } from "@aokiapp/tlv-parser";
+import { BasicTLVParser } from "@aokiapp/tlv-parser";
 
 async function main() {
   try {
@@ -38,10 +37,9 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new TLVParser(schemaKenhojoMyNumber);
-    const parsed = await parser.parse(readBinaryResponse.data);
+    const parsed = BasicTLVParser.parse(readBinaryResponse.data.buffer);
 
-    console.log(parsed);
+    console.log(parsed.value);
 
     await device.release();
     await platform.release();

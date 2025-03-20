@@ -1,7 +1,7 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
 import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { TLVParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv-parser";
 import { schemaKenkakuMyNumber } from "@aokiapp/mynacard/schema";
 import { askPassword } from "@aokiapp/mynacard/utils";
 
@@ -38,10 +38,13 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new TLVParser(schemaKenkakuMyNumber);
-    const parsed = await parser.parse(readBinaryResponse.data);
+    const parser = new SchemaParser(schemaKenkakuMyNumber);
+    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
+      async: true,
+    });
 
     console.log(parsed);
+    console.log(parsed.publicKey.algorithm);
 
     await device.release();
     await platform.release();

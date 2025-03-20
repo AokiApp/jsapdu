@@ -1,6 +1,11 @@
 import { TagClass, TLVResult } from "./types";
 
 export class BasicTLVParser {
+  /**
+   * Parse a buffer containing a single TLV structure.
+   * @param buffer - The TLV data buffer to parse.
+   * @returns The parsed result including tag, length, and value.
+   */
   public static parse(buffer: ArrayBuffer): TLVResult {
     const view = new DataView(buffer);
     let offset = 0;
@@ -22,12 +27,25 @@ export class BasicTLVParser {
     };
   }
 
-  protected static readTagInfo(view: DataView, offset: number) {
+  /**
+   * Read the tag portion from the DataView and update the offset.
+   * @param view - The DataView representing the TLV buffer.
+   * @param offset - The current read position within the buffer.
+   * @returns An object containing the parsed tag information and the new offset.
+   */
+  protected static readTagInfo(
+    view: DataView,
+    offset: number,
+  ): {
+    tag: { tagClass: TagClass; constructed: boolean; tagNumber: number };
+    newOffset: number;
+  } {
     const firstByte = view.getUint8(offset++);
     const tagClassBits = (firstByte & 0xc0) >> 6;
     const tagClass: TagClass = this.getTagClass(tagClassBits);
     const isConstructed = !!(firstByte & 0x20);
     let tagNumber = firstByte & 0x1f;
+
     if (tagNumber === 0x1f) {
       tagNumber = 0;
       let b: number;
@@ -42,6 +60,11 @@ export class BasicTLVParser {
     };
   }
 
+  /**
+   * Convert tag class bits into a TagClass enum value.
+   * @param {number} bits - The bits extracted from the tag byte.
+   * @returns {TagClass} The corresponding TagClass.
+   */
   protected static getTagClass(bits: number): TagClass {
     switch (bits) {
       case 0:
@@ -56,7 +79,16 @@ export class BasicTLVParser {
     throw new Error("Invalid tag class");
   }
 
-  protected static readLength(view: DataView, offset: number) {
+  /**
+   * Read the length portion from the DataView and update the offset.
+   * @param view - The DataView representing the TLV buffer.
+   * @param offset - The current read position within the buffer.
+   * @returns An object containing the parsed length and the new offset.
+   */
+  protected static readLength(
+    view: DataView,
+    offset: number,
+  ): { length: number; newOffset: number } {
     let length = view.getUint8(offset++);
     if (length & 0x80) {
       const numBytes = length & 0x7f;
@@ -68,6 +100,13 @@ export class BasicTLVParser {
     return { length, newOffset: offset };
   }
 
+  /**
+   * Read the value portion from the buffer based on the specified length.
+   * @param buffer - The original TLV data buffer.
+   * @param offset - The current read position within the buffer.
+   * @param length - The length of the TLV value.
+   * @returns An object containing the raw value slice and the new offset.
+   */
   protected static readValue(
     buffer: ArrayBuffer,
     offset: number,
