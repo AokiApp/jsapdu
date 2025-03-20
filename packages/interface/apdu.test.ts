@@ -70,6 +70,7 @@ describe("CommandApdu class", () => {
     expect(command.p2).toBe(0x00);
     expect(command.data).toBe(null);
     expect(command.le).toBe(null);
+    expect(command.toUint8Array()).toEqual(bytes);
   });
 
   test("should parse APDU from Uint8Array (standard case 2)", () => {
@@ -81,15 +82,18 @@ describe("CommandApdu class", () => {
     expect(command.p2).toBe(0x00);
     expect(command.data).toBe(null);
     expect(command.le).toBe(255);
+    expect(command.toUint8Array()).toEqual(bytes);
   });
 
   test("should parse APDU from hex string", () => {
-    const command = CommandApdu.fromHexString("00A4040004D392F000");
+    const commandString = "00A4040004D392F000";
+    const command = CommandApdu.fromHexString(commandString);
     expect(command.cla).toBe(0x00);
     expect(command.ins).toBe(0xa4);
     expect(command.p1).toBe(0x04);
     expect(command.p2).toBe(0x00);
     expect(command.data).toEqual(Uint8Array.from([0xd3, 0x92, 0xf0, 0x00]));
+    expect(command.toHexString()).toEqual(commandString);
   });
 
   test("should throw error when parsing invalid hex string", () => {

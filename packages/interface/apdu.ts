@@ -55,78 +55,60 @@ export class CommandApdu {
    */
   public toUint8Array(): Uint8Array {
     const header = new Uint8Array([this.cla, this.ins, this.p1, this.p2]);
-    let body = new Uint8Array(0);
-    let isExtended = false;
+    const isExtended =
+      (this.data && this.data.length > 255) || (this.le && this.le > 256);
 
-    // Determine Lc and Le
-    if (this.data !== null && this.data.length > 255) {
-      isExtended = true;
-    }
-    if (this.le !== null && this.le > 256) {
-      isExtended = true;
+    let bodyLen = 0;
+    if (this.data && this.le !== null) {
+      bodyLen = isExtended
+        ? 1 + 2 + this.data.length + 2
+        : 1 + this.data.length + 1;
+    } else if (this.data) {
+      bodyLen = isExtended ? 1 + 2 + this.data.length : 1 + this.data.length;
+    } else if (this.le !== null) {
+      bodyLen = isExtended ? 1 + 2 : 1;
     }
 
-    if (this.data !== null && this.le !== null) {
+    const bodyBuffer = new ArrayBuffer(bodyLen);
+    const view = new DataView(bodyBuffer);
+    let offset = 0;
+
+    if (this.data && this.le !== null) {
       if (isExtended) {
-        // Extended APDU (both data and Le exist)
-        const extendedBody = new Uint8Array(1 + 2 + this.data.length + 2);
-        let offset = 0;
-        extendedBody[offset++] = 0x00; // Extended APDU indicator
-        extendedBody[offset++] = (this.data.length >>> 8) & 0xff; // Lc high byte
-        extendedBody[offset++] = this.data.length & 0xff; // Lc low byte
-        extendedBody.set(this.data, offset); // Data
+        view.setUint8(offset++, 0x00);
+        view.setUint16(offset, this.data.length);
+        offset += 2;
+        new Uint8Array(bodyBuffer).set(this.data, offset);
         offset += this.data.length;
-        extendedBody[offset++] = (this.le >>> 8) & 0xff; // Le high byte
-        extendedBody[offset++] = this.le & 0xff; // Le low byte
-        body = extendedBody;
+        view.setUint16(offset, this.le);
       } else {
-        // Standard APDU (both data and Le exist)
-        const standardBody = new Uint8Array(1 + this.data.length + 1);
-        let offset = 0;
-        standardBody[offset++] = this.data.length; // Lc
-        standardBody.set(this.data, offset); // Data
+        view.setUint8(offset++, this.data.length);
+        new Uint8Array(bodyBuffer).set(this.data, offset);
         offset += this.data.length;
-        standardBody[offset++] = this.le; // Le
-        body = standardBody;
+        view.setUint8(offset, this.le);
       }
-    } else if (this.data !== null) {
+    } else if (this.data) {
       if (isExtended) {
-        // Extended APDU (data only)
-        const extendedBody = new Uint8Array(1 + 2 + this.data.length);
-        let offset = 0;
-        extendedBody[offset++] = 0x00; // Extended APDU indicator
-        extendedBody[offset++] = (this.data.length >>> 8) & 0xff; // Lc high byte
-        extendedBody[offset++] = this.data.length & 0xff; // Lc low byte
-        extendedBody.set(this.data, offset); // Data
-        body = extendedBody;
+        view.setUint8(offset++, 0x00);
+        view.setUint16(offset, this.data.length);
+        offset += 2;
+        new Uint8Array(bodyBuffer).set(this.data, offset);
       } else {
-        // Standard APDU (data only)
-        const standardBody = new Uint8Array(1 + this.data.length);
-        let offset = 0;
-        standardBody[offset++] = this.data.length; // Lc
-        standardBody.set(this.data, offset); // Data
-        body = standardBody;
+        view.setUint8(offset++, this.data.length);
+        new Uint8Array(bodyBuffer).set(this.data, offset);
       }
     } else if (this.le !== null) {
       if (isExtended) {
-        // Extended APDU (Le only)
-        const extendedBody = new Uint8Array(1 + 2);
-        extendedBody[0] = 0x00; // Extended APDU indicator
-        extendedBody[1] = (this.le >>> 8) & 0xff; // Le high byte
-        extendedBody[2] = this.le & 0xff; // Le low byte
-        body = extendedBody;
+        view.setUint8(offset++, 0x00);
+        view.setUint16(offset, this.le);
       } else {
-        // Standard APDU (Le only)
-        const standardBody = new Uint8Array(1);
-        standardBody[0] = this.le; // Le
-        body = standardBody;
+        view.setUint8(offset, this.le);
       }
     }
 
-    // Combine header and body
-    const apdu = new Uint8Array(header.length + body.length);
+    const apdu = new Uint8Array(header.length + bodyLen);
     apdu.set(header, 0);
-    apdu.set(body, header.length);
+    apdu.set(new Uint8Array(bodyBuffer), header.length);
     return apdu;
   }
 
