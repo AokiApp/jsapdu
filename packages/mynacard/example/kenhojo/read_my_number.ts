@@ -41,6 +41,12 @@ async function main() {
 
     console.log(parsed.value);
 
+    const hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      readBinaryResponse.data.buffer,
+    );
+    console.log(new Uint8Array(hashBuffer));
+
     await device.release();
     await platform.release();
   } catch (error) {

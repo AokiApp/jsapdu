@@ -28,7 +28,9 @@ async function main() {
     }
 
     const parser = new SchemaParser(schemaCertificate);
-    const parsed = await parser.parse(readBinaryResponse.data, { async: true });
+    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
+      async: true,
+    });
 
     console.log(parsed);
 

@@ -2,7 +2,7 @@ import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard/schema";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 import { askPassword } from "@aokiapp/mynacard/utils";
 
 async function main() {
@@ -38,10 +38,19 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
+    const buffer = readBinaryResponse.data.buffer;
+
     const parser = new SchemaParser(schemaKenhojoBasicFour);
-    const parsed = parser.parse(readBinaryResponse.data.buffer);
+    const parsed = parser.parse(buffer);
+
+    const { endOffset } = BasicTLVParser.parse(buffer);
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      buffer.slice(parsed.offsets[0], endOffset),
+    );
 
     console.log(parsed);
+    console.log(new Uint8Array(digest));
 
     await device.release();
     await platform.release();
