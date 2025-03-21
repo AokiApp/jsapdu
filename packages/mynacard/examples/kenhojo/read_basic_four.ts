@@ -1,9 +1,13 @@
-import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
-import { schemaKenhojoBasicFour } from "@aokiapp/mynacard/schema";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
+import {
+  KENHOJO_AP,
+  KENHOJO_AP_EF,
+  schemaKenhojoBasicFour,
+} from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
-import { askPassword } from "@aokiapp/mynacard/utils";
+
+import { askPassword } from "../utils";
 
 async function main() {
   try {

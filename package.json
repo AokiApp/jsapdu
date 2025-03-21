@@ -1,8 +1,9 @@
 {
   "name": "jsapdu",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "vitest"
   },
   "keywords": [],
@@ -21,8 +22,5 @@
   },
   "workspaces": [
     "packages/*"
-  ],
-  "dependencies": {
-    "pcsclite": "^1.0.1"
-  }
+  ]
 }

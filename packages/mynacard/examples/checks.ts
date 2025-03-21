@@ -1,19 +1,56 @@
 import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 import {
+  hexStringToUint8Array,
   schemaCertificate,
   schemaKenhojoBasicFour,
   schemaKenhojoSignature,
   schemaKenkakuEntries,
   schemaKenkakuMyNumber,
-} from "./schema";
-import {
-  kenhojoBasicFour,
-  kenhojoCertificate,
-  kenhojoMyNumber,
-  kenhojoSignature,
-  kenkakuEntries,
-  kenkakuMyNumber,
-} from "./constantPrivate";
+} from "@aokiapp/mynacard";
+
+export const kenkakuEntries = hexStringToUint8Array(
+  process.env.KENKAKU_02 || "",
+);
+
+export const kenkakuInformation = hexStringToUint8Array(
+  process.env.KENKAKU_03 || "",
+);
+
+export const kenkakuCertificate = hexStringToUint8Array(
+  process.env.KENKAKU_04 || "",
+);
+
+export const kenkakuMyNumber = hexStringToUint8Array(
+  process.env.KENKAKU_05 || "",
+);
+
+export const kenhojoMyNumber = hexStringToUint8Array(
+  process.env.KENHOJO_01 || "",
+);
+
+export const kenhojoBasicFour = hexStringToUint8Array(
+  process.env.KENHOJO_02 || "",
+);
+
+export const kenhojoSignature = hexStringToUint8Array(
+  process.env.KENHOJO_03 || "",
+);
+
+export const kenhojoCertificate = hexStringToUint8Array(
+  process.env.KENHOJO_04 || "",
+);
+
+export const kenhojoInformation = hexStringToUint8Array(
+  process.env.KENHOJO_05 || "",
+);
+
+export const kenhojoEf0006 = hexStringToUint8Array(
+  process.env.KENHOJO_06 || "",
+);
+
+export const kenhojoAuthKey = hexStringToUint8Array(
+  process.env.KENHOJO_07 || "",
+);
 
 const kenhojoMyNumberParsed = BasicTLVParser.parse(kenhojoMyNumber.buffer);
 console.log("=== KENHOJO MY NUMBER DATA ===");

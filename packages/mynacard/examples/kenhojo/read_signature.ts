@@ -1,9 +1,13 @@
-import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
+import {
+  KENHOJO_AP,
+  KENHOJO_AP_EF,
+  schemaKenhojoSignature,
+} from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
-import { schemaKenkakuEntries } from "@aokiapp/mynacard/schema";
-import { askPassword } from "@aokiapp/mynacard/utils";
+
+import { askPassword } from "../utils";
 
 async function main() {
   try {
@@ -14,16 +18,16 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
+    const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
 
     if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
       throw new Error("Failed to select DF");
     }
 
-    const pin = await askPassword("Enter PIN-A: ");
+    const pin = await askPassword("Enter PIN: ");
 
     const verifyResponse = await session.transmit(
-      verify(pin, { ef: KENKAKU_AP_EF.PIN_A }),
+      verify(pin, { ef: KENHOJO_AP_EF.PIN }),
     );
 
     if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
@@ -31,17 +35,15 @@ async function main() {
     }
 
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.ENTRIES),
+      readEfBinaryFull(KENHOJO_AP_EF.SIGNATURE),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new SchemaParser(schemaKenkakuEntries);
-    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
-      async: true,
-    });
+    const parser = new SchemaParser(schemaKenhojoSignature);
+    const parsed = parser.parse(readBinaryResponse.data.buffer);
 
     console.log(parsed);
 

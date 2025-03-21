@@ -293,3 +293,7 @@ export abstract class EmulatedCard {
 }
 
 type EmulatedCardState = "disconnected" | string; // todo: def
+
+export { CommandApdu, ResponseApdu };
+export * from "./apdu";
+export * from "./constant";

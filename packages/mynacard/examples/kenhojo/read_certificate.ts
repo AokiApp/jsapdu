@@ -1,8 +1,11 @@
-import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard/constant";
+import { readEfBinaryFull, selectDf } from "@aokiapp/interface";
+import {
+  KENHOJO_AP,
+  KENHOJO_AP_EF,
+  schemaCertificate,
+} from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { askPassword } from "@aokiapp/mynacard/utils";
-import { BasicTLVParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv-parser";
 
 async function main() {
   try {
@@ -19,33 +22,20 @@ async function main() {
       throw new Error("Failed to select DF");
     }
 
-    const pin = await askPassword("Enter PIN: ");
-
-    const verifyResponse = await session.transmit(
-      verify(pin, { ef: KENHOJO_AP_EF.PIN }),
-    );
-
-    if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
-      throw new Error("PIN verification failed");
-    }
-
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENHOJO_AP_EF.MY_NUMBER),
+      readEfBinaryFull(KENHOJO_AP_EF.CERTIFICATE),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
-    const parsed = BasicTLVParser.parse(readBinaryResponse.data.buffer);
+    const parser = new SchemaParser(schemaCertificate);
+    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
+      async: true,
+    });
 
-    console.log(parsed.value);
-
-    const hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      readBinaryResponse.data.buffer,
-    );
-    console.log(new Uint8Array(hashBuffer));
+    console.log(parsed);
 
     await device.release();
     await platform.release();

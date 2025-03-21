@@ -8,8 +8,8 @@ import {
   SmartCardPlatform,
   SmartCardPlatformManager,
 } from "@aokiapp/interface";
-import { PCSCLite, CardReader } from "@aokiapp/pcsc/typesPcsclite";
-import { CommandApdu, ResponseApdu } from "@aokiapp/interface/apdu";
+import { PCSCLite, CardReader } from "./typesPcsclite";
+import { CommandApdu, ResponseApdu } from "@aokiapp/interface";
 
 export class PcscPlatformManager extends SmartCardPlatformManager {
   public getPlatform(): PcscPlatform {

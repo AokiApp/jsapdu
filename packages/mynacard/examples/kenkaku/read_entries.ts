@@ -1,9 +1,13 @@
-import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface/apdu";
-import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
+import {
+  KENKAKU_AP,
+  KENKAKU_AP_EF,
+  schemaKenkakuEntries,
+} from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
-import { schemaKenkakuMyNumber } from "@aokiapp/mynacard/schema";
-import { askPassword } from "@aokiapp/mynacard/utils";
+
+import { askPassword } from "../utils";
 
 async function main() {
   try {
@@ -31,20 +35,39 @@ async function main() {
     }
 
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.MY_NUMBER),
+      readEfBinaryFull(KENKAKU_AP_EF.ENTRIES),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new SchemaParser(schemaKenkakuMyNumber);
+    const parser = new SchemaParser(schemaKenkakuEntries);
     const parsed = await parser.parse(readBinaryResponse.data.buffer, {
       async: true,
     });
 
+    const buffer = readBinaryResponse.data.buffer;
+
+    const digest_1 = await crypto.subtle.digest(
+      "SHA-256",
+      buffer.slice(parsed.offsets[0], parsed.offsets[2]),
+    );
+    const digest_2 = await crypto.subtle.digest(
+      "SHA-256",
+      buffer.slice(parsed.offsets[3], parsed.offsets[4]),
+    );
+    const digest_3 = await crypto.subtle.digest(
+      "SHA-256",
+      buffer.slice(parsed.offsets[5], parsed.offsets[5]),
+    );
+    const digest = new ArrayBuffer(32 * 3);
+    new Uint8Array(digest).set(new Uint8Array(digest_1), 0);
+    new Uint8Array(digest).set(new Uint8Array(digest_2), 32);
+    new Uint8Array(digest).set(new Uint8Array(digest_3), 64);
+
     console.log(parsed);
-    console.log(parsed.publicKey.algorithm);
+    console.log(digest);
 
     await device.release();
     await platform.release();

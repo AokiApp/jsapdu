@@ -1,8 +1,13 @@
-import { readEfBinaryFull, selectDf } from "@aokiapp/interface/apdu";
-import { KENKAKU_AP, KENKAKU_AP_EF } from "@aokiapp/mynacard/constant";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
+import {
+  KENKAKU_AP,
+  KENKAKU_AP_EF,
+  schemaKenkakuMyNumber,
+} from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
-import { schemaCertificate } from "@aokiapp/mynacard/schema";
+
+import { askPassword } from "../utils";
 
 async function main() {
   try {
@@ -19,20 +24,31 @@ async function main() {
       throw new Error("Failed to select DF");
     }
 
+    const pin = await askPassword("Enter PIN-A: ");
+
+    const verifyResponse = await session.transmit(
+      verify(pin, { ef: KENKAKU_AP_EF.PIN_A }),
+    );
+
+    if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
+      throw new Error("PIN verification failed");
+    }
+
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE),
+      readEfBinaryFull(KENKAKU_AP_EF.MY_NUMBER),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new SchemaParser(schemaCertificate);
+    const parser = new SchemaParser(schemaKenkakuMyNumber);
     const parsed = await parser.parse(readBinaryResponse.data.buffer, {
       async: true,
     });
 
     console.log(parsed);
+    console.log(parsed.publicKey.algorithm);
 
     await device.release();
     await platform.release();

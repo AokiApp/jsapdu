@@ -16,7 +16,7 @@ interface TLVSchemaBase {
  * Interface for defining a primitive TLV schema.
  * @template DecodedType - The type after decoding.
  */
-interface PrimitiveTLVSchema<DecodedType = DefaultEncodeType>
+export interface PrimitiveTLVSchema<DecodedType = DefaultEncodeType>
   extends TLVSchemaBase {
   /**
    * Optional decode function which can return either a value or a Promise of a value.
@@ -28,7 +28,7 @@ interface PrimitiveTLVSchema<DecodedType = DefaultEncodeType>
  * Interface for defining a constructed TLV schema.
  * @template F - The array of child field schemas.
  */
-interface ConstructedTLVSchema<F extends readonly TLVSchema[]>
+export interface ConstructedTLVSchema<F extends readonly TLVSchema[]>
   extends TLVSchemaBase {
   readonly fields: F;
 }
