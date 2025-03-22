@@ -10,7 +10,7 @@ export class CommandApdu {
   public readonly ins: number;
   public readonly p1: number;
   public readonly p2: number;
-  public readonly data: Uint8Array | null;
+  public readonly data: Uint8Array<ArrayBuffer> | null;
   public readonly le: number | null;
 
   /**
@@ -51,7 +51,7 @@ export class CommandApdu {
   /**
    * Method to serialize CommandApdu to Uint8Array
    *
-   * @returns {Uint8Array} Uint8Array representing the APDU command
+   * @returns Uint8Array representing the APDU command
    */
   public toUint8Array(): Uint8Array<ArrayBuffer> {
     const header = new Uint8Array([this.cla, this.ins, this.p1, this.p2]);
@@ -115,7 +115,7 @@ export class CommandApdu {
   /**
    * Method to serialize CommandApdu to a hexadecimal string
    *
-   * @returns {string} Hexadecimal string of the APDU command
+   * @returns Hexadecimal string of the APDU command
    */
   public toHexString(): string {
     const byteArray = this.toUint8Array();
@@ -129,7 +129,7 @@ export class CommandApdu {
    * Static method to parse a Uint8Array into a CommandApdu
    *
    * @param byteArray - Uint8Array to parse
-   * @returns {CommandApdu} Parsed CommandApdu instance
+   * @returns Parsed CommandApdu instance
    */
   public static fromUint8Array(
     byteArray: Uint8Array<ArrayBuffer>,
@@ -226,7 +226,7 @@ export class CommandApdu {
    * Static method to create a CommandApdu from a hexadecimal string
    *
    * @param hexString - Hexadecimal string
-   * @returns {CommandApdu} Parsed CommandApdu instance
+   * @returns Parsed CommandApdu instance
    */
   public static fromHexString(hexString: string): CommandApdu {
     if (typeof hexString !== "string") {
@@ -250,7 +250,7 @@ export class CommandApdu {
   /**
    * Method to return the APDU command as a human-readable hexadecimal string
    *
-   * @returns {string} Hexadecimal string of the APDU command
+   * @returns Hexadecimal string of the APDU command
    */
   public toString(): string {
     return this.toHexString();
@@ -345,8 +345,8 @@ export function selectEf(
  * Construct a VERIFY command APDU
  * @param data - PIN data (1 to 16 bytes)
  * @param options - Options for VERIFY command
- * @returns {CommandApdu} VERIFY command APDU
- * @throws {Error} If EF identifier is invalid or if PIN data string is not numeric
+ * @returns VERIFY command APDU
+ * @throws If EF identifier is invalid or if PIN data string is not numeric
  */
 export function verify(
   data: Uint8Array<ArrayBuffer> | number[] | string,
