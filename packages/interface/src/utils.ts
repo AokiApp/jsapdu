@@ -1,4 +1,6 @@
-export function toUint8Array(data: Uint8Array | number[] | string): Uint8Array {
+export function toUint8Array(
+  data: Uint8Array<ArrayBuffer> | number[] | string,
+): Uint8Array<ArrayBuffer> {
   if (typeof data === "string") {
     return new Uint8Array(
       data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),

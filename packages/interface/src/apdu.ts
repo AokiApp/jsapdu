@@ -28,7 +28,7 @@ export class CommandApdu {
     ins: number,
     p1: number,
     p2: number,
-    data: Uint8Array | null = null,
+    data: Uint8Array<ArrayBuffer> | null = null,
     le: number | null = null,
   ) {
     // Validate input bytes
@@ -53,7 +53,7 @@ export class CommandApdu {
    *
    * @returns {Uint8Array} Uint8Array representing the APDU command
    */
-  public toUint8Array(): Uint8Array {
+  public toUint8Array(): Uint8Array<ArrayBuffer> {
     const header = new Uint8Array([this.cla, this.ins, this.p1, this.p2]);
     const isExtended =
       (this.data && this.data.length > 255) || (this.le && this.le > 256);
@@ -131,7 +131,9 @@ export class CommandApdu {
    * @param byteArray - Uint8Array to parse
    * @returns {CommandApdu} Parsed CommandApdu instance
    */
-  public static fromUint8Array(byteArray: Uint8Array): CommandApdu {
+  public static fromUint8Array(
+    byteArray: Uint8Array<ArrayBuffer>,
+  ): CommandApdu {
     if (!(byteArray instanceof Uint8Array)) {
       throw new TypeError("Input must be a Uint8Array.");
     }
@@ -144,7 +146,7 @@ export class CommandApdu {
     const ins = byteArray[1];
     const p1 = byteArray[2];
     const p2 = byteArray[3];
-    let data: Uint8Array | null = null;
+    let data: Uint8Array<ArrayBuffer> | null = null;
     let le: number | null = null;
     let index = 4;
 
@@ -256,17 +258,19 @@ export class CommandApdu {
 }
 
 export class ResponseApdu {
-  public readonly data: Uint8Array;
+  public readonly data: Uint8Array<ArrayBuffer>;
   public readonly sw1: number;
   public readonly sw2: number;
 
-  constructor(data: Uint8Array, sw1: number, sw2: number) {
+  constructor(data: Uint8Array<ArrayBuffer>, sw1: number, sw2: number) {
     this.data = data;
     this.sw1 = sw1;
     this.sw2 = sw2;
   }
 
-  public static fromUint8Array(byteArray: Uint8Array): ResponseApdu {
+  public static fromUint8Array(
+    byteArray: Uint8Array<ArrayBuffer>,
+  ): ResponseApdu {
     if (!(byteArray instanceof Uint8Array)) {
       throw new TypeError("Input must be a Uint8Array.");
     }
@@ -305,7 +309,7 @@ export class ResponseApdu {
 export function select(
   p1: number,
   p2: number,
-  data: Uint8Array | number[] | string,
+  data: Uint8Array<ArrayBuffer> | number[] | string,
   le: number | null = null,
 ): CommandApdu {
   if ((p2 & 0x0c) === 0x0c && le !== null) {
@@ -315,7 +319,7 @@ export function select(
 }
 
 export function selectDf(
-  data: Uint8Array | number[] | string,
+  data: Uint8Array<ArrayBuffer> | number[] | string,
   fciRequested: boolean = false,
 ): CommandApdu {
   const dfData = toUint8Array(data);
@@ -327,7 +331,9 @@ export function selectDf(
     : select(0x04, 0x0c, dfData, null);
 }
 
-export function selectEf(data: Uint8Array | number[] | string): CommandApdu {
+export function selectEf(
+  data: Uint8Array<ArrayBuffer> | number[] | string,
+): CommandApdu {
   const efData = toUint8Array(data);
   if (efData.length !== 2) {
     throw new Error("Invalid EF identifier.");
@@ -343,7 +349,7 @@ export function selectEf(data: Uint8Array | number[] | string): CommandApdu {
  * @throws {Error} If EF identifier is invalid or if PIN data string is not numeric
  */
 export function verify(
-  data: Uint8Array | number[] | string,
+  data: Uint8Array<ArrayBuffer> | number[] | string,
   options: {
     ef?: number | string;
     isCurrent?: boolean;
@@ -367,7 +373,7 @@ export function verify(
     p2 = 0x80;
   }
 
-  let pinData: Uint8Array;
+  let pinData: Uint8Array<ArrayBuffer>;
   if (typeof data === "string") {
     if (!/^\d+$/.test(data)) {
       throw new Error("PIN data string must contain only digits.");

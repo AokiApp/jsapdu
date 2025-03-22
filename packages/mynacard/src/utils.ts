@@ -1,6 +1,8 @@
 import { BasicTLVParser } from "@aokiapp/tlv-parser";
 
-export function hexStringToUint8Array(hexString: string): Uint8Array {
+export function hexStringToUint8Array(
+  hexString: string,
+): Uint8Array<ArrayBuffer> {
   // Check if the input is in hexadecimal format
   if (!/^[0-9a-fA-F\s]+$/.test(hexString)) {
     throw new Error("Invalid hexadecimal string: Contains non-hex characters.");
