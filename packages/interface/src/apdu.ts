@@ -1,4 +1,4 @@
-import { INS } from "./constant";
+import { INS } from "./constants";
 import { toUint8Array } from "./utils";
 
 /**
@@ -282,7 +282,7 @@ export class ResponseApdu {
     return new ResponseApdu(data, sw1, sw2);
   }
 
-  public toUint8Array(): Uint8Array {
+  public toUint8Array(): Uint8Array<ArrayBuffer> {
     const byteArray = new Uint8Array(this.data.length + 2);
     byteArray.set(this.data, 0);
     byteArray[this.data.length] = this.sw1;
