@@ -10,7 +10,7 @@ export const JPKI_AP_EF = {
   /** 署名用電子証明書CA */
   SIGN_CERT_CA: 0x02,
   UNKNOWN_05: 0x05,
-  JPKI_API_TOKEN: 0x06,
+  JPKI_AP_TOKEN: 0x06,
   UNKNOWN_08: 0x08,
   UNKNOWN_09: 0x09,
   /** 利用者証明用電子証明書 */
