@@ -4,13 +4,13 @@ import {
   KENKAKU_AP_EF,
   schemaCertificate,
 } from "@aokiapp/mynacard";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
+
+import { getPlatform } from "../utils.js";
 
 async function main() {
   try {
-    const manager = new PcscPlatformManager();
-    const platform = manager.getPlatform();
+    const platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
     const device = await devices[0].acquireDevice();

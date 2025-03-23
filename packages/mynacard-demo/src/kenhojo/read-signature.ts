@@ -4,15 +4,13 @@ import {
   KENHOJO_AP_EF,
   schemaKenhojoSignature,
 } from "@aokiapp/mynacard";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { askPassword } from "../utils.js";
+import { askPassword, getPlatform } from "../utils.js";
 
 async function main() {
   try {
-    const manager = new PcscPlatformManager();
-    const platform = manager.getPlatform();
+    const platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
     const device = await devices[0].acquireDevice();

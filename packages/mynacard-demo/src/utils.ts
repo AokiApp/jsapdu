@@ -1,3 +1,5 @@
+import { PcscPlatform } from "@aokiapp/pcsc";
+
 /**
  * Prompts the user for a password in the terminal, masking input with asterisks.
  * @param query The prompt message to display
@@ -58,4 +60,13 @@ export async function askPassword(query: string): Promise<string> {
     stdin.setEncoding("utf8");
     stdin.on("data", onData);
   });
+}
+
+export async function getPlatform() {
+  if (typeof process !== "undefined" && process.versions?.node) {
+    const pcsclite = await import("pcsclite");
+    return new PcscPlatform(pcsclite.default());
+  } else {
+    throw new Error("Unsupported platform");
+  }
 }

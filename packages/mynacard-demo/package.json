@@ -12,5 +12,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
+  },
+  "dependencies": {
+    "pcsclite": "^1.0.1"
   }
 }
