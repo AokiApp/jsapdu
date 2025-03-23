@@ -1,4 +1,4 @@
-import { CommandApdu, ResponseApdu } from "./apdu";
+import { CommandApdu, ResponseApdu } from "./apdu/index.js";
 
 /**
  * Platform manager for SmartCard R/W

@@ -1,5 +1,5 @@
-import { TagClass, TagInfo } from "./types";
-import { BasicTLVParser } from "./basicParser";
+import { BasicTLVParser } from "./basic-parser.js";
+import { TagClass, TagInfo } from "./types.js";
 
 type DefaultEncodeType = ArrayBuffer;
 

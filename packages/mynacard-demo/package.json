@@ -1,19 +1,16 @@
 {
-  "name": "@aokiapp/interface",
-  "version": "1.0.0",
+  "name": "@aokiapp/mynacard-demo",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
-  },
-  "devDependencies": {}
+  }
 }

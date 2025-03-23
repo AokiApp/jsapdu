@@ -1,6 +1,6 @@
-import { INS } from "../../constants";
-import { toUint8Array } from "../../utils";
-import { CommandApdu } from "../command-apdu";
+import { INS } from "../../constants.js";
+import { toUint8Array } from "../../utils.js";
+import { CommandApdu } from "../command-apdu.js";
 
 function select(
   p1: number,

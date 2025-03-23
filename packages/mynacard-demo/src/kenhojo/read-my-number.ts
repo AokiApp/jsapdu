@@ -3,7 +3,7 @@ import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { BasicTLVParser } from "@aokiapp/tlv-parser";
 
-import { askPassword } from "../utils";
+import { askPassword } from "../utils.js";
 
 async function main() {
   try {
@@ -38,14 +38,12 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
-    const parsed = BasicTLVParser.parse(readBinaryResponse.data.buffer);
+    const buffer = readBinaryResponse.arrayBuffer();
+    const parsed = BasicTLVParser.parse(buffer);
 
     console.log(parsed.value);
 
-    const hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      readBinaryResponse.data.buffer,
-    );
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
     console.log(new Uint8Array(hashBuffer));
 
     await device.release();

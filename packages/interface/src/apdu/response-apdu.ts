@@ -45,4 +45,8 @@ export class ResponseApdu {
   public toString(): string {
     return this.toHexString();
   }
+
+  public arrayBuffer(): ArrayBuffer {
+    return this.data.buffer;
+  }
 }

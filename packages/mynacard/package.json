@@ -10,6 +10,7 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "clean": "tsc --build --clean"
   }
 }

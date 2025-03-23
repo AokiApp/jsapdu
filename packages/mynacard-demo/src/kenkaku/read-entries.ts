@@ -7,7 +7,7 @@ import {
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { askPassword } from "../utils";
+import { askPassword } from "../utils.js";
 
 async function main() {
   try {
@@ -42,12 +42,9 @@ async function main() {
       throw new Error("Failed to read binary");
     }
 
+    const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuEntries);
-    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
-      async: true,
-    });
-
-    const buffer = readBinaryResponse.data.buffer;
+    const parsed = await parser.parse(buffer, { async: true });
 
     const digest_1 = await crypto.subtle.digest(
       "SHA-256",

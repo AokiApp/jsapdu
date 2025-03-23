@@ -1,4 +1,4 @@
-import { TagClass, TLVResult } from "./types";
+import { TagClass, TLVResult } from "./types.js";
 
 export class BasicTLVParser {
   /**

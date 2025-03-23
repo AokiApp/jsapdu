@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b packages/*",
+    "clean": "tsc -b packages/* --clean",
     "test": "vitest"
   },
   "keywords": [],

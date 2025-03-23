@@ -1,7 +1,7 @@
 import { readEfBinaryFull, selectDf } from "@aokiapp/interface";
 import {
-  KENHOJO_AP,
-  KENHOJO_AP_EF,
+  KENKAKU_AP,
+  KENKAKU_AP_EF,
   schemaCertificate,
 } from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
@@ -16,24 +16,23 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
+    const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
 
     if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
       throw new Error("Failed to select DF");
     }
 
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENHOJO_AP_EF.CERTIFICATE),
+      readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
+    const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaCertificate);
-    const parsed = await parser.parse(readBinaryResponse.data.buffer, {
-      async: true,
-    });
+    const parsed = await parser.parse(buffer, { async: true });
 
     console.log(parsed);
 

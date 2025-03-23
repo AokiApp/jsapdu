@@ -1,5 +1,3 @@
-import { BasicTLVParser } from "./basicParser";
-import { SchemaParser, Schema } from "./schemaParser";
-import { TagClass } from "./types";
-
-export { BasicTLVParser, SchemaParser, Schema, TagClass };
+export * from "./basic-parser.js";
+export * from "./schema-parser.js";
+export * from "./types.js";

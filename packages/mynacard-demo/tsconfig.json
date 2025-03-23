@@ -2,8 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "ESNext",
     "rootDir": "src",
     "outDir": "dist",
     "composite": true,
@@ -11,5 +10,10 @@
     "declarationMap": true
   },
   "include": ["src"],
-  "references": [{ "path": "../interface" }]
+  "references": [
+    { "path": "../pcsc" },
+    { "path": "../interface" },
+    { "path": "../tlv-parser" },
+    { "path": "../mynacard" }
+  ]
 }

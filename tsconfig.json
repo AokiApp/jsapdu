@@ -5,6 +5,7 @@
     { "path": "./packages/interface" },
     { "path": "./packages/pcsc" },
     { "path": "./packages/tlv-parser" },
-    { "path": "./packages/mynacard" }
+    { "path": "./packages/mynacard" },
+    { "path": "./packages/mynacard-demo" }
   ]
 }

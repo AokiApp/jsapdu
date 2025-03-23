@@ -1,5 +1,5 @@
-import { toUint8Array } from "../../utils";
-import { CommandApdu } from "../command-apdu";
+import { toUint8Array } from "../../utils.js";
+import { CommandApdu } from "../command-apdu.js";
 
 /**
  * Construct a VERIFY command APDU

@@ -1,5 +1,5 @@
-import { INS } from "../../constants";
-import { CommandApdu } from "../command-apdu";
+import { INS } from "../../constants.js";
+import { CommandApdu } from "../command-apdu.js";
 
 function readBinary(
   offset: number,

@@ -1,13 +1,13 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
 import {
-  KENHOJO_AP,
-  KENHOJO_AP_EF,
-  schemaKenhojoSignature,
+  KENKAKU_AP,
+  KENKAKU_AP_EF,
+  schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { askPassword } from "../utils";
+import { askPassword } from "../utils.js";
 
 async function main() {
   try {
@@ -18,16 +18,16 @@ async function main() {
     const device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
-    const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
+    const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
 
     if (selectResponse.sw1 !== 0x90 || selectResponse.sw2 !== 0x00) {
       throw new Error("Failed to select DF");
     }
 
-    const pin = await askPassword("Enter PIN: ");
+    const pin = await askPassword("Enter PIN-A: ");
 
     const verifyResponse = await session.transmit(
-      verify(pin, { ef: KENHOJO_AP_EF.PIN }),
+      verify(pin, { ef: KENKAKU_AP_EF.PIN_A }),
     );
 
     if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
@@ -35,17 +35,19 @@ async function main() {
     }
 
     const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENHOJO_AP_EF.SIGNATURE),
+      readEfBinaryFull(KENKAKU_AP_EF.MY_NUMBER),
     );
 
     if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
       throw new Error("Failed to read binary");
     }
 
-    const parser = new SchemaParser(schemaKenhojoSignature);
-    const parsed = parser.parse(readBinaryResponse.data.buffer);
+    const buffer = readBinaryResponse.arrayBuffer();
+    const parser = new SchemaParser(schemaKenkakuMyNumber);
+    const parsed = await parser.parse(buffer, { async: true });
 
     console.log(parsed);
+    console.log(parsed.publicKey.algorithm);
 
     await device.release();
     await platform.release();

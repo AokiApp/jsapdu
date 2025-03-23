@@ -1,5 +1,5 @@
 import { Schema, TagClass } from "@aokiapp/tlv-parser";
-import { decodePublicKey } from "./utils";
+import { decodePublicKey } from "./utils.js";
 
 function decodeText(buffer: ArrayBuffer): string {
   return new TextDecoder("utf-8").decode(buffer);
