@@ -3,7 +3,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "composite": true,
     "declaration": true,
