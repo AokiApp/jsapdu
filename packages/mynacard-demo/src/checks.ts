@@ -68,28 +68,27 @@ console.log(kenhojoSignatureParser.parse(kenhojoSignature.buffer));
 console.log("=== KENHOJO SIGNATURE DATA ===");
 
 const kenhojoCertificateParser = new SchemaParser(schemaCertificate);
-kenhojoCertificateParser
-  .parse(kenhojoCertificate.buffer, { async: true })
-  .then((parsed) => {
-    console.log("=== KENHOJO CERTIFICATE DATA ===");
-    console.log(parsed);
-    console.log("=== KENHOJO CERTIFICATE DATA ===");
-  });
+const kenhojoCertificateParsed = await kenhojoCertificateParser.parse(
+  kenhojoCertificate.buffer,
+  { async: true },
+);
+console.log("=== KENHOJO CERTIFICATE DATA ===");
+console.log(kenhojoCertificateParsed);
+console.log("=== KENHOJO CERTIFICATE DATA ===");
 
 const kenkakuEntriesParser = new SchemaParser(schemaKenkakuEntries);
-kenkakuEntriesParser
-  .parse(kenkakuEntries.buffer, { async: true })
-  .then((parsed) => {
-    console.log("=== KENKAKU ENTRIES DATA ===");
-    console.log(parsed);
-    console.log("=== KENKAKU ENTRIES DATA ===");
-  });
+const kenkakuEntriesParsed = kenkakuEntriesParser.parse(kenkakuEntries.buffer, {
+  async: true,
+});
+console.log("=== KENKAKU ENTRIES DATA ===");
+console.log(kenkakuEntriesParsed);
+console.log("=== KENKAKU ENTRIES DATA ===");
 
 const kenkakuMyNumberParser = new SchemaParser(schemaKenkakuMyNumber);
-kenkakuMyNumberParser
-  .parse(kenkakuMyNumber.buffer, { async: true })
-  .then((parsed) => {
-    console.log("=== KENKAKU MY NUMBER DATA ===");
-    console.log(parsed);
-    console.log("=== KENKAKU MY NUMBER DATA ===");
-  });
+const kenkakuMyNumberParsed = kenkakuMyNumberParser.parse(
+  kenkakuMyNumber.buffer,
+  { async: true },
+);
+console.log("=== KENKAKU MY NUMBER DATA ===");
+console.log(kenkakuMyNumberParsed);
+console.log("=== KENKAKU MY NUMBER DATA ===");
