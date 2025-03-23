@@ -4,9 +4,14 @@ import {
   KENHOJO_AP_EF,
   schemaKenhojoBasicFour,
 } from "@aokiapp/mynacard";
-import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { askPassword, getPlatform } from "../utils.js";
+import {
+  askPassword,
+  calculateBasicFourHash,
+  getPlatform,
+  uint8ArrayToHexString,
+} from "../utils.js";
 
 async function main() {
   try {
@@ -44,14 +49,10 @@ async function main() {
     const parser = new SchemaParser(schemaKenhojoBasicFour);
     const parsed = parser.parse(buffer);
 
-    const { endOffset } = BasicTLVParser.parse(buffer);
-    const digest = await crypto.subtle.digest(
-      "SHA-256",
-      buffer.slice(parsed.offsets[0], endOffset),
-    );
+    const digest = await calculateBasicFourHash(buffer);
 
     console.log(parsed);
-    console.log(new Uint8Array(digest));
+    console.log("Hash:", uint8ArrayToHexString(new Uint8Array(digest)));
 
     await device.release();
     await platform.release();

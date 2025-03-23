@@ -1,4 +1,6 @@
+import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
 import { PcscPlatform } from "@aokiapp/pcsc";
+import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 
 /**
  * Prompts the user for a password in the terminal, masking input with asterisks.
@@ -69,4 +71,29 @@ export async function getPlatform() {
   } else {
     throw new Error("Unsupported platform");
   }
+}
+
+export async function calculateMyNumberHash(
+  buffer: ArrayBuffer,
+): Promise<ArrayBuffer> {
+  return await crypto.subtle.digest("SHA-256", buffer);
+}
+
+export async function calculateBasicFourHash(
+  buffer: ArrayBuffer,
+): Promise<ArrayBuffer> {
+  const parser = new SchemaParser(schemaKenhojoBasicFour);
+  const parsed = parser.parse(buffer);
+  const { endOffset } = BasicTLVParser.parse(buffer);
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    buffer.slice(parsed.offsets[0], endOffset),
+  );
+  return digest;
+}
+
+export function uint8ArrayToHexString(uint8Array: Uint8Array): string {
+  return Array.from(uint8Array)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }

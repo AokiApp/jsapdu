@@ -69,12 +69,12 @@ export const schemaKenhojoSignature = Schema.constructed(
   "kenhojoSignature",
   [
     Schema.primitive(
-      "kenhojoMyNumberSignature",
+      "kenhojoMyNumberHash",
       (buffer) => new Uint8Array(buffer),
       { tagClass: TagClass.Private, tagNumber: 0x31 },
     ),
     Schema.primitive(
-      "kenhojoAttributesSignature",
+      "kenhojoBasicFourHash",
       (buffer) => new Uint8Array(buffer),
       { tagClass: TagClass.Private, tagNumber: 0x32 },
     ),

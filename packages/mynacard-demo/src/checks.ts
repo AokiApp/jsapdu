@@ -7,6 +7,12 @@ import {
   schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
 
+import {
+  calculateBasicFourHash,
+  calculateMyNumberHash,
+  uint8ArrayToHexString,
+} from "./utils.js";
+
 function hexStringToUint8Array(hexString: string): Uint8Array<ArrayBuffer> {
   // Check if the input is in hexadecimal format
   if (!/^[0-9a-fA-F\s]+$/.test(hexString)) {
@@ -42,12 +48,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const base64 = btoa(binary);
     return base64;
   }
-}
-
-function uint8ArrayToHexString(uint8Array: Uint8Array): string {
-  return Array.from(uint8Array)
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 const {
@@ -126,8 +126,14 @@ console.log();
 
 if (kenhojoMyNumber) {
   const parsed = BasicTLVParser.parse(kenhojoMyNumber.buffer);
+  const buffer = kenhojoMyNumber.buffer.slice(
+    0,
+    kenhojoMyNumber.buffer.byteLength - 2,
+  );
+  const hash = await calculateMyNumberHash(buffer);
   console.log("=== KENHOJO MY NUMBER (01) DATA ===");
   console.log(new TextDecoder().decode(parsed.value));
+  console.log(`Hash: ${uint8ArrayToHexString(new Uint8Array(hash))}`);
   console.log("=== KENHOJO MY NUMBER (01) DATA ===");
 }
 
@@ -136,11 +142,13 @@ console.log();
 if (kenhojoBasicFour) {
   const parser = new SchemaParser(schemaKenhojoBasicFour);
   const parsed = parser.parse(kenhojoBasicFour.buffer);
+  const hash = await calculateBasicFourHash(kenhojoBasicFour.buffer);
   console.log("=== KENHOJO BASIC FOUR (02) DATA ===");
   console.log(`Name: ${parsed.name}`);
   console.log(`Address: ${parsed.address}`);
   console.log(`Birth: ${parsed.birth}`);
   console.log(`Gender: ${parsed.gender}`);
+  console.log(`Hash: ${uint8ArrayToHexString(new Uint8Array(hash))}`);
   console.log("=== KENHOJO BASIC FOUR (02) DATA ===");
 }
 
@@ -151,12 +159,12 @@ if (kenhojoSignature) {
   console.log("=== KENHOJO SIGNATURE (03) DATA ===");
   const parsed = parser.parse(kenhojoSignature.buffer);
   console.log(
-    "Kenhojo My Number Signature:",
-    uint8ArrayToHexString(parsed.kenhojoMyNumberSignature),
+    "Kenhojo My Number Hash:",
+    uint8ArrayToHexString(parsed.kenhojoMyNumberHash),
   );
   console.log(
-    "Kenhojo Basic Four Signature:",
-    uint8ArrayToHexString(parsed.kenhojoAttributesSignature),
+    "Kenhojo Basic Four Hash:",
+    uint8ArrayToHexString(parsed.kenhojoBasicFourHash),
   );
   console.log("=== KENHOJO SIGNATURE (03) DATA ===");
 }

@@ -6,7 +6,7 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { askPassword, getPlatform } from "../utils.js";
+import { askPassword, getPlatform, uint8ArrayToHexString } from "../utils.js";
 
 async function main() {
   try {
@@ -44,7 +44,14 @@ async function main() {
     const parser = new SchemaParser(schemaKenhojoSignature);
     const parsed = parser.parse(buffer);
 
-    console.log(parsed);
+    console.log(
+      "Kenhojo My Number Hash:",
+      uint8ArrayToHexString(parsed.kenhojoMyNumberHash),
+    );
+    console.log(
+      "Kenhojo Basic Four Hash:",
+      uint8ArrayToHexString(parsed.kenhojoBasicFourHash),
+    );
 
     await device.release();
     await platform.release();

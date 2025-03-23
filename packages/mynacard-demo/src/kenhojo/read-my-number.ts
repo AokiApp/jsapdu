@@ -2,7 +2,12 @@ import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
 import { BasicTLVParser } from "@aokiapp/tlv-parser";
 
-import { askPassword, getPlatform } from "../utils.js";
+import {
+  askPassword,
+  calculateMyNumberHash,
+  getPlatform,
+  uint8ArrayToHexString,
+} from "../utils.js";
 
 async function main() {
   try {
@@ -39,10 +44,10 @@ async function main() {
     const buffer = readBinaryResponse.arrayBuffer();
     const parsed = BasicTLVParser.parse(buffer);
 
-    console.log(parsed.value);
+    console.log(new TextDecoder().decode(parsed.value));
 
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    console.log(new Uint8Array(hashBuffer));
+    const digest = await calculateMyNumberHash(buffer);
+    console.log("Hash:", uint8ArrayToHexString(new Uint8Array(digest)));
 
     await device.release();
     await platform.release();
