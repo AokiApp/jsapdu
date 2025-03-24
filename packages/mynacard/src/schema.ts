@@ -1,4 +1,5 @@
 import { Schema, TagClass } from "@aokiapp/tlv-parser";
+
 import { decodePublicKey } from "./utils.js";
 
 function decodeText(buffer: ArrayBuffer): string {

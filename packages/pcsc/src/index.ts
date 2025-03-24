@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
-
 import pcsclite from "pcsclite";
+
 import {
   SmartCard,
   SmartCardDevice,
@@ -8,8 +8,9 @@ import {
   SmartCardPlatform,
   SmartCardPlatformManager,
 } from "@aokiapp/interface";
-import { PCSCLite, CardReader } from "./typesPcsclite";
 import { CommandApdu, ResponseApdu } from "@aokiapp/interface";
+
+import { CardReader, PCSCLite } from "./typesPcsclite";
 
 export class PcscPlatformManager extends SmartCardPlatformManager {
   public getPlatform(): PcscPlatform {

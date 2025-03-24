@@ -1,4 +1,3 @@
-import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 import {
   schemaCertificate,
   schemaKenhojoBasicFour,
@@ -6,6 +5,7 @@ import {
   schemaKenkakuEntries,
   schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
+import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 
 import {
   calculateBasicFourHash,

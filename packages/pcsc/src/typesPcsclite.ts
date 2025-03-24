@@ -2,7 +2,6 @@
  * @file Type definitions for the `pcsclite` package.
  * @see https://github.com/santigimeno/node-pcsclite/blob/master/index.d.ts
  */
-
 import { Buffer } from "node:buffer";
 import { EventEmitter } from "node:events";
 
