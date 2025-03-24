@@ -1,5 +1,6 @@
-import { expect, test, describe } from "vitest";
-import { CommandApdu } from "@aokiapp/interface";
+import { describe, expect, test } from "vitest";
+
+import { CommandApdu } from "../../src";
 
 describe("CommandApdu class", () => {
   test("should create standard APDU command with data payload", () => {
