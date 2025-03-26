@@ -212,7 +212,10 @@ export class CommandApdu {
 
       if (byteArray.length === index + 2) {
         // Case 4 Extended: CLA, INS, P1, P2, 00, Data, Le1, Le2
-        le = (byteArray[index] << 8) | byteArray[index + 1] ? 65536 : lcOrLe;
+        le = (byteArray[index] << 8) | byteArray[index + 1];
+        if (le === 0) {
+          le = 65536;
+        }
         return new CommandApdu(cla, ins, p1, p2, data, le);
       }
       throw new RangeError("Extended APDU structure is invalid.");
