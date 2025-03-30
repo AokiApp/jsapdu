@@ -223,31 +223,6 @@ export class CommandApdu {
   }
 
   /**
-   * Static method to create a CommandApdu from a hexadecimal string
-   *
-   * @param hexString - Hexadecimal string
-   * @returns Parsed CommandApdu instance
-   */
-  public static fromHexString(hexString: string): CommandApdu {
-    if (typeof hexString !== "string") {
-      throw new TypeError("Input must be a string.");
-    }
-    if (hexString.length % 2 !== 0) {
-      throw new RangeError("Length of hexadecimal string must be even.");
-    }
-    const byteArray = new Uint8Array(hexString.length / 2);
-    for (let i = 0; i < byteArray.length; i++) {
-      const byte = hexString.substring(i * 2, i * 2 + 2);
-      const parsed = parseInt(byte, 16);
-      if (isNaN(parsed)) {
-        throw new RangeError(`Invalid hexadecimal character: ${byte}`);
-      }
-      byteArray[i] = parsed;
-    }
-    return CommandApdu.fromUint8Array(byteArray);
-  }
-
-  /**
    * Method to return the APDU command as a human-readable hexadecimal string
    *
    * @returns Hexadecimal string of the APDU command

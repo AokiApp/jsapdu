@@ -35,17 +35,6 @@ export class ResponseApdu {
     return byteArray;
   }
 
-  public toHexString(): string {
-    return Array.from(this.toUint8Array())
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-  }
-
-  public toString(): string {
-    return this.toHexString();
-  }
-
   public arrayBuffer(): ArrayBuffer {
     return this.data.buffer;
   }
