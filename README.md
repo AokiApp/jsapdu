@@ -40,7 +40,8 @@ The library is built around several key abstractions:
 ## What it is not
 
 - A full-fledged SmartCard middleware
-  - Only cares about APDU communication, does not handle something higher-level, such card file structure, well-known INS commands, etc.
+  - Nucleus component: Only cares about APDU communication, does not handle higher-level operations, such as card file structure, well-known INS commands, etc.
+  - Utilities: Handles higher-level operations, especially on the deep domain of mynacard. However it's not comprehensive and does not guarantee adherence to standards, nor ensures functionality with other smart cards.
 - A cryptographic library
   - Does not provide cryptographic operations, such as RSA, ECC, etc.
 - A NFC NDEF tag library
