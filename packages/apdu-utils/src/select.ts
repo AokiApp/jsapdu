@@ -1,6 +1,6 @@
-import { INS } from "../../constants.js";
-import { toUint8Array } from "../../utils.js";
-import { CommandApdu } from "../command-apdu.js";
+import { CommandApdu, INS } from "@aokiapp/interface";
+
+import { toUint8Array } from "./utils.js";
 
 function select(
   p1: number,

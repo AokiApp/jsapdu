@@ -1,5 +1,6 @@
-import { expect, test, describe } from "vitest";
-import { select, selectDf, selectEf } from "../../src";
+import { describe, expect, test } from "vitest";
+
+import { select, selectDf, selectEf } from "../src";
 
 const DF = [0xd3, 0x92, 0xf0, 0x00, 0x26, 0x01, 0x00, 0x00, 0x00, 0x01];
 const DF_STRING = "D392F000260100000001";

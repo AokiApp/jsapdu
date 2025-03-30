@@ -1,5 +1,6 @@
-import { toUint8Array } from "../../utils.js";
-import { CommandApdu } from "../command-apdu.js";
+import { CommandApdu } from "@aokiapp/interface";
+
+import { toUint8Array } from "./utils.js";
 
 /**
  * Construct a VERIFY command APDU

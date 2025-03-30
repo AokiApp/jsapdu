@@ -1,11 +1,11 @@
-import { expect, test, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 
-import { verify } from "../../src/apdu/command-utils/verify";
+import { verify } from "../src";
+
+const TEST_PIN = "1234";
+const PIN_DIGITS = [0x31, 0x32, 0x33, 0x34]; // ASCII for "1234"
 
 describe("verify", () => {
-  const TEST_PIN = "1234";
-  const PIN_DIGITS = [0x31, 0x32, 0x33, 0x34]; // ASCII for "1234"
-
   test("should create VERIFY command for current DF", () => {
     const EXPECTED_VERIFY = Uint8Array.from([
       0x00,

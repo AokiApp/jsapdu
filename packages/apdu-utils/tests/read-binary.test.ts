@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  readBinary,
-  readEfBinaryFull,
-  readCurrentEfBinaryFull,
-} from "../../src";
+
+import { readBinary, readCurrentEfBinaryFull, readEfBinaryFull } from "../src";
 
 describe("readBinary", () => {
   test("should create READ BINARY command with offset and length", () => {

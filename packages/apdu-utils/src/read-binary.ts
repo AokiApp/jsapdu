@@ -1,5 +1,4 @@
-import { INS } from "../../constants.js";
-import { CommandApdu } from "../command-apdu.js";
+import { CommandApdu, INS } from "@aokiapp/interface";
 
 function readBinary(
   offset: number,

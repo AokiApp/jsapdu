@@ -1,4 +1,4 @@
-import { readEfBinaryFull, selectDf, verify } from "@aokiapp/interface";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
 import { BasicTLVParser } from "@aokiapp/tlv-parser";
 

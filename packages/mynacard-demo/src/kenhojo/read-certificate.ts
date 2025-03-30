@@ -1,4 +1,4 @@
-import { readEfBinaryFull, selectDf } from "@aokiapp/interface";
+import { readEfBinaryFull, selectDf } from "@aokiapp/apdu-utils";
 import {
   KENHOJO_AP,
   KENHOJO_AP_EF,

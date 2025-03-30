@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "./packages/apdu-utils" },
     { "path": "./packages/interface" },
     { "path": "./packages/pcsc" },
     { "path": "./packages/tlv-parser" },
