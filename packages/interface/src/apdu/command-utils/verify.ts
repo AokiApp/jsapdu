@@ -35,9 +35,6 @@ function verify(
 
   let pinData: Uint8Array<ArrayBuffer>;
   if (typeof data === "string") {
-    if (!/^\d+$/.test(data)) {
-      throw new Error("PIN data string must contain only digits.");
-    }
     pinData = Uint8Array.from(
       data.split("").map((digit) => digit.charCodeAt(0)),
     );
