@@ -97,3 +97,15 @@ export function uint8ArrayToHexString(uint8Array: Uint8Array): string {
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
+
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(buffer).toString("base64");
+  } else {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const base64 = btoa(binary);
+    return base64;
+  }
+}
