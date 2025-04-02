@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "outDir": "dist-test",
+    "types": ["vitest/globals"],
+    "composite": true,
+    "baseUrl": ".",
+    "allowJs": true,
+    "paths": {
+      "@aokiapp/interface": ["../interface/src"],
+      "@aokiapp/interface/errors": ["../interface/src/errors"]
+    }
+  },
+  "include": ["src", "tests"],
+  "references": [{ "path": "../interface" }],
+  "ts-node": { "moduleTypes": { "tests/**/*": "cjs" } }
+}
