@@ -178,6 +178,14 @@ export abstract class SmartCardDeviceInfo {
 
 /**
  * APDU Platform API type
+ * provided by the specific platform implementation
+ * @example "pcsc" (PC/SC)
+ * @example "winscard" (WinSCard)
+ * @example "corenfc" (Core NFC)
+ * @example "androidnfc" (Android NFC Support)
+ * @example "ble" (Bluetooth LE Reader)
+ * @example "custom-driver" (Custom driver)
+ * @example "webusb" (WebUSB)
  */
 type ApduApi = string;
 
@@ -214,7 +222,10 @@ export abstract class SmartCardDevice {
    * @throws {SmartCardError} If session start fails
    */
   public abstract startSession(): Promise<SmartCard>;
-
+  /**
+   * Start HCE session
+   */
+  // public abstract startHceSession(): Promise<EmulatedCard>; // todo: implement
   /**
    * Release the device
    * @throws {SmartCardError} If release fails
