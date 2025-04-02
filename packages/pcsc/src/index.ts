@@ -23,6 +23,8 @@ export class PcscPlatformManager extends SmartCardPlatformManager {
 
 export class PcscPlatform extends SmartCardPlatform {
   private readers: CardReader[] = [];
+  private errorHandler?: (err: unknown) => void;
+  private readerHandler?: (reader: CardReader) => void;
 
   constructor(private pcsc: PCSCLite) {
     super();
@@ -33,13 +35,32 @@ export class PcscPlatform extends SmartCardPlatform {
       this.assertNotInitialized();
       await this.initWithTimeout(timeoutMs);
     } catch (error) {
+      // Cleanup in case of error
+      this.removeEventListeners();
       throw fromUnknownError(error);
+    }
+  }
+
+  private removeEventListeners(): void {
+    if (this.errorHandler) {
+      this.pcsc.removeListener("error", this.errorHandler);
+      this.errorHandler = undefined;
+    }
+    if (this.readerHandler) {
+      this.pcsc.removeListener("reader", this.readerHandler);
+      this.readerHandler = undefined;
     }
   }
 
   private async initWithTimeout(timeoutMs: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        this.removeEventListeners();
+      };
+
       const timeoutId = setTimeout(() => {
+        cleanup();
         reject(new TimeoutError(
           "PC/SC initialization timed out: No reader found",
           "platform_init",
@@ -47,27 +68,54 @@ export class PcscPlatform extends SmartCardPlatform {
         ));
       }, timeoutMs);
 
-      const readerHandler = (reader: CardReader) => {
+      this.readerHandler = (reader: CardReader) => {
+        reader.on("end", () => {
+          const index = this.readers.indexOf(reader);
+          if (index !== -1) {
+            this.readers.splice(index, 1);
+          }
+        });
+
         this.readers.push(reader);
-        clearTimeout(timeoutId);
-        this.initialized = true; // 成功時のみフラグを設定
+        cleanup();
+        this.initialized = true;
         resolve();
-        this.pcsc.removeListener("reader", readerHandler);
       };
 
-      this.pcsc.on("reader", readerHandler);
-
-      this.pcsc.on("error", (err: unknown) => {
-        clearTimeout(timeoutId);
+      this.errorHandler = (err: unknown) => {
+        cleanup();
         reject(fromUnknownError(err, "PLATFORM_ERROR"));
-      });
+      };
+
+      this.pcsc.on("reader", this.readerHandler);
+      this.pcsc.on("error", this.errorHandler);
     });
   }
 
   public async release(): Promise<void> {
     try {
       this.assertInitialized();
+
+      // Release all readers first
+      await Promise.all(
+        this.readers.map(async (reader) => {
+          try {
+            await Promise.resolve(reader.close());
+          } catch (error) {
+            console.warn("Error closing reader:", error);
+          }
+        })
+      );
+
+      // Clear readers array
+      this.readers = [];
+
+      // Remove event listeners
+      this.removeEventListeners();
+
+      // Close PCSC
       await Promise.resolve(this.pcsc.close());
+      
       this.initialized = false;
     } catch (error) {
       throw fromUnknownError(error);
@@ -80,8 +128,14 @@ export class PcscPlatform extends SmartCardPlatform {
       if (this.readers.length === 0) {
         throw new SmartCardError("NO_READERS", "No card readers found");
       }
-      await Promise.resolve(); // Ensure async context
-      return this.readers.map((reader) => new PcscDeviceInfo(this, reader));
+      
+      // Filter out closed readers
+      const activeReaders = this.readers.filter(reader => !reader.closed);
+      if (activeReaders.length === 0) {
+        throw new SmartCardError("NO_READERS", "No active readers found");
+      }
+      await Promise.resolve(); // consume async context
+      return activeReaders.map(reader => new PcscDeviceInfo(this, reader));
     } catch (error) {
       throw fromUnknownError(error);
     }
@@ -141,16 +195,43 @@ export class PcscDeviceInfo extends SmartCardDeviceInfo {
   }
 
   public async acquireDevice(): Promise<PcscDevice> {
-    return new PcscDevice(this.platform, this.reader);
+    if (this.reader.closed) {
+      throw new SmartCardError(
+        "READER_ERROR",
+        "Reader is closed"
+      );
+    }
+    const device = new PcscDevice(this.platform, this.reader);
+    await Promise.resolve(); // Ensure async context
+    return device;
   }
 }
 
 export class PcscDevice extends SmartCardDevice {
+  private endHandler?: () => void;
+
   constructor(
     private platform: PcscPlatform,
     public reader: CardReader,
   ) {
     super(platform, new PcscDeviceInfo(platform, reader));
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    this.endHandler = () => {
+      if (this.isActive()) {
+        this.release().catch(console.error);
+      }
+    };
+    this.reader.on("end", this.endHandler);
+  }
+
+  private removeEventHandlers(): void {
+    if (this.endHandler) {
+      this.reader.removeListener("end", this.endHandler);
+      this.endHandler = undefined;
+    }
   }
 
   public getDeviceInfo(): SmartCardDeviceInfo {
@@ -158,11 +239,18 @@ export class PcscDevice extends SmartCardDevice {
   }
 
   public isActive(): boolean {
-    return this.reader.connected;
+    return this.reader.connected && !this.reader.closed;
   }
 
   public async isCardPresent(): Promise<boolean> {
     try {
+      if (this.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
+        );
+      }
+
       return await new Promise((resolve, reject) => {
         this.reader.get_status((err, state) => {
           if (err) {
@@ -179,6 +267,13 @@ export class PcscDevice extends SmartCardDevice {
 
   public async startSession(): Promise<Pcsc> {
     try {
+      if (this.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
+        );
+      }
+
       const pcsc = new Pcsc(this);
       await pcsc.connect();
       return pcsc;
@@ -189,7 +284,10 @@ export class PcscDevice extends SmartCardDevice {
 
   public async release(): Promise<void> {
     try {
-      await Promise.resolve(this.reader.close());
+      this.removeEventHandlers();
+      if (!this.reader.closed) {
+        await Promise.resolve(this.reader.close());
+      }
     } catch (error) {
       throw fromUnknownError(error);
     }
@@ -199,9 +297,27 @@ export class PcscDevice extends SmartCardDevice {
 export class Pcsc extends SmartCard {
   private protocol!: number;
   private connected = false;
+  private statusHandler?: () => void;
 
   constructor(private device: PcscDevice) {
     super(device);
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    this.statusHandler = () => {
+      if (this.connected) {
+        this.release().catch(console.error);
+      }
+    };
+    this.device.reader.on("status", this.statusHandler);
+  }
+
+  private removeEventHandlers(): void {
+    if (this.statusHandler) {
+      this.device.reader.removeListener("status", this.statusHandler);
+      this.statusHandler = undefined;
+    }
   }
 
   public async connect(): Promise<void> {
@@ -210,6 +326,13 @@ export class Pcsc extends SmartCard {
         throw new SmartCardError(
           "ALREADY_CONNECTED",
           "Card already connected"
+        );
+      }
+
+      if (this.device.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
         );
       }
 
@@ -229,22 +352,24 @@ export class Pcsc extends SmartCard {
       this.protocol = protocol;
       this.connected = true;
     } catch (error) {
+      this.removeEventHandlers();
       throw fromUnknownError(error);
     }
   }
 
-  /**
-   * Returns the ATR (Answer To Reset) of the card.
-   * ATR contains information about the card's capabilities and communication parameters.
-   * @returns Promise resolving to Uint8Array containing the ATR
-   * @throws Error if the operation fails or ATR is undefined
-   */
   public async getAtr(): Promise<Uint8Array> {
     try {
       if (!this.connected) {
         throw new SmartCardError(
           "NOT_CONNECTED",
           "Card not connected"
+        );
+      }
+
+      if (this.device.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
         );
       }
 
@@ -269,18 +394,19 @@ export class Pcsc extends SmartCard {
     }
   }
 
-  /**
-   * Transmits APDU commands to the card and returns the response.
-   * @param data APDU command as Uint8Array to be sent to the card
-   * @returns Promise resolving to Uint8Array containing the card's response
-   * @throws Error if card is not connected or transmission fails
-   */
   public async transmit(data: CommandApdu): Promise<ResponseApdu> {
     try {
       if (!this.connected) {
         throw new SmartCardError(
           "NOT_CONNECTED",
           "Card not connected"
+        );
+      }
+
+      if (this.device.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
         );
       }
 
@@ -303,18 +429,19 @@ export class Pcsc extends SmartCard {
     }
   }
 
-  /**
-   * Resets the card by disconnecting with the RESET flag.
-   * This performs a warm reset of the card which reinitializes it.
-   * @returns Promise resolving when reset completes
-   * @throws Error if reset operation fails
-   */
   public async reset(): Promise<void> {
     try {
       if (!this.connected) {
         throw new SmartCardError(
           "NOT_CONNECTED",
           "Card not connected"
+        );
+      }
+
+      if (this.device.reader.closed) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Reader is closed"
         );
       }
 
@@ -341,19 +468,23 @@ export class Pcsc extends SmartCard {
         return;
       }
 
+      this.removeEventHandlers();
       this.connected = false;
-      await new Promise<void>((resolve, reject) => {
-        this.device.reader.disconnect(
-          this.device.reader.SCARD_LEAVE_CARD,
-          (err) => {
-            if (err) {
-              reject(fromUnknownError(err, "READER_ERROR"));
-            } else {
-              resolve();
-            }
-          },
-        );
-      });
+
+      if (!this.device.reader.closed) {
+        await new Promise<void>((resolve, reject) => {
+          this.device.reader.disconnect(
+            this.device.reader.SCARD_LEAVE_CARD,
+            (err) => {
+              if (err) {
+                reject(fromUnknownError(err, "READER_ERROR"));
+              } else {
+                resolve();
+              }
+            },
+          );
+        });
+      }
     } catch (error) {
       throw fromUnknownError(error);
     }

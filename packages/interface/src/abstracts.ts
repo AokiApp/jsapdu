@@ -323,4 +323,5 @@ export abstract class EmulatedCard {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type EmulatedCardState = "disconnected" | string; // todo: def
