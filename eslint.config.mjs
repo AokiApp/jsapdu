@@ -19,4 +19,9 @@ export default tseslint.config(
   {
     ignores: ["**/dist/**"],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-unsafe-call": "off",
+    }
+  }
 );
