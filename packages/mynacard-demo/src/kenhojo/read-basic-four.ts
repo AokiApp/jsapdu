@@ -14,11 +14,13 @@ import {
 } from "../utils.js";
 
 async function main() {
+  let platform;
+  let device;
   try {
-    const platform = await getPlatform();
+    platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
-    const device = await devices[0].acquireDevice();
+    device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
     const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
@@ -53,11 +55,11 @@ async function main() {
 
     console.log(parsed);
     console.log("Hash:", uint8ArrayToHexString(new Uint8Array(digest)));
-
-    await device.release();
-    await platform.release();
   } catch (error) {
     console.error("error:", error);
+  } finally {
+    await device?.release();
+    await platform?.release();
   }
 }
 
