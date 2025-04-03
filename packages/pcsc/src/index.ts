@@ -117,6 +117,10 @@ export class PcscPlatform extends SmartCardPlatform {
       this.removeErrorEventListener();
       this.removeReaderEventListener();
 
+      this.pcsc.on("error", () => {
+        // expect Context Cancelled, do nothing
+        // ref: https://nodejs.org/api/events.html#error-events
+      });
       // Close PCSC
       await Promise.resolve(this.pcsc.close());
 
