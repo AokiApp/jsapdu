@@ -9,10 +9,6 @@
       "import": "./dist/src/index.js",
       "require": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
-    },
-    "./errors": {
-      "import": "./dist/src/errors.js",
-      "types": "./dist/src/errors.d.ts"
     }
   },
   "scripts": {

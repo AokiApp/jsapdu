@@ -13,7 +13,6 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
-        project: ["./packages/*/tsconfig.json", "./packages/*/tsconfig.test.json"],
       },
     },
   },
@@ -23,19 +22,6 @@ export default tseslint.config(
   {
     rules: {
       "@typescript-eslint/no-unsafe-call": "off",
-    }
-  },
-  {
-    files: ["**/*.test.ts", "**/tests/**/*.ts"],
-    languageOptions: {
-      globals: {
-        describe: "readonly",
-        it: "readonly",
-        expect: "readonly",
-        vi: "readonly",
-        beforeEach: "readonly",
-        afterEach: "readonly"
-      }
     }
   }
 );

@@ -85,7 +85,13 @@
    }
    ```
 
-3. Testing Challenges:
+3. Resource Constraints:
+   - Limited consideration for low-end devices
+   - No memory usage optimization
+   - Missing resource pooling for constrained environments
+   - No configuration options for resource limits
+
+4. Testing Challenges:
    - Real device dependency
    - Limited mock/simulation support
    - Missing test infrastructure for different platforms
@@ -129,7 +135,6 @@
    - Add mynacard-specific utility documentation
 
 2. Improved Error Handling:
-  Like this, but not limited to:
    ```typescript
    export class SmartCardError extends Error {
      constructor(
@@ -157,26 +162,69 @@
    }
    ```
 
-3. Performance Optimization:
-   - Add configurable resource pooling
-   - Implement memory-efficient operations
-   - Add optional caching strategies
-   - Optimize for constrained environments
+3. Resource Management for Constrained Environments:
+   ```typescript
+   export interface ResourceConfig {
+     maxMemory?: number;
+     maxConnections?: number;
+     timeouts: {
+       connect: number;
+       transmit: number;
+       release: number;
+     };
+     lowMemoryMode?: boolean;
+   }
 
-4. Security Considerations:
-   - Add library-level security features
-   - Implement secure resource cleanup
-   - Add platform security requirements
-   - Enhance error privacy
+   export class ResourceManager {
+     private connections = new Map();
+     private memoryUsage = 0;
+     
+     constructor(private config: ResourceConfig) {}
+     
+     async acquireConnection() {
+       if (this.config.lowMemoryMode) {
+         // Implement aggressive resource cleanup
+       }
+       // Implementation with limits and pooling
+     }
+   }
+   ```
 
-5. Enhanced Platform Support:
+4. Enhanced Platform Support:
+   ```typescript
+   export interface PlatformCapabilities {
+     memoryConstrained: boolean;
+     timeoutControl: boolean;
+     supportedProtocols: string[];
+     maxConcurrentOperations?: number;
+   }
 
-6. Testing Strategy:
+   export abstract class SmartCardPlatform {
+     abstract getCapabilities(): PlatformCapabilities;
+     abstract configure(config: PlatformConfig): Promise<void>;
+   }
+   ```
+
+5. Testing Strategy:
    - Develop platform-specific test harnesses
    - Create minimal mock implementations
    - Add performance benchmarks for constrained environments
    - Include platform capability testing
 
-7. Interface Extensions:
+6. Interface Extensions:
+   - Add platform capability detection
+   - Implement resource-aware operations
+   - Add configuration options for different environments
    - Enhance platform abstraction layer
 
+7. Performance Optimization:
+   - Add configurable resource pooling
+   - Implement memory-efficient operations
+   - Add optional caching strategies
+   - Optimize for constrained environments
+
+8. Security Considerations:
+   - Add library-level security features
+   - Implement secure resource cleanup
+   - Add platform security requirements
+   - Enhance error privacy
