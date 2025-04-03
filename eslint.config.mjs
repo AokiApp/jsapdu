@@ -22,6 +22,7 @@ export default tseslint.config(
   {
     rules: {
       "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/prefer-promise-reject-errors": "off",
     }
   }
 );

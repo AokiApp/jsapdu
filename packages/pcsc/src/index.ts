@@ -130,7 +130,7 @@ export class PcscPlatform extends SmartCardPlatform {
       }
       
       // Filter out closed readers
-      const activeReaders = this.readers.filter(reader => !reader.closed);
+      const activeReaders = this.readers.filter(reader => reader.connected);
       if (activeReaders.length === 0) {
         throw new SmartCardError("NO_READERS", "No active readers found");
       }
@@ -195,7 +195,7 @@ export class PcscDeviceInfo extends SmartCardDeviceInfo {
   }
 
   public async acquireDevice(): Promise<PcscDevice> {
-    if (this.reader.closed) {
+    if (!this.reader.connected) {
       throw new SmartCardError(
         "READER_ERROR",
         "Reader is closed"
@@ -239,12 +239,12 @@ export class PcscDevice extends SmartCardDevice {
   }
 
   public isActive(): boolean {
-    return this.reader.connected && !this.reader.closed;
+    return this.reader.connected;
   }
 
   public async isCardPresent(): Promise<boolean> {
     try {
-      if (this.reader.closed) {
+      if (!this.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -267,7 +267,7 @@ export class PcscDevice extends SmartCardDevice {
 
   public async startSession(): Promise<Pcsc> {
     try {
-      if (this.reader.closed) {
+      if (!this.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -285,7 +285,7 @@ export class PcscDevice extends SmartCardDevice {
   public async release(): Promise<void> {
     try {
       this.removeEventHandlers();
-      if (!this.reader.closed) {
+      if (this.reader.connected) {
         await Promise.resolve(this.reader.close());
       }
     } catch (error) {
@@ -329,7 +329,7 @@ export class Pcsc extends SmartCard {
         );
       }
 
-      if (this.device.reader.closed) {
+      if (!this.device.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -366,7 +366,7 @@ export class Pcsc extends SmartCard {
         );
       }
 
-      if (this.device.reader.closed) {
+      if (!this.device.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -403,7 +403,7 @@ export class Pcsc extends SmartCard {
         );
       }
 
-      if (this.device.reader.closed) {
+      if (!this.device.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -438,7 +438,7 @@ export class Pcsc extends SmartCard {
         );
       }
 
-      if (this.device.reader.closed) {
+      if (!this.device.reader.connected) {
         throw new SmartCardError(
           "READER_ERROR",
           "Reader is closed"
@@ -471,7 +471,7 @@ export class Pcsc extends SmartCard {
       this.removeEventHandlers();
       this.connected = false;
 
-      if (!this.device.reader.closed) {
+      if (this.device.reader.connected) {
         await new Promise<void>((resolve, reject) => {
           this.device.reader.disconnect(
             this.device.reader.SCARD_LEAVE_CARD,
