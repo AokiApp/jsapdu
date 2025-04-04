@@ -66,8 +66,8 @@ export async function askPassword(query: string): Promise<string> {
 
 export async function getPlatform() {
   if (typeof process !== "undefined" && process.versions?.node) {
-    const pcsclite = await import("pcsclite");
-    return new PcscPlatform(pcsclite.default());
+    await Promise.resolve(); // consume async context
+    return new PcscPlatform();
   } else {
     throw new Error("Unsupported platform");
   }

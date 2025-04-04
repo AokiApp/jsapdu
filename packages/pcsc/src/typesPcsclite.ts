@@ -23,6 +23,7 @@ export interface PCSCLite extends EventEmitter {
   on(type: "reader", listener: (reader: CardReader) => void): this;
   once(type: "reader", listener: (reader: CardReader) => void): this;
   close(): void;
+  readers: { [key: string]: CardReader }; // this is not defined in the original
 }
 
 export interface CardReader extends EventEmitter {
