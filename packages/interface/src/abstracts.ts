@@ -1,8 +1,5 @@
 import { CommandApdu, ResponseApdu } from "./apdu/index.js";
-import {
-  SmartCardError,
-  fromUnknownError,
-} from "./errors.js";
+import { SmartCardError, fromUnknownError } from "./errors.js";
 
 /**
  * Platform manager for SmartCard R/W
@@ -55,10 +52,7 @@ export abstract class SmartCardPlatform {
    */
   protected assertInitialized() {
     if (!this.initialized) {
-      throw new SmartCardError(
-        "NOT_INITIALIZED",
-        "Platform not initialized"
-      );
+      throw new SmartCardError("NOT_INITIALIZED", "Platform not initialized");
     }
   }
 
@@ -71,7 +65,7 @@ export abstract class SmartCardPlatform {
     if (this.initialized) {
       throw new SmartCardError(
         "ALREADY_INITIALIZED",
-        "Platform already initialized"
+        "Platform already initialized",
       );
     }
   }
@@ -225,7 +219,7 @@ export abstract class SmartCardDevice {
   /**
    * Start HCE session
    */
-  // public abstract startHceSession(): Promise<EmulatedCard>; // todo: implement
+  public abstract startHceSession(): Promise<EmulatedCard>;
   /**
    * Release the device
    * @throws {SmartCardError} If release fails

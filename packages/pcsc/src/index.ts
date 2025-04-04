@@ -3,6 +3,7 @@ import { once } from "node:events";
 import pcsclite from "pcsclite";
 
 import {
+  EmulatedCard,
   SmartCard,
   SmartCardDevice,
   SmartCardDeviceInfo,
@@ -253,6 +254,9 @@ export class PcscDevice extends SmartCardDevice {
     } catch (error) {
       throw fromUnknownError(error);
     }
+  }
+  public startHceSession(): Promise<EmulatedCard> {
+    throw new Error("This platform does not support HCE");
   }
 }
 
