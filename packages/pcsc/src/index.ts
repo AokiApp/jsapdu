@@ -66,11 +66,7 @@ export class PcscPlatform extends SmartCardPlatform {
         controller.abort();
       }, timeoutMs);
       try {
-        await once(this.pcsc, "reader", { signal: controller.signal }).catch(
-          (err: unknown) => {
-            throw fromUnknownError(err, "PLATFORM_ERROR");
-          },
-        );
+        await once(this.pcsc, "reader", { signal: controller.signal });
       } finally {
         clearTimeout(timeoutId);
       }
@@ -87,7 +83,7 @@ export class PcscPlatform extends SmartCardPlatform {
       // initialization & first time reader detection did not succeed in time
       // falls here when timeout or error event is emitted
       await this.release();
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (error instanceof Error && error.name === "AbortError") {
         // タイムアウトエラーの場合、AbortControllerのabort()で設定したエラーを投げる
         throw new TimeoutError(
           "PC/SC initialization timed out: No reader found",
@@ -95,19 +91,18 @@ export class PcscPlatform extends SmartCardPlatform {
           timeoutMs,
         );
       }
-      throw error;
+      throw fromUnknownError(error, "PLATFORM_ERROR");
     }
   }
 
   public async release(): Promise<void> {
     try {
-      this.assertInitialized();
       // Remove error handler
       this.setErrorHandler(false);
       // Remove reader watcher
       this.setReaderWatcher(false);
 
-      this.readers.forEach((reader) => {
+      Object.values(this.pcsc.readers).forEach((reader) => {
         reader.close(); // need this, otherwise it seems hidden handler remains (outside node) and prevents graceful exit
       });
 
