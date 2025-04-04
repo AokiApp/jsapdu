@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { once } from "node:events";
 import pcsclite from "pcsclite";
 
 import {
@@ -17,63 +18,115 @@ import { CardReader, PCSCLite } from "./typesPcsclite";
 
 export class PcscPlatformManager extends SmartCardPlatformManager {
   public getPlatform(): PcscPlatform {
-    return new PcscPlatform(pcsclite());
+    return new PcscPlatform();
   }
 }
 
 export class PcscPlatform extends SmartCardPlatform {
   private readers: CardReader[] = [];
+  private pcsc!: PCSCLite;
 
-  constructor(private pcsc: PCSCLite) {
+  constructor() {
     super();
+  }
+
+  private errorHandler = (error: unknown) => {
+    // Handle error
+    console.error("PC/SC Error:", error);
+  };
+  private setErrorHandler(enable: boolean): void {
+    if (enable) {
+      this.pcsc.on("error", this.errorHandler);
+    } else {
+      this.pcsc.removeListener("error", this.errorHandler);
+    }
+  }
+
+  private readerWatcherHandler = () => {
+    this.readers = Object.values(this.pcsc.readers); // pcsc.readers is updated in behind, so just use it
+  };
+
+  private setReaderWatcher(enable: boolean): void {
+    if (enable) {
+      this.pcsc.on("reader", this.readerWatcherHandler);
+    } else {
+      this.pcsc.removeListener("reader", this.readerWatcherHandler);
+    }
   }
 
   public async init(timeoutMs = 10000): Promise<void> {
     this.assertNotInitialized();
 
-    return new Promise<void>((resolve, reject) => {
-      // タイムアウト処理
+    // Initialization starts in background
+    this.pcsc = pcsclite() as PCSCLite; // override type, which is not maintained and bad in quality
+    try {
+      const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        reject(
-          new TimeoutError(
-            "PC/SC initialization timed out: No reader found",
-            "platform_init",
-            timeoutMs,
-          ),
-        );
+        controller.abort();
       }, timeoutMs);
-
-      const readerHandler = (reader: CardReader) => {
-        this.readers.push(reader);
-        clearTimeout(timeoutId);
-        this.initialized = true; // 成功時のみフラグを設定
-        resolve();
-        this.pcsc.removeListener("reader", readerHandler);
-      };
-
-      this.pcsc.on("reader", readerHandler);
-
-      this.pcsc.on("error", (err: unknown) => {
-        console.error(
-          "PCSC error:",
-          err instanceof Error ? err.message : String(err),
+      try {
+        await once(this.pcsc, "reader", { signal: controller.signal }).catch(
+          (err: unknown) => {
+            throw fromUnknownError(err, "PLATFORM_ERROR");
+          },
         );
+      } finally {
         clearTimeout(timeoutId);
-        reject(fromUnknownError(err, "PLATFORM_ERROR"));
-      });
-    });
+      }
+      // reader is found, so we can set the error handler in the next step
+      // but for first time, we need to set current readers, since `reader` event is already emitted
+      this.readers = Object.values(this.pcsc.readers);
+
+      // then set the real reader watcher handler
+      this.setReaderWatcher(true);
+      // and set the error handler
+      this.setErrorHandler(true);
+      this.initialized = true;
+    } catch (error: unknown) {
+      // initialization & first time reader detection did not succeed in time
+      // falls here when timeout or error event is emitted
+      await this.release();
+      if (error instanceof DOMException && error.name === "AbortError") {
+        // タイムアウトエラーの場合、AbortControllerのabort()で設定したエラーを投げる
+        throw new TimeoutError(
+          "PC/SC initialization timed out: No reader found",
+          "platform_init",
+          timeoutMs,
+        );
+      }
+      throw error;
+    }
   }
 
   public async release(): Promise<void> {
     try {
       this.assertInitialized();
-      this.pcsc.on("error", () => {
-        // expect Context Cancelled, do nothing
-        // ref: https://nodejs.org/api/events.html#error-events
+      // Remove error handler
+      this.setErrorHandler(false);
+      // Remove reader watcher
+      this.setReaderWatcher(false);
+
+      this.readers.forEach((reader) => {
+        reader.close(); // need this, otherwise it seems hidden handler remains (outside node) and prevents graceful exit
       });
+
+      const noopHandler = () => {
+        // expect Context Cancelled, do nothing
+        // since node:events has special handling for `error` event
+        // and we don't want to throw an error when closing
+        // the PC/SC context
+        // ref: https://nodejs.org/api/events.html#error-events
+
+        this.pcsc.removeListener("error", noopHandler);
+      };
+      this.pcsc.on("error", noopHandler);
       // Close PCSC
       await Promise.resolve(this.pcsc.close());
       this.initialized = false;
+      setTimeout(() => {
+        // remove noop handler
+        this.pcsc.removeListener("error", noopHandler);
+      }, 1000);
     } catch (error) {
       throw fromUnknownError(error);
     }
