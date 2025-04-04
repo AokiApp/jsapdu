@@ -1,4 +1,5 @@
 import { readEfBinaryFull, selectDf } from "@aokiapp/apdu-utils";
+import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/interface";
 import {
   KENHOJO_AP,
   KENHOJO_AP_EF,
@@ -9,6 +10,8 @@ import { SchemaParser } from "@aokiapp/tlv-parser";
 import { getPlatform } from "../utils.js";
 
 async function main() {
+  let platform: SmartCardPlatform | undefined;
+  let device: SmartCardDevice | undefined;
   try {
     const platform = await getPlatform();
     await platform.init();
@@ -35,11 +38,11 @@ async function main() {
     const parsed = await parser.parse(buffer, { async: true });
 
     console.log(parsed);
-
-    await device.release();
-    await platform.release();
   } catch (error) {
     console.error("error:", error);
+  } finally {
+    await device?.release();
+    await platform?.release();
   }
 }
 

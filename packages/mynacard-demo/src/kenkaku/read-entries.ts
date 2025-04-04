@@ -1,4 +1,5 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
+import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/interface";
 import {
   KENKAKU_AP,
   KENKAKU_AP_EF,
@@ -9,11 +10,13 @@ import { SchemaParser } from "@aokiapp/tlv-parser";
 import { askPassword, getPlatform } from "../utils.js";
 
 async function main() {
+  let platform: SmartCardPlatform | undefined;
+  let device: SmartCardDevice | undefined;
   try {
-    const platform = await getPlatform();
+    platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
-    const device = await devices[0].acquireDevice();
+    device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
     const selectResponse = await session.transmit(selectDf(KENKAKU_AP));
@@ -63,11 +66,11 @@ async function main() {
 
     console.log(parsed);
     console.log(digest);
-
-    await device.release();
-    await platform.release();
   } catch (error) {
     console.error("error:", error);
+  } finally {
+    await device?.release();
+    await platform?.release();
   }
 }
 

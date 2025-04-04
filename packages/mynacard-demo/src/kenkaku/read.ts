@@ -142,12 +142,8 @@ async function main() {
   } catch (error) {
     console.error("error:", error);
   } finally {
-    if (device) {
-      await device.release();
-    }
-    if (platform) {
-      await platform.release();
-    }
+    await device?.release();
+    await platform?.release();
   }
 }
 

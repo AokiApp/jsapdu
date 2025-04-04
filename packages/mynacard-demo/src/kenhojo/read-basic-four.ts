@@ -1,4 +1,5 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
+import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/interface";
 import {
   KENHOJO_AP,
   KENHOJO_AP_EF,
@@ -14,8 +15,8 @@ import {
 } from "../utils.js";
 
 async function main() {
-  let platform;
-  let device;
+  let platform: SmartCardPlatform | undefined;
+  let device: SmartCardDevice | undefined;
   try {
     platform = await getPlatform();
     await platform.init();
