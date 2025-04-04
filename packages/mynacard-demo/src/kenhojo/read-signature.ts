@@ -55,9 +55,6 @@ async function main() {
       "Kenhojo Basic Four Hash:",
       uint8ArrayToHexString(parsed.kenhojoBasicFourHash),
     );
-
-    await device.release();
-    await platform.release();
   } catch (error) {
     console.error("error:", error);
   } finally {

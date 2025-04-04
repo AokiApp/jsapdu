@@ -38,9 +38,6 @@ async function main() {
     const parsed = await parser.parse(buffer, { async: true });
 
     console.log(parsed);
-
-    await device.release();
-    await platform.release();
   } catch (error) {
     console.error("error:", error);
   } finally {
