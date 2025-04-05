@@ -16,7 +16,7 @@ async function main() {
     const platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
-    const device = await devices[0].acquireDevice();
+    device = await devices[0].acquireDevice();
     const session = await device.startSession();
 
     const selectResponse = await session.transmit(selectDf(KENHOJO_AP));
