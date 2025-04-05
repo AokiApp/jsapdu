@@ -13,7 +13,7 @@ async function main() {
   let platform: SmartCardPlatform | undefined;
   let device: SmartCardDevice | undefined;
   try {
-    const platform = await getPlatform();
+    platform = await getPlatform();
     await platform.init();
     const devices = await platform.getDevices();
     device = await devices[0].acquireDevice();
