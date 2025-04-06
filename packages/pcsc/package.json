@@ -1,0 +1,21 @@
+{
+  "name": "@aokiapp/pcsc",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "tsc --build --clean"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "pcsclite": "^1.0.1"
+  }
+}
