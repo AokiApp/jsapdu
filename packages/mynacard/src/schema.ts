@@ -90,6 +90,24 @@ export const schemaKenhojoSignature = Schema.constructed(
   },
 );
 
+export const schemaKenhojoAuthKey = Schema.constructed(
+  "kenhojoAuthKey",
+  [
+    Schema.primitive("publicKey", decodePublicKey, {
+      tagClass: TagClass.Private,
+      tagNumber: 0x51,
+    }),
+    Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
+      tagClass: TagClass.Private,
+      tagNumber: 0x52,
+    }),
+  ],
+  {
+    tagClass: TagClass.Private,
+    tagNumber: 0x50,
+  },
+);
+
 export const schemaKenkakuBirth = Schema.constructed("kenkakuBirth", [
   Schema.primitive("birth", decodeText, {
     tagClass: TagClass.Private,
@@ -97,11 +115,11 @@ export const schemaKenkakuBirth = Schema.constructed("kenkakuBirth", [
   }),
   Schema.primitive("publicKey", decodePublicKey, {
     tagClass: TagClass.Private,
-    tagNumber: 0x32,
+    tagNumber: 0x12,
   }),
   Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
     tagClass: TagClass.Private,
-    tagNumber: 0x33,
+    tagNumber: 0x13,
   }),
 ]);
 

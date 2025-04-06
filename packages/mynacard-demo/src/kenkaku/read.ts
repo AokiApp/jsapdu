@@ -63,7 +63,7 @@ async function readEntries(session: SmartCard) {
 
 async function readCertificate(session: SmartCard) {
   const readBinaryResponse = await session.transmit(
-    readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE),
+    readEfBinaryFull(KENKAKU_AP_EF.INTERMEDIATE_CERTIFICATE),
   );
 
   if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {

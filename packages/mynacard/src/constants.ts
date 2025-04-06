@@ -45,8 +45,8 @@ export const KENKAKU_AP_EF = {
   ENTRIES: 0x02,
   /** AP基本情報 */
   INFORMATION: 0x03,
-  /** 証明書 */
-  CERTIFICATE: 0x04,
+  /** 中間証明書 */
+  INTERMEDIATE_CERTIFICATE: 0x04,
   /** 個人番号 */
   MY_NUMBER: 0x05,
   UNKNOWN_06: 0x06,
@@ -73,8 +73,8 @@ export const KENHOJO_AP_EF = {
   BASIC_FOUR: 0x02,
   /** 個人番号と券面事項のハッシュ (保護) */
   SIGNATURE: 0x03,
-  /** 証明書 */
-  CERTIFICATE: 0x04,
+  /** 中間証明書 */
+  INTERMEDIATE_CERTIFICATE: 0x04,
   /** AP基本情報 */
   INFORMATION: 0x05,
   /** 不明な鍵 (保護) */

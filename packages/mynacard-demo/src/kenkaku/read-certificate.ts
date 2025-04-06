@@ -1,13 +1,54 @@
-import { readEfBinaryFull, selectDf } from "@aokiapp/apdu-utils";
-import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/interface";
+import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
+import {
+  SmartCard,
+  SmartCardDevice,
+  SmartCardPlatform,
+} from "@aokiapp/interface";
 import {
   KENKAKU_AP,
   KENKAKU_AP_EF,
   schemaCertificate,
+  schemaKenkakuBirth,
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv-parser";
 
-import { getPlatform } from "../utils.js";
+import { askPassword, getPlatform } from "../utils.js";
+
+async function readBirth(session: SmartCard) {
+  const readBinaryResponse = await session.transmit(
+    readEfBinaryFull(KENKAKU_AP_EF.BIRTH),
+  );
+
+  if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
+    throw new Error("Failed to read binary");
+  }
+
+  const buffer = readBinaryResponse.arrayBuffer();
+  const parser = new SchemaParser(schemaKenkakuBirth);
+  const parsed = await parser.parse(buffer, { async: true });
+
+  console.log(parsed);
+
+  return parsed;
+}
+
+async function readIntermediateCertificate(session: SmartCard) {
+  const readBinaryResponse = await session.transmit(
+    readEfBinaryFull(KENKAKU_AP_EF.INTERMEDIATE_CERTIFICATE),
+  );
+
+  if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
+    throw new Error("Failed to read binary");
+  }
+
+  const buffer = readBinaryResponse.arrayBuffer();
+  const parser = new SchemaParser(schemaCertificate);
+  const parsed = await parser.parse(buffer, { async: true });
+
+  console.log(parsed);
+
+  return parsed;
+}
 
 async function main() {
   let platform: SmartCardPlatform | undefined;
@@ -25,19 +66,18 @@ async function main() {
       throw new Error("Failed to select DF");
     }
 
-    const readBinaryResponse = await session.transmit(
-      readEfBinaryFull(KENKAKU_AP_EF.CERTIFICATE),
+    const pin = await askPassword("Enter BIRTH-PIN: ");
+
+    const verifyResponse = await session.transmit(
+      verify(pin, { ef: KENKAKU_AP_EF.BIRTH_PIN }),
     );
 
-    if (readBinaryResponse.sw1 !== 0x90 || readBinaryResponse.sw2 !== 0x00) {
-      throw new Error("Failed to read binary");
+    if (verifyResponse.sw1 !== 0x90 || verifyResponse.sw2 !== 0x00) {
+      throw new Error("PIN verification failed");
     }
 
-    const buffer = readBinaryResponse.arrayBuffer();
-    const parser = new SchemaParser(schemaCertificate);
-    const parsed = await parser.parse(buffer, { async: true });
-
-    console.log(parsed);
+    await readIntermediateCertificate(session);
+    await readBirth(session);
   } catch (error) {
     console.error("error:", error);
   } finally {
