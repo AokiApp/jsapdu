@@ -11,6 +11,12 @@ class JSApduModuleDefinition : ModuleDefinition {
     // Set the module name that will be used in JavaScript
     Name("JSApduModule")
 
+    // Define events for APDU commands and state changes
+    Events(
+      "onApduCommand",
+      "onHceStateChange"
+    )
+
     // Constants that will be exported to JavaScript
     Constants(
       "PLATFORM_NAME" to "Android NFC",
@@ -122,40 +128,11 @@ class JSApduModuleDefinition : ModuleDefinition {
       return@Coroutine null
     }
 
-    // Create APDU handler
-    AsyncFunction("createApduHandler") { handler: (List<Int>) -> List<Int> ->
-      val apduHandler = object : ApduHandler {
-        override fun handleApdu(apdu: ByteArray): ByteArray {
-          val result = handler(apdu.map { it.toInt() and 0xFF })
-          return result.map { it.toByte() }.toByteArray()
-        }
-      }
-      return@AsyncFunction ObjectRegistry.register(apduHandler)
-    }
-
-    // Create state change handler
-    AsyncFunction("createStateChangeHandler") { handler: (String) -> Unit ->
-      val stateChangeHandler = object : StateChangeHandler {
-        override fun handleStateChange(state: String) {
-          handler(state)
-        }
-      }
-      return@AsyncFunction ObjectRegistry.register(stateChangeHandler)
-    }
-
-    // Set APDU handler for HCE
-    Function("setApduHandler") { receiverId: String, handlerId: String ->
+    // Function to send APDU response back to native side
+    Function("sendApduResponse") { receiverId: String, responseData: List<Int> ->
       val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
-      val handler = ObjectRegistry.getObject<ApduHandler>(handlerId)
-      card.setApduHandler(handler::handleApdu)
-      return@Function null
-    }
-
-    // Set state change handler for HCE
-    Function("setStateChangeHandler") { receiverId: String, handlerId: String ->
-      val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
-      val handler = ObjectRegistry.getObject<StateChangeHandler>(handlerId)
-      card.setStateChangeHandler(handler::handleStateChange)
+      val responseBytes = responseData.map { it.toByte() }.toByteArray()
+      card.handleApduResponse(responseBytes)
       return@Function null
     }
 

@@ -20,17 +20,16 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Handles Host Card Emulation (HCE) functionality
  */
 class AndroidEmulatedCardImpl(
-  private val parentDevice: AndroidDeviceImpl
+  private val parentDevice: AndroidDeviceImpl,
+  private val module: JSApduModule
 ) : Registrable() {
   
   // Flag to track if the card is active
   private val active = AtomicBoolean(true)
   
-  // APDU handler
-  private var apduHandler: ((ByteArray) -> ByteArray)? = null
-  
-  // State change handler
-  private var stateChangeHandler: ((String) -> Unit)? = null
+  // Pending APDU response
+  private var pendingApduResponse: ByteArray? = null
+  private val apduResponseLock = Object()
   
   // Messenger for communicating with the HCE service
   private var serviceMessenger: Messenger? = null
@@ -43,15 +42,36 @@ class AndroidEmulatedCardImpl(
     when (msg.what) {
       MESSAGE_APDU_RECEIVED -> {
         val apdu = msg.data.getByteArray(KEY_APDU)
-        if (apdu != null && apduHandler != null) {
-          val response = apduHandler!!(apdu)
+        if (apdu != null) {
+          // Send event to JavaScript with proper routing information
+          module.sendEvent("onApduCommand", mapOf(
+            "receiverId" to receiverId,
+            "apduCommand" to apdu.map { it.toInt() and 0xFF }
+          ))
+          
+          // Wait for response with timeout
+          synchronized(apduResponseLock) {
+            try {
+              apduResponseLock.wait(RESPONSE_TIMEOUT_MS.toLong())
+            } catch (e: InterruptedException) {
+              // Ignore
+            }
+          }
+          
+          // Send response or default response
+          val response = pendingApduResponse ?: DEFAULT_RESPONSE
+          pendingApduResponse = null
           sendResponse(response)
         }
         true
       }
       MESSAGE_STATE_CHANGED -> {
         val state = msg.data.getString(KEY_STATE) ?: "unknown"
-        stateChangeHandler?.invoke(state)
+        // Send event to JavaScript with proper routing information
+        module.sendEvent("onHceStateChange", mapOf(
+          "receiverId" to receiverId,
+          "state" to state
+        ))
         true
       }
       else -> false
@@ -99,48 +119,14 @@ class AndroidEmulatedCardImpl(
   }
   
   /**
-   * Set APDU handler
-   * @throws SmartCardError If setting handler fails
+   * Handle APDU response from JavaScript
    */
-  fun setApduHandler(handler: (ByteArray) -> ByteArray) {
-    try {
-      if (!active.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not active"
-        )
-      }
-      apduHandler = handler
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
+  fun handleApduResponse(response: ByteArray) {
+    pendingApduResponse = response
+    synchronized(apduResponseLock) {
+      apduResponseLock.notify()
     }
   }
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
-  
-  /**
-   * Set state change handler
-   * @throws SmartCardError If setting handler fails
-   */
-  fun setStateChangeHandler(handler: (String) -> Unit) {
-    try {
-      if (!active.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not active"
-        )
-      }
-      stateChangeHandler = handler
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
-    }
-  }
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
   
   /**
    * Send response to the HCE service
@@ -215,5 +201,11 @@ class AndroidEmulatedCardImpl(
     // Bundle keys
     const val KEY_APDU = "apdu"
     const val KEY_STATE = "state"
+    
+    // Default response when no handler is available
+    private val DEFAULT_RESPONSE = byteArrayOf(0x6F, 0x00) // SW_UNKNOWN
+    
+    // Timeout for waiting for response from JavaScript
+    private const val RESPONSE_TIMEOUT_MS = 2000
   }
 }

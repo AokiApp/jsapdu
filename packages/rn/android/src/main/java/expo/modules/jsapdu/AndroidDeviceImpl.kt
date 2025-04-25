@@ -142,8 +142,15 @@ class AndroidDeviceImpl(
     }
     
     try {
-      // Create a new emulated card instance
-      return AndroidEmulatedCardImpl(this)
+      // Get the module instance
+      val module = platform.getAppContext().getModule(JSApduModule::class.java)
+        ?: throw SmartCardError(
+          SmartCardErrorCode.PLATFORM_ERROR,
+          "JSApduModule not found"
+        )
+      
+      // Create a new emulated card instance directly
+      return AndroidEmulatedCardImpl(this, module)
     } catch (e: Exception) {
       throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
     }

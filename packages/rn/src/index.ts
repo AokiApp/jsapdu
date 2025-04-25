@@ -19,6 +19,55 @@ function fromUint8Array(arr: Uint8Array): number[] {
   return Array.from(arr);
 }
 
+/**
+ * JavaScript side object registry
+ * Similar to the native ObjectRegistry but for JavaScript objects
+ */
+class ObjectRegistry {
+  // Map of receiver IDs to objects
+  private static objects = new Map<string, any>();
+
+  /**
+   * Get an object by its receiver ID
+   * @param id The receiver ID
+   * @returns The object
+   * @throws Error if the object is not found
+   */
+  static getObject<T>(id: string): T {
+    const obj = this.objects.get(id);
+    if (!obj) {
+      throw new Error(`Object with ID ${id} not found`);
+    }
+    return obj as T;
+  }
+
+  /**
+   * Register an object with a specific receiver ID
+   * @param id The receiver ID
+   * @param obj The object to register
+   */
+  static registerWithId(id: string, obj: any): void {
+    this.objects.set(id, obj);
+  }
+
+  /**
+   * Unregister an object by its receiver ID
+   * @param id The receiver ID
+   */
+  static unregister(id: string): void {
+    this.objects.delete(id);
+  }
+
+  /**
+   * Check if an object with the given ID is registered
+   * @param id The receiver ID
+   * @returns True if the object is registered, false otherwise
+   */
+  static isRegistered(id: string): boolean {
+    return this.objects.has(id);
+  }
+}
+
 // EMA bridge interface
 interface IJsApduModule {
   createPlatformManager(): Promise<string>;
@@ -35,13 +84,12 @@ interface IJsApduModule {
   resetCard(receiverId: string): Promise<void>;
   releaseCard(receiverId: string): Promise<void>;
   // HCE/EmulatedCard
-  createApduHandler(
-    handler: (apdu: number[]) => Promise<number[]>,
-  ): Promise<string>;
-  createStateChangeHandler(handler: (state: string) => void): Promise<string>;
-  setApduHandler(receiverId: string, handlerId: string): Promise<void>;
-  setStateChangeHandler(receiverId: string, handlerId: string): Promise<void>;
+  sendApduResponse(receiverId: string, responseData: number[]): Promise<void>;
   releaseEmulatedCard(receiverId: string): Promise<void>;
+
+  // Event emitter methods
+  addListener(eventName: string, listener: (event: any) => void): void;
+  removeListener(eventName: string, listener: (event: any) => void): void;
 }
 
 const JsApduModule = requireNativeModule("JsApduModule")! as IJsApduModule;
@@ -289,18 +337,36 @@ export class AndroidEmulatedCard extends EmulatedCard {
   #receiverId: string;
   #parentDevice: AndroidNfcReader;
   #released = false;
-  #apduHandlerId: string | null = null;
-  #stateChangeHandlerId: string | null = null;
+  #apduHandler: ((apdu: Uint8Array) => Promise<Uint8Array>) | null = null;
+  #stateChangeHandler: ((state: string) => void) | null = null;
+
+  // Flag to track if global listeners are initialized
+  private static listenersInitialized = false;
 
   constructor(receiverId: string, parentDevice: AndroidNfcReader) {
     super(parentDevice);
     this.#receiverId = receiverId;
     this.#parentDevice = parentDevice;
+
+    // Register this instance in the registry
+    ObjectRegistry.registerWithId(receiverId, this);
+
+    // Set up global event listeners if they don't exist yet
+    if (!AndroidEmulatedCard.listenersInitialized) {
+      JsApduModule.addListener(
+        "onApduCommand",
+        AndroidEmulatedCard.handleApduCommandEvent,
+      );
+      JsApduModule.addListener(
+        "onHceStateChange",
+        AndroidEmulatedCard.handleStateChangeEvent,
+      );
+      AndroidEmulatedCard.listenersInitialized = true;
+    }
   }
 
   isActive(): boolean {
     this.#assertNotReleased();
-    // No direct native method; assume always active if not released
     return !this.#released;
   }
 
@@ -308,32 +374,80 @@ export class AndroidEmulatedCard extends EmulatedCard {
     handler: (apdu: Uint8Array) => Promise<Uint8Array>,
   ): Promise<void> {
     this.#assertNotReleased();
-    // Register handler with native side
-    const handlerId = await JsApduModule.createApduHandler(
-      async (apduArr: number[]) => {
-        const apduBytes = toUint8Array(apduArr);
-        const response = await handler(apduBytes);
-        return fromUint8Array(response);
-      },
-    );
-    await JsApduModule.setApduHandler(this.#receiverId, handlerId);
-    this.#apduHandlerId = handlerId;
+    this.#apduHandler = handler;
   }
 
   async setStateChangeHandler(handler: (state: string) => void): Promise<void> {
     this.#assertNotReleased();
-    const handlerId = await JsApduModule.createStateChangeHandler(handler);
-    await JsApduModule.setStateChangeHandler(this.#receiverId, handlerId);
-    this.#stateChangeHandlerId = handlerId;
+    this.#stateChangeHandler = handler;
   }
 
   async release(): Promise<void> {
     if (this.#released) return;
+
+    // Unregister this instance from the registry
+    ObjectRegistry.unregister(this.#receiverId);
+
     await JsApduModule.releaseEmulatedCard(this.#receiverId);
     this.#released = true;
   }
 
   #assertNotReleased() {
     if (this.#released) throw new Error("EmulatedCard already released");
+  }
+
+  // Static event handlers for proper routing
+  private static async handleApduCommandEvent(event: {
+    receiverId: string;
+    apduCommand: number[];
+  }) {
+    try {
+      // Get the instance from the registry
+      const instance = ObjectRegistry.getObject<AndroidEmulatedCard>(
+        event.receiverId,
+      );
+
+      // Check if the instance has an APDU handler
+      if (!instance.#apduHandler) return;
+
+      // Convert to Uint8Array and call handler
+      const apduBytes = toUint8Array(event.apduCommand);
+      const response = await instance.#apduHandler(apduBytes);
+
+      // Send response back to native side
+      await JsApduModule.sendApduResponse(
+        event.receiverId,
+        fromUint8Array(response),
+      );
+    } catch (error) {
+      console.error("Error handling APDU command:", error);
+      // If we can get the receiverId, send an error response
+      if (event.receiverId) {
+        await JsApduModule.sendApduResponse(
+          event.receiverId,
+          [0x6f, 0x00], // SW_UNKNOWN
+        );
+      }
+    }
+  }
+
+  private static handleStateChangeEvent(event: {
+    receiverId: string;
+    state: string;
+  }) {
+    try {
+      // Get the instance from the registry
+      const instance = ObjectRegistry.getObject<AndroidEmulatedCard>(
+        event.receiverId,
+      );
+
+      // Check if the instance has a state change handler
+      if (!instance.#stateChangeHandler) return;
+
+      // Call handler
+      instance.#stateChangeHandler(event.state);
+    } catch (error) {
+      console.error("Error handling state change:", error);
+    }
   }
 }
