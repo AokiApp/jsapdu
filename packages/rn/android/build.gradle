@@ -1,0 +1,60 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath("com.android.tools.build:gradle:7.3.1")
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+  compileSdkVersion 33
+  defaultConfig {
+    minSdkVersion 21
+    targetSdkVersion 33
+    versionCode 1
+    versionName "1.0"
+  }
+  
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+  
+  lintOptions {
+    abortOnError false
+  }
+  
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  
+  kotlinOptions {
+    jvmTarget = '1.8'
+  }
+}
+
+repositories {
+  mavenCentral()
+  google()
+}
+
+dependencies {
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
+  
+  // Expo modules
+  implementation "expo.modules.kotlin:expo-modules-kotlin:0.13.0"
+  
+  // React Native
+  implementation "com.facebook.react:react-native:+"
+}

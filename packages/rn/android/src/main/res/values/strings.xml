@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_description">JSApdu HCE Service</string>
+    <string name="aid_description">JSApdu Payment</string>
+    <string name="aid_other_description">JSApdu Other Applications</string>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/service_description"
+    android:requireDeviceUnlock="false">
+    
+    <!-- AID group for payment -->
+    <aid-group
+        android:description="@string/aid_description"
+        android:category="payment">
+        <!-- Example AID for payment -->
+        <aid-filter android:name="A0000000041010"/>
+    </aid-group>
+    
+    <!-- AID group for other -->
+    <aid-group
+        android:description="@string/aid_other_description"
+        android:category="other">
+        <!-- Example AIDs for other applications -->
+        <aid-filter android:name="F0010203040506"/>
+        <aid-filter android:name="A0000000000101"/>
+    </aid-group>
+</host-apdu-service>
