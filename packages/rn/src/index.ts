@@ -34,8 +34,14 @@ interface IJsApduModule {
   transmit(receiverId: string, apdu: number[]): Promise<number[]>;
   resetCard(receiverId: string): Promise<void>;
   releaseCard(receiverId: string): Promise<void>;
-  // EmulatedCard/HCE
-  // ... (other methods will be added as needed)
+  // HCE/EmulatedCard
+  createApduHandler(
+    handler: (apdu: number[]) => Promise<number[]>,
+  ): Promise<string>;
+  createStateChangeHandler(handler: (state: string) => void): Promise<string>;
+  setApduHandler(receiverId: string, handlerId: string): Promise<void>;
+  setStateChangeHandler(receiverId: string, handlerId: string): Promise<void>;
+  releaseEmulatedCard(receiverId: string): Promise<void>;
 }
 
 const JsApduModule = requireNativeModule("JsApduModule")! as IJsApduModule;
@@ -278,11 +284,13 @@ export class AndroidNfcCard extends SmartCard {
   }
 }
 
-// EmulatedCard implementation (stubs)
+// EmulatedCard implementation (HCE)
 export class AndroidEmulatedCard extends EmulatedCard {
   #receiverId: string;
   #parentDevice: AndroidNfcReader;
   #released = false;
+  #apduHandlerId: string | null = null;
+  #stateChangeHandlerId: string | null = null;
 
   constructor(receiverId: string, parentDevice: AndroidNfcReader) {
     super(parentDevice);
@@ -292,25 +300,36 @@ export class AndroidEmulatedCard extends EmulatedCard {
 
   isActive(): boolean {
     this.#assertNotReleased();
-    // Not implemented: always true for now
+    // No direct native method; assume always active if not released
     return !this.#released;
   }
 
-  async setApduHandler(): Promise<void> {
+  async setApduHandler(
+    handler: (apdu: Uint8Array) => Promise<Uint8Array>,
+  ): Promise<void> {
     this.#assertNotReleased();
-    // Not implemented
-    throw new Error("setApduHandler not implemented");
+    // Register handler with native side
+    const handlerId = await JsApduModule.createApduHandler(
+      async (apduArr: number[]) => {
+        const apduBytes = toUint8Array(apduArr);
+        const response = await handler(apduBytes);
+        return fromUint8Array(response);
+      },
+    );
+    await JsApduModule.setApduHandler(this.#receiverId, handlerId);
+    this.#apduHandlerId = handlerId;
   }
 
-  async setStateChangeHandler(): Promise<void> {
+  async setStateChangeHandler(handler: (state: string) => void): Promise<void> {
     this.#assertNotReleased();
-    // Not implemented
-    throw new Error("setStateChangeHandler not implemented");
+    const handlerId = await JsApduModule.createStateChangeHandler(handler);
+    await JsApduModule.setStateChangeHandler(this.#receiverId, handlerId);
+    this.#stateChangeHandlerId = handlerId;
   }
 
   async release(): Promise<void> {
     if (this.#released) return;
-    // Not implemented: should call JsApduModule.releaseEmulatedCard
+    await JsApduModule.releaseEmulatedCard(this.#receiverId);
     this.#released = true;
   }
 
