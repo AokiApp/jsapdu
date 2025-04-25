@@ -1,223 +1,61 @@
-# jsapdu Architecture
+# Android Binding Architecture Documentation
 
-## Overview
+Welcome!  
+This documentation is a deep, reader-first reference for the Androidバインディング (Android binding) of this project.  
+It is designed for advanced maintainers and contributors who need to understand the _mechanisms_, _design intent_, _computer science concepts_, and _rationale_ behind the architecture—far beyond surface-level API explanations.
 
-jsapdu is designed with a layered architecture that provides:
-- Platform independence through abstraction
-- Extensibility for different card communication protocols
-- Type safety and modern resource management
-- Clear separation between core functionality and utilities
+---
 
-## Core Components
+## How to Use These Docs
 
-### 1. Platform Layer
+- **Start here** for a map of the documentation and guidance on where to find explanations for specific mechanisms.
+- Each file is focused on a major architectural theme, with cross-references and diagrams.
+- If you are struggling to understand how JS and JVM objects are mirrored, how receiver IDs work, or how message passing is coordinated, you are in the right place.
 
-```typescript
-export abstract class SmartCardPlatform {
-  public abstract init(): Promise<void>;
-  public abstract release(): Promise<void>;
-  public abstract getDevices(): Promise<SmartCardDeviceInfo[]>;
-}
-```
+---
 
-The platform layer provides:
-- Platform initialization and cleanup
-- Device enumeration and management
-- Resource lifecycle management
-- Error handling and recovery
+## Documentation Map
 
-### 2. Device Layer
+| File Name                            | Main Topics                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `object-mirroring-and-routing.md`    | Object mirroring, receiver ID system, registry mechanisms, routing from many objects       |
+| `message-passing-and-lifecycle.md`   | Message passing, event/method routing, error propagation, object lifecycle, runtime issues |
+| `cs-concepts-faq-and-comparisons.md` | CS background, design rationale, comparisons, and a comprehensive FAQ                      |
 
-```typescript
-export abstract class SmartCardDevice {
-  public abstract isActive(): boolean;
-  public abstract isCardPresent(): Promise<boolean>;
-  public abstract startSession(): Promise<SmartCard>;
-  public abstract release(): Promise<void>;
-}
-```
+---
 
-The device layer handles:
-- Card reader state management
-- Card presence detection
-- Session establishment
-- Device-specific operations
+## Quickstart: Where to Find What
 
-### 3. Card Layer
+- **How does JS↔JVM object mirroring work?**  
+  See: `object-mirroring-and-routing.md` (with diagrams)
 
-```typescript
-export abstract class SmartCard {
-  public abstract getAtr(): Promise<Uint8Array>;
-  public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
-  public abstract reset(): Promise<void>;
-  public abstract release(): Promise<void>;
-}
-```
+- **How are method calls/events routed to the right object?**  
+  See: `object-mirroring-and-routing.md` and `message-passing-and-lifecycle.md`
 
-The card layer provides:
-- APDU command transmission
-- Card reset functionality
-- ATR/ATS handling
-- Session management
+- **What are the main runtime constraints and how are they handled?**  
+  See: `message-passing-and-lifecycle.md`
 
-## Package Structure
+- **What are the key computer science ideas behind this design?**  
+  See: `cs-concepts-faq-and-comparisons.md`
 
-```
-jsapdu/
-├── packages/
-│   ├── interface/        # Core abstractions
-│   ├── pcsc/            # PC/SC implementation
-│   ├── tlv-parser/      # TLV data parsing
-│   ├── apdu-utils/      # APDU utilities
-│   ├── mynacard/        # MynaCard specific code
-│   └── mynacard-demo/   # Demo applications
-```
+- **Stuck or confused?**  
+  The FAQ in `cs-concepts-faq-and-comparisons.md` is designed to answer a wide range of deep and subtle questions.
 
-### Interface Package
-- Defines core abstractions
-- Provides APDU handling
-- Implements error system
-- Contains common utilities
+---
 
-### PCSC Package
-- Implements PC/SC platform
-- Handles USB card readers
-- Manages reader lifecycle
-- Provides APDU transmission
+## Philosophy
 
-### TLV Parser Package
-- Parses ASN.1 TLV structures
-- Supports sync/async parsing
-- Provides schema validation
-- Handles complex data structures
+- **Reader-first:**  
+  This documentation is written to reduce cognitive load, demystify complex flows, and provide historical and conceptual context.  
+  You will find analogies, diagrams, and practical explanations throughout.
 
-## Error Handling
+- **No API Reference:**  
+  This is not an API reference. If you want to know what methods exist, read the code.  
+  This is about _why_ and _how_ the system works, not _what_ the surface API is.
 
-The error system is designed to:
-- Provide structured error information
-- Enable proper error recovery
-- Protect sensitive information
-- Support debugging
-- Handle platform-specific errors
+---
 
-```typescript
-export class SmartCardError extends Error {
-  constructor(
-    public readonly code: SmartCardErrorCode,
-    message: string,
-    public readonly cause?: Error
-  ) {
-    super(message);
-  }
-}
-```
+## Contributing
 
-## Resource Management
-
-Resources are managed using:
-- Symbol.asyncDispose for automatic cleanup
-- Explicit state tracking
-- Error-safe release patterns
-- Timeout handling
-
-Example:
-```typescript
-async function example() {
-  await using platform = manager.getPlatform();
-  await using device = (await platform.getDevices())[0].acquireDevice();
-  await using card = await device.startSession();
-  
-  // Resources automatically cleaned up
-}
-```
-
-## Extension Points
-
-### 1. New Platforms
-To add a new platform:
-1. Implement SmartCardPlatformManager
-2. Implement SmartCardPlatform
-3. Implement device and card classes
-4. Handle platform-specific errors
-
-### 2. New Card Types
-To add support for new cards:
-1. Create card-specific APDU commands
-2. Implement high-level operations
-3. Add TLV parsing schemas if needed
-4. Create utility functions
-
-### 3. New Protocols
-To add new communication protocols:
-1. Extend platform abstractions if needed
-2. Implement protocol-specific device handling
-3. Add protocol configuration options
-4. Implement error handling
-
-## Security Considerations
-
-1. Resource Cleanup
-- All resources must be properly released
-- Sensitive data should be cleared
-- Connections must be closed properly
-
-2. Error Handling
-- Sensitive information must be protected
-- Error messages should be sanitized
-- Stack traces should be hidden in production
-
-3. Input Validation
-- APDU commands must be validated
-- Buffer sizes must be checked
-- Resource limits must be enforced
-
-## Performance Considerations
-
-1. Memory Management
-- Buffer pooling for frequent operations
-- Proper cleanup of large buffers
-- Minimal copying of data
-
-2. Connection Handling
-- Connection pooling where appropriate
-- Proper timeout handling
-- Resource limit enforcement
-
-3. Async Operations
-- Proper async/await usage
-- Cancellation support
-- Timeout handling
-
-## Testing Strategy
-
-1. Unit Tests
-- Core functionality testing
-- Error handling verification
-- Resource management testing
-
-2. Integration Tests
-- Platform implementation testing
-- End-to-end scenarios
-- Error recovery testing
-
-3. Performance Tests
-- Resource usage monitoring
-- Operation timing
-- Stress testing
-
-## Future Considerations
-
-1. Platform Support
-- Web platform support (WebUSB, WebNFC)
-- Mobile platform support
-- Cloud HSM integration
-
-2. Feature Extensions
-- Secure channel support
-- Additional card protocols
-- Enhanced debugging tools
-
-3. Performance Improvements
-- Connection pooling
-- Buffer optimization
-- Caching strategies
+If you find a gap in the explanations, or a new pain point emerges, please extend these docs!  
+The goal is to make the architecture as transparent and learnable as possible for future maintainers.
