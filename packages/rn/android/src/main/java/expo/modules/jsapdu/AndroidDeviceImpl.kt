@@ -73,10 +73,6 @@ class AndroidDeviceImpl(
    * Check if the card is present
    * @throws {SmartCardError} If check fails
    */
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
   fun isCardPresent(): Boolean {
     if (!active.get()) {
       throw SmartCardError(
@@ -91,10 +87,6 @@ class AndroidDeviceImpl(
   /**
    * Start communication session with the card
    * @throws {SmartCardError} If session start fails
-   */
-  
-  /**
-   * Non-suspending version for JavaScript bridge
    */
   fun startSession(): AndroidSmartCardImpl {
     if (!active.get()) {
@@ -134,10 +126,6 @@ class AndroidDeviceImpl(
    * Start HCE session
    * @throws {SmartCardError} If session start fails
    */
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
   fun startHceSession(): AndroidEmulatedCardImpl {
     if (!active.get()) {
       throw SmartCardError(
@@ -164,10 +152,6 @@ class AndroidDeviceImpl(
   /**
    * Release the device
    * @throws {SmartCardError} If release fails
-   */
-  
-  /**
-   * Non-suspending version for JavaScript bridge
    */
   fun release() {
     if (!active.getAndSet(false)) {

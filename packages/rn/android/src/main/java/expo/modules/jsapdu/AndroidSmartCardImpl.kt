@@ -23,26 +23,6 @@ class AndroidSmartCardImpl(
    * Get ATR (Answer To Reset) or equivalent such as ATS (Answer To Select)
    * @throws SmartCardError If operation fails
    */
-  suspend fun getAtr(): ByteArray = withContext(Dispatchers.IO) {
-    try {
-      if (!connected.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not connected"
-        )
-      }
-      
-      // For IsoDep, we use the historical bytes as ATR
-      // This is not a true ATR, but it's the closest equivalent
-      isoDep.historicalBytes ?: ByteArray(0)
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
-    }
-  }
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
   fun getAtr(): ByteArray {
     try {
       if (!connected.get()) {
@@ -51,7 +31,6 @@ class AndroidSmartCardImpl(
           "Card not connected"
         )
       }
-      
       // For IsoDep, we use the historical bytes as ATR
       // This is not a true ATR, but it's the closest equivalent
       return isoDep.historicalBytes ?: ByteArray(0)
@@ -59,6 +38,7 @@ class AndroidSmartCardImpl(
       throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
     }
   }
+  
   
   /**
    * Transmit APDU command to the card
@@ -84,27 +64,6 @@ class AndroidSmartCardImpl(
     }
   }
   
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
-  fun transmit(apduBytes: ByteArray): ByteArray {
-    try {
-      if (!connected.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not connected"
-        )
-      }
-      
-      // Create command APDU
-      val apdu = CommandApdu(apduBytes)
-      
-      // Send command to card
-      return isoDep.transceive(apdu.toByteArray())
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.TRANSMISSION_ERROR)
-    }
-  }
   
   /**
    * Reset the card
@@ -130,26 +89,6 @@ class AndroidSmartCardImpl(
     }
   }
   
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
-  fun reset() {
-    try {
-      if (!connected.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not connected"
-        )
-      }
-      
-      // For IsoDep, we can't truly reset the card
-      // The best we can do is disconnect and reconnect
-      isoDep.close()
-      isoDep.connect()
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
-    }
-  }
   
   /**
    * Release the session
@@ -170,19 +109,4 @@ class AndroidSmartCardImpl(
     }
   }
   
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
-  fun release() {
-    if (!connected.getAndSet(false)) {
-      return
-    }
-    
-    try {
-      // Close the connection
-      isoDep.close()
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
-    }
-  }
 }

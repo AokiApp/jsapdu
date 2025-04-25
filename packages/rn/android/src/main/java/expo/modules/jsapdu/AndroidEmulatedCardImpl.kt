@@ -102,25 +102,6 @@ class AndroidEmulatedCardImpl(
    * Set APDU handler
    * @throws SmartCardError If setting handler fails
    */
-  suspend fun setApduHandler(handler: (ByteArray) -> ByteArray): Boolean = withContext(Dispatchers.IO) {
-    try {
-      if (!active.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not active"
-        )
-      }
-      
-      apduHandler = handler
-      true
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
-    }
-  }
-  
-  /**
-   * Non-suspending version for JavaScript bridge
-   */
   fun setApduHandler(handler: (ByteArray) -> ByteArray) {
     try {
       if (!active.get()) {
@@ -129,7 +110,6 @@ class AndroidEmulatedCardImpl(
           "Card not active"
         )
       }
-      
       apduHandler = handler
     } catch (e: Exception) {
       throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
@@ -137,27 +117,12 @@ class AndroidEmulatedCardImpl(
   }
   
   /**
-   * Set state change handler
-   * @throws SmartCardError If setting handler fails
+   * Non-suspending version for JavaScript bridge
    */
-  suspend fun setStateChangeHandler(handler: (String) -> Unit): Boolean = withContext(Dispatchers.IO) {
-    try {
-      if (!active.get()) {
-        throw SmartCardError(
-          SmartCardErrorCode.NOT_CONNECTED,
-          "Card not active"
-        )
-      }
-      
-      stateChangeHandler = handler
-      true
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
-    }
-  }
   
   /**
-   * Non-suspending version for JavaScript bridge
+   * Set state change handler
+   * @throws SmartCardError If setting handler fails
    */
   fun setStateChangeHandler(handler: (String) -> Unit) {
     try {
@@ -167,12 +132,15 @@ class AndroidEmulatedCardImpl(
           "Card not active"
         )
       }
-      
       stateChangeHandler = handler
     } catch (e: Exception) {
       throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
     }
   }
+  
+  /**
+   * Non-suspending version for JavaScript bridge
+   */
   
   /**
    * Send response to the HCE service
@@ -235,36 +203,6 @@ class AndroidEmulatedCardImpl(
   /**
    * Non-suspending version for JavaScript bridge
    */
-  fun release() {
-    if (!active.getAndSet(false)) {
-      return
-    }
-    
-    try {
-      // Unregister the client
-      if (serviceBound.get() && serviceMessenger != null) {
-        val msg = Message.obtain(null, MESSAGE_UNREGISTER_CLIENT)
-        msg.replyTo = messenger
-        try {
-          serviceMessenger?.send(msg)
-        } catch (e: RemoteException) {
-          e.printStackTrace()
-        }
-      }
-      
-      // Unbind from the service
-      val context = parentDevice.platform.getAppContext().reactContext
-      context?.unbindService(serviceConnection)
-      
-      // Clean up resources
-      apduHandler = null
-      stateChangeHandler = null
-      serviceMessenger = null
-      serviceBound.set(false)
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
-    }
-  }
   
   companion object {
     // Message types

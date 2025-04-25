@@ -95,32 +95,31 @@ class JSApduModuleDefinition : ModuleDefinition {
       return@Function null
     }
 
-    // Get ATR
-    AsyncFunction("getAtr") { receiverId: String ->
+    // Get ATR (synchronous, since getAtr is now sync)
+    Function("getAtr") { receiverId: String ->
       val card = ObjectRegistry.getObject<AndroidSmartCardImpl>(receiverId)
-      val atr = card.getAtr()
-      return@AsyncFunction atr
+      return@Function card.getAtr()
     }
 
     // Transmit APDU
-    AsyncFunction("transmit") { receiverId: String, apdu: List<Int> ->
+    // Transmit APDU (Coroutine mode)
+    AsyncFunction("transmit") Coroutine { receiverId: String, apdu: List<Int> ->
       val card = ObjectRegistry.getObject<AndroidSmartCardImpl>(receiverId)
-      val response = card.transmit(apdu.map { it.toByte() }.toByteArray())
-      return@AsyncFunction response.map { it.toInt() and 0xFF }
+      val response = card.transmit(CommandApdu(apdu.map { it.toByte() }.toByteArray()))
+      return@Coroutine response.bytes.map { it.toInt() and 0xFF }
     }
-
     // Reset card
-    AsyncFunction("resetCard") { receiverId: String ->
+    // Reset card (Coroutine mode)
+    AsyncFunction("resetCard") Coroutine { receiverId: String ->
       val card = ObjectRegistry.getObject<AndroidSmartCardImpl>(receiverId)
       card.reset()
-      return@AsyncFunction null
+      return@Coroutine null
     }
-
-    // Release card
-    AsyncFunction("releaseCard") { receiverId: String ->
+    // Release card (Coroutine mode)
+    AsyncFunction("releaseCard") Coroutine { receiverId: String ->
       val card = ObjectRegistry.getObject<AndroidSmartCardImpl>(receiverId)
       card.release()
-      return@AsyncFunction null
+      return@Coroutine null
     }
 
     // Create APDU handler
@@ -145,26 +144,26 @@ class JSApduModuleDefinition : ModuleDefinition {
     }
 
     // Set APDU handler for HCE
-    AsyncFunction("setApduHandler") { receiverId: String, handlerId: String ->
+    Function("setApduHandler") { receiverId: String, handlerId: String ->
       val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
       val handler = ObjectRegistry.getObject<ApduHandler>(handlerId)
       card.setApduHandler(handler::handleApdu)
-      return@AsyncFunction null
+      return@Function null
     }
 
     // Set state change handler for HCE
-    AsyncFunction("setStateChangeHandler") { receiverId: String, handlerId: String ->
+    Function("setStateChangeHandler") { receiverId: String, handlerId: String ->
       val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
       val handler = ObjectRegistry.getObject<StateChangeHandler>(handlerId)
       card.setStateChangeHandler(handler::handleStateChange)
-      return@AsyncFunction null
+      return@Function null
     }
 
     // Release emulated card
-    AsyncFunction("releaseEmulatedCard") { receiverId: String ->
+    AsyncFunction("releaseEmulatedCard") Coroutine { receiverId: String ->
       val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
       card.release()
-      return@AsyncFunction null
+      return@Coroutine null
     }
   }
 }
