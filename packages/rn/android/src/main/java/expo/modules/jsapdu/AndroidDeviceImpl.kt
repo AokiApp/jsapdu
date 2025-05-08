@@ -169,14 +169,33 @@ class AndroidDeviceImpl(
       // Disable reader mode
       val activity = platform.getAppContext().activityProvider?.currentActivity
       if (activity != null) {
-        nfcAdapter.disableReaderMode(activity)
+        try {
+          nfcAdapter.disableReaderMode(activity)
+        } catch (e: Exception) {
+          e.printStackTrace()
+        }
       }
       
       // Clean up resources
       currentTag = null
       tagDeferred?.cancel()
       tagDeferred = null
+      
+      // Unregister from ObjectRegistry
+      this.unregister()
     } catch (e: Exception) {
+      // Ensure resources are cleaned up even if an exception occurs
+      currentTag = null
+      tagDeferred?.cancel()
+      tagDeferred = null
+      
+      try {
+        this.unregister()
+      } catch (innerEx: Exception) {
+        // Ignore exceptions during emergency cleanup
+        innerEx.printStackTrace()
+      }
+      
       throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
     }
   }

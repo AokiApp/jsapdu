@@ -101,10 +101,25 @@ class AndroidSmartCardImpl(
     
     try {
       // Close the connection
-      isoDep.close()
+      try {
+        isoDep.close()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+      
+      // Unregister from ObjectRegistry
+      this@AndroidSmartCardImpl.unregister()
       
       true
     } catch (e: Exception) {
+      // Ensure resources are cleaned up even if an exception occurs
+      try {
+        this@AndroidSmartCardImpl.unregister()
+      } catch (innerEx: Exception) {
+        // Ignore exceptions during emergency cleanup
+        innerEx.printStackTrace()
+      }
+      
       throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
     }
   }

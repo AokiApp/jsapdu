@@ -102,10 +102,54 @@ object ObjectRegistry {
   
   /**
    * Clear all registered objects
+   * This should be called when the application is being destroyed
+   * to prevent memory leaks
    */
   fun clear() {
+    // Make a copy of the keys to avoid ConcurrentModificationException
+    val keys = objects.keys().toList()
+    for (id in keys) {
+      try {
+        val obj = objects[id]
+        if (obj is AutoCloseable) {
+          try {
+            obj.close()
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+        objects.remove(id)
+        if (obj != null) {
+          objectIds.remove(obj)
+        }
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
+    
+    // Final cleanup in case any objects remain
     objects.clear()
     objectIds.clear()
+  }
+  
+  /**
+   * Get the number of registered objects
+   * Useful for debugging memory leaks
+   */
+  fun size(): Int {
+    return objects.size
+  }
+  
+  /**
+   * Dump the registry contents for debugging
+   */
+  fun dumpRegistry(): String {
+    val sb = StringBuilder()
+    sb.append("ObjectRegistry contents:\n")
+    objects.forEach { (id, obj) ->
+      sb.append("  $id: ${obj.javaClass.simpleName}\n")
+    }
+    return sb.toString()
   }
 }
 
@@ -125,5 +169,24 @@ abstract class Registrable {
    */
   fun unregister() {
     ObjectRegistry.unregister(this)
+  }
+  
+  /**
+   * Finalizer method to ensure cleanup if object is not properly released
+   * This is a last resort and should not be relied upon for normal cleanup
+   */
+  protected fun finalize() {
+    try {
+      if (ObjectRegistry.isRegistered(this)) {
+        println("WARNING: Object was not properly released before garbage collection: ${this.javaClass.simpleName}")
+        try {
+          unregister()
+        } catch (e: Exception) {
+          // Ignore exceptions in finalizer
+        }
+      }
+    } catch (e: Throwable) {
+      // Never throw exceptions from finalizers
+    }
   }
 }

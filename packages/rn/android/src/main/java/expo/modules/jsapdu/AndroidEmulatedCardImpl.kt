@@ -172,7 +172,13 @@ class AndroidEmulatedCardImpl(
       
       // Unbind from the service
       val context = parentDevice.platform.getAppContext().reactContext
-      context?.unbindService(serviceConnection)
+      if (context != null && serviceBound.get()) {
+        try {
+          context.unbindService(serviceConnection)
+        } catch (e: Exception) {
+          e.printStackTrace()
+        }
+      }
       
       // Clean up resources
       apduHandler = null
@@ -180,8 +186,24 @@ class AndroidEmulatedCardImpl(
       serviceMessenger = null
       serviceBound.set(false)
       
+      // Unregister from ObjectRegistry
+      this@AndroidEmulatedCardImpl.unregister()
+      
       true
     } catch (e: Exception) {
+      // Even if an exception occurs, ensure resources are cleaned up
+      apduHandler = null
+      stateChangeHandler = null
+      serviceMessenger = null
+      serviceBound.set(false)
+      
+      try {
+        this@AndroidEmulatedCardImpl.unregister()
+      } catch (innerEx: Exception) {
+        // Ignore exceptions during emergency cleanup
+        innerEx.printStackTrace()
+      }
+      
       throw fromUnknownError(e, SmartCardErrorCode.PLATFORM_ERROR)
     }
   }

@@ -66,6 +66,44 @@ class ObjectRegistry {
   static isRegistered(id: string): boolean {
     return this.objects.has(id);
   }
+
+  /**
+   * Clear all registered objects
+   * This should be called when the application is being destroyed
+   * to prevent memory leaks
+   */
+  static clear(): void {
+    // Release any resources that need explicit cleanup
+    for (const [id, obj] of this.objects.entries()) {
+      if (obj && typeof obj.release === "function") {
+        try {
+          obj.release();
+        } catch (e) {
+          console.error(`Error releasing object ${id}:`, e);
+        }
+      }
+    }
+    this.objects.clear();
+  }
+
+  /**
+   * Get the number of registered objects
+   * Useful for debugging memory leaks
+   */
+  static size(): number {
+    return this.objects.size;
+  }
+
+  /**
+   * Dump the registry contents for debugging
+   */
+  static dumpRegistry(): string {
+    let result = "ObjectRegistry contents:\n";
+    this.objects.forEach((obj, id) => {
+      result += `  ${id}: ${obj.constructor?.name || "Unknown"}\n`;
+    });
+    return result;
+  }
 }
 
 // EMA bridge interface
@@ -342,6 +380,8 @@ export class AndroidEmulatedCard extends EmulatedCard {
 
   // Flag to track if global listeners are initialized
   private static listenersInitialized = false;
+  // Counter to track active instances
+  private static activeInstances = 0;
 
   constructor(receiverId: string, parentDevice: AndroidNfcReader) {
     super(parentDevice);
@@ -350,6 +390,9 @@ export class AndroidEmulatedCard extends EmulatedCard {
 
     // Register this instance in the registry
     ObjectRegistry.registerWithId(receiverId, this);
+
+    // Increment active instances counter
+    AndroidEmulatedCard.activeInstances++;
 
     // Set up global event listeners if they don't exist yet
     if (!AndroidEmulatedCard.listenersInitialized) {
@@ -388,8 +431,31 @@ export class AndroidEmulatedCard extends EmulatedCard {
     // Unregister this instance from the registry
     ObjectRegistry.unregister(this.#receiverId);
 
+    // Clear handlers to prevent memory leaks
+    this.#apduHandler = null;
+    this.#stateChangeHandler = null;
+
     await JsApduModule.releaseEmulatedCard(this.#receiverId);
     this.#released = true;
+
+    // Decrement active instances counter
+    AndroidEmulatedCard.activeInstances--;
+
+    // If no more active instances, remove global listeners
+    if (
+      AndroidEmulatedCard.activeInstances === 0 &&
+      AndroidEmulatedCard.listenersInitialized
+    ) {
+      JsApduModule.removeListener(
+        "onApduCommand",
+        AndroidEmulatedCard.handleApduCommandEvent,
+      );
+      JsApduModule.removeListener(
+        "onHceStateChange",
+        AndroidEmulatedCard.handleStateChangeEvent,
+      );
+      AndroidEmulatedCard.listenersInitialized = false;
+    }
   }
 
   #assertNotReleased() {
