@@ -4,7 +4,6 @@ import {
   SmartCardDevice,
 } from "@aokiapp/interface/src/abstracts";
 
-import { AndroidEmulatedCard } from "./AndroidEmulatedCard";
 import { AndroidNfcCard } from "./AndroidNfcCard";
 import { AndroidNfcReaderInfo } from "./AndroidNfcReaderInfo";
 import { JsApduModule } from "./JsApduModule";
@@ -47,9 +46,7 @@ export class AndroidNfcReader extends SmartCardDevice {
   }
 
   async startHceSession(): Promise<EmulatedCard> {
-    this.#assertNotReleased();
-    const cardId = await JsApduModule.startHceSession(this.#receiverId);
-    return new AndroidEmulatedCard(cardId, this);
+    throw new Error("HCE session not supported");
   }
 
   async release(): Promise<void> {

@@ -122,39 +122,6 @@ class AndroidDeviceImpl(
     }
   }
   
-  /**
-   * Start HCE session
-   * @throws {SmartCardError} If session start fails
-   */
-  fun startHceSession(): AndroidEmulatedCardImpl {
-    if (!active.get()) {
-      throw SmartCardError(
-        SmartCardErrorCode.NOT_CONNECTED,
-        "Device not active"
-      )
-    }
-    
-    if (!deviceInfo.supportsHce) {
-      throw SmartCardError(
-        SmartCardErrorCode.UNSUPPORTED_OPERATION,
-        "HCE not supported on this device"
-      )
-    }
-    
-    try {
-      // Get the module instance
-      val module = platform.getAppContext().getModule(JSApduModule::class.java)
-        ?: throw SmartCardError(
-          SmartCardErrorCode.PLATFORM_ERROR,
-          "JSApduModule not found"
-        )
-      
-      // Create a new emulated card instance directly
-      return AndroidEmulatedCardImpl(this, module)
-    } catch (e: Exception) {
-      throw fromUnknownError(e, SmartCardErrorCode.READER_ERROR)
-    }
-  }
   
   /**
    * Release the device

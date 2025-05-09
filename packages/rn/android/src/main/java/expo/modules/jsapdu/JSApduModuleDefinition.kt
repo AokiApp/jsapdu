@@ -87,13 +87,6 @@ class JSApduModuleDefinition : ModuleDefinition {
       return@Function card.receiverId
     }
 
-    // Start HCE session
-    Function("startHceSession") { receiverId: String ->
-      val device = ObjectRegistry.getObject<AndroidDeviceImpl>(receiverId)
-      val card = device.startHceSession()
-      return@Function card.receiverId
-    }
-
     // Release device
     Function("releaseDevice") { receiverId: String ->
       val device = ObjectRegistry.getObject<AndroidDeviceImpl>(receiverId)
@@ -128,19 +121,5 @@ class JSApduModuleDefinition : ModuleDefinition {
       return@Coroutine null
     }
 
-    // Function to send APDU response back to native side
-    Function("sendApduResponse") { receiverId: String, responseData: List<Int> ->
-      val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
-      val responseBytes = responseData.map { it.toByte() }.toByteArray()
-      card.handleApduResponse(responseBytes)
-      return@Function null
-    }
-
-    // Release emulated card
-    AsyncFunction("releaseEmulatedCard") Coroutine { receiverId: String ->
-      val card = ObjectRegistry.getObject<AndroidEmulatedCardImpl>(receiverId)
-      card.release()
-      return@Coroutine null
-    }
   }
 }

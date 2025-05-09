@@ -1,5 +1,3 @@
-
-
 // Utility for Uint8Array <-> number[] conversion
 export { toUint8Array, fromUint8Array } from "./utils";
 
@@ -23,9 +21,6 @@ export { AndroidNfcReader } from "./AndroidNfcReader";
 
 // AndroidNfcCard
 export { AndroidNfcCard } from "./AndroidNfcCard";
-
-// AndroidEmulatedCard
-export { AndroidEmulatedCard } from "./AndroidEmulatedCard";
 
 /*
   既存のinterfaceや関数、定数はそのまま残す場合はここに記述
