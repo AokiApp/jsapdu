@@ -10,5 +10,5 @@
     "declarationMap": true
   },
   "include": ["src"],
-  "references": [{ "path": "../pcsc" }, { "path": "../tlv-parser" }]
+  "references": [{ "path": "../tlv-parser" }]
 }

@@ -12,7 +12,6 @@
   "include": ["src"],
   "references": [
     { "path": "../apdu-utils" },
-    { "path": "../pcsc" },
     { "path": "../interface" },
     { "path": "../tlv-parser" },
     { "path": "../mynacard" }
