@@ -48,7 +48,7 @@ export class PcscDevice extends SmartCardDevice {
     parentPlatform: PcscPlatform,
     readerName: string,
     context: number,
-    cardHandle: number,
+    cardHandle: number | null,
     activeProtocol: number,
     onReleaseCallback: (() => void) | null = null,
   ) {
@@ -69,10 +69,52 @@ export class PcscDevice extends SmartCardDevice {
   }
 
   /**
-   * Check if the device is active
+   * Whether the device currently has an active card session
    */
-  public isActive(): boolean {
-    return this.active;
+  public isSessionActive(): boolean {
+    return this.card !== null && this.card.isActive();
+  }
+
+  /**
+   * Check whether the reader itself is available (irrespective of card presence)
+   */
+  public async isDeviceAvailable(): Promise<boolean> {
+    // If this device instance already has an active session, it's available by definition
+    if (this.isSessionActive()) {
+      return true;
+    }
+
+    try {
+      const hCard = [0];
+      const activeProtocol = [0];
+      const ret = SCardConnect(
+        this.context,
+        this.readerName,
+        SCARD_SHARE_SHARED,
+        SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
+        hCard,
+        activeProtocol,
+      );
+
+      if (ret === PcscErrorCode.SCARD_S_SUCCESS) {
+        // Reader is free; disconnect immediately and return true
+        SCardDisconnect(hCard[0], SCARD_LEAVE_CARD);
+        return true;
+      }
+
+      // Reader exists, card might be absent; still considered available
+      if (
+        ret === PcscErrorCode.SCARD_E_NO_SMARTCARD ||
+        ret === PcscErrorCode.SCARD_W_REMOVED_CARD
+      ) {
+        return true;
+      }
+
+      // Sharing violation or other errors mean reader is busy/unavailable
+      return false;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -80,56 +122,41 @@ export class PcscDevice extends SmartCardDevice {
    * @throws {SmartCardError} If check fails
    */
   public async isCardPresent(): Promise<boolean> {
-    if (!this.active) {
-      throw new SmartCardError("NOT_CONNECTED", "Device is not active");
-    }
-
     try {
-      // If we already have a card handle, check if it's still valid
+      // Use existing handle if we already have one
       if (this.cardHandle !== null) {
-        try {
-          await callSCardStatus(this.cardHandle);
-          return true; // If status call succeeds, card is present
-        } catch {
-          return false; // If status call fails, card is not present or handle is invalid
-        }
+        await callSCardStatus(this.cardHandle);
+        return true;
       }
 
-      // If we don't have a card handle, try to connect to the card
+      // Otherwise attempt a short-lived connection to detect presence
       const hCard = [0];
-      const pdwActiveProtocol = [0];
+      const activeProtocol = [0];
       const ret = SCardConnect(
         this.context,
         this.readerName,
         SCARD_SHARE_SHARED,
         SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
         hCard,
-        pdwActiveProtocol,
+        activeProtocol,
       );
 
-      // If the connection is successful, disconnect immediately and return true
-      if (ret === PcscErrorCode.SCARD_S_SUCCESS) {
-        const cardHandle = hCard[0];
-        SCardDisconnect(cardHandle, SCARD_LEAVE_CARD);
-        return true;
-      }
-
-      // If the error is SCARD_E_NO_SMARTCARD, the card is not present
-      if (ret === PcscErrorCode.SCARD_E_NO_SMARTCARD) {
+      if (
+        ret === PcscErrorCode.SCARD_E_NO_SMARTCARD ||
+        ret === PcscErrorCode.SCARD_W_REMOVED_CARD
+      ) {
         return false;
       }
 
-      // For any other error, throw an exception
-      throw new SmartCardError(
-        "READER_ERROR",
-        `Failed to check card presence: ${ret}`,
-      );
+      ensureScardSuccess(ret);
+      // Card present – disconnect the probing handle
+      SCardDisconnect(hCard[0], SCARD_LEAVE_CARD);
+      return true;
     } catch (error) {
-      throw new SmartCardError(
-        "READER_ERROR",
-        "Failed to check card presence",
-        error instanceof Error ? error : undefined,
-      );
+      if (error instanceof SmartCardError && error.code === "CARD_NOT_PRESENT") {
+        return false;
+      }
+      throw error;
     }
   }
 
@@ -138,21 +165,35 @@ export class PcscDevice extends SmartCardDevice {
    * @throws {SmartCardError} If session start fails
    */
   public async startSession(): Promise<SmartCard> {
-    if (!this.active) {
-      throw new SmartCardError("NOT_CONNECTED", "Device is not active");
-    }
+    return this.mutex.lock(async () => {
+      if (this.card !== null && this.card.isActive()) {
+        return this.card;
+      }
 
-    // Check if we already have an active card session
-    if (this.card !== null && this.card.isActive()) {
+      if (!(await this.isCardPresent())) {
+        throw new SmartCardError("CARD_NOT_PRESENT", "No card present in reader");
+      }
+
+      // Open a connection to the card if we don't have one yet
+      if (this.cardHandle === null) {
+        const hCard = [0];
+        const activeProtocol = [0];
+        const ret = SCardConnect(
+          this.context,
+          this.readerName,
+          SCARD_SHARE_SHARED,
+          SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
+          hCard,
+          activeProtocol,
+        );
+        ensureScardSuccess(ret);
+        this.cardHandle = hCard[0];
+        this.activeProtocol = activeProtocol[0];
+      }
+
+      this.card = new PcscCard(this, this.cardHandle!, this.activeProtocol);
       return this.card;
-    }
-
-    // 既にハンドルを持っている前提でカードを生成
-    if (this.cardHandle == null) {
-      throw new SmartCardError("NOT_CONNECTED", "No card handle available");
-    }
-    this.card = new PcscCard(this, this.cardHandle, this.activeProtocol);
-    return this.card;
+    });
   }
 
   /**
@@ -161,33 +202,14 @@ export class PcscDevice extends SmartCardDevice {
    * @throws {SmartCardError} If timeout is reached or card is not present
    */
   public async waitForCardPresence(timeout: number): Promise<void> {
-    if (!this.active) {
-      throw new SmartCardError("NOT_CONNECTED", "Device is not active");
-    }
-
-    if (timeout <= 0) {
-      throw new SmartCardError(
-        "INVALID_PARAMETER",
-        "Timeout must be greater than 0",
-      );
-    }
-
-    const startTime = Date.now();
-    let isPresent = await this.isCardPresent();
-
-    while (!isPresent) {
-      // Check if timeout has been reached
-      if (Date.now() - startTime > timeout) {
-        throw new SmartCardError(
-          "TIMEOUT",
-          "Timeout waiting for card presence",
-        );
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      if (await this.isCardPresent()) {
+        return;
       }
-
-      // Wait a bit before checking again
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      isPresent = await this.isCardPresent();
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
+    throw new SmartCardError("TIMEOUT", "Timed out waiting for card presence");
   }
 
   /**

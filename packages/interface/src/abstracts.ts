@@ -88,6 +88,7 @@ export abstract class SmartCardPlatform {
 
   /**
    * Acquire a device by its ID
+   * Even if the device has not inserted the card, it is considered acquirable
    * Note: Don't forget to add the device to the platform's devices list after acquiring it
    * @returns {Promise<SmartCardDevice>} Acquired device instance
    * @param id - Device ID to acquire
@@ -217,12 +218,23 @@ export abstract class SmartCardDevice {
   public abstract getDeviceInfo(): SmartCardDeviceInfo;
 
   /**
-   * Whether acquired device session is active or not
+   * Whether acquired device has already started a session or not
    */
-  public abstract isActive(): boolean;
+  public abstract isSessionActive(): boolean;
+
+  /**
+   * Whether acquired device is available or not
+   * It must be callable regardless of any of: card presense, existing card session, any other prerequisites
+   * It returns true if the device is available, false otherwise
+   * It also returns true if the device is already in a session, since it is available
+   */
+  public abstract isDeviceAvailable(): Promise<boolean>;
 
   /**
    * Check if the card is present
+   * It must be callable regardless of any of: card presense, existing card session, any other prerequisites
+   * Do check card presense without locking any resources
+   * It doesn't need to be TOCTTOU-resistant
    * @throws {SmartCardError} If check fails
    */
   public abstract isCardPresent(): Promise<boolean>;
@@ -240,6 +252,7 @@ export abstract class SmartCardDevice {
    * Wait for the card to be present
    * This method is blocking and will wait until the card is present.
    * After the card is present, it will return immediately. You are expected to call `startSession` after this method.
+   * If platform supports card presence detection except for polling, it should be implemented in this method.
    * @param timeout - Timeout in milliseconds. It is required to prevent infinite waiting
    * @throws {SmartCardError} If timeout is reached or card is not present
    */

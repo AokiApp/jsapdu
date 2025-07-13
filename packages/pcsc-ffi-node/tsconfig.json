@@ -4,19 +4,9 @@
     "outDir": "./dist",
     "rootDir": ".",
     "module": "ESNext",
-    "composite": true,
     "moduleResolution": "Bundler",
     "declaration": true,
     "declarationMap": true
   },
   "include": ["src", "src/**/*.ts"],
-  "files": [
-    "src/index.ts",
-    "src/functions.ts",
-    "src/errors.ts",
-    "src/ffi.ts",
-    "src/types.ts",
-    "src/ctypes.ts"
-  ],
-  "references": []
 }

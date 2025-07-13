@@ -9,9 +9,12 @@ import {
   SCARD_PROTOCOL_T1,
   SCARD_SCOPE_SYSTEM,
   SCARD_SHARE_SHARED,
+  PcscErrorCode,
   SCardConnect,
   SCardEstablishContext,
   SCardReleaseContext,
+  SCARD_LEAVE_CARD,
+  SCardDisconnect,
 } from "@aokiapp/pcsc-ffi-node";
 
 import { PcscDeviceInfo } from "./device-info.js";
@@ -137,7 +140,7 @@ export class PcscPlatform extends SmartCardPlatform {
    * @throws {SmartCardError} If platform is not initialized or device acquisition fails
    */
   public async acquireDevice(id: string): Promise<SmartCardDevice> {
-    return await this.mutex.lock(async () => {
+    return this.mutex.lock(async () => {
       this.assertInitialized();
 
       if (this.context === null) {
@@ -147,65 +150,69 @@ export class PcscPlatform extends SmartCardPlatform {
         );
       }
 
-      // Check if device is already acquired
+      // Already acquired?
       if (this.acquiredDevices.has(id)) {
-        const device = this.acquiredDevices.get(id)!;
-        if (device.isActive()) {
-          throw new SmartCardError(
-            "ALREADY_CONNECTED",
-            `Device ${id} is already acquired`,
-          );
-        } else {
-          // Remove inactive device
-          this.acquiredDevices.delete(id);
-        }
+        throw new SmartCardError("ALREADY_CONNECTED", "Device is already acquired");
       }
 
-      try {
-        // Verify that the reader exists
-        const deviceInfos = await this.getDeviceInfo();
-        const deviceInfo = deviceInfos.find((info) => info.id === id);
-
-        if (!deviceInfo) {
-          throw new SmartCardError("READER_ERROR", `Device ${id} not found`);
-        }
-
-        // Acquire (connect) the device here
-        const hCard = [0];
-        const pdwActiveProtocol = [0];
-        const ret = SCardConnect(
-          this.context,
-          id,
-          SCARD_SHARE_SHARED,
-          SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
-          hCard,
-          pdwActiveProtocol,
+      // Ensure the requested reader exists
+      const readers = await callSCardListReaders(this.context);
+      if (!readers.includes(id)) {
+        throw new SmartCardError(
+          "READER_ERROR",
+          "Device with the given ID does not exist",
         );
-        ensureScardSuccess(ret);
-        const cardHandle = hCard[0];
-        const activeProtocol = pdwActiveProtocol[0];
+      }
 
-        // コールバックでrelease時にMapから外す仕組みを渡す
-        const device = new PcscDevice(
-          this,
-          id,
-          this.context,
-          cardHandle,
-          activeProtocol,
-          () => {
-            this.acquiredDevices.delete(id);
-          },
-        );
-        this.acquiredDevices.set(id, device);
+      // Try to open the reader to verify availability and, if possible, obtain a handle
+      const hCard = [0];
+      const activeProtocol = [0];
+      const ret = SCardConnect(
+        this.context,
+        id,
+        SCARD_SHARE_SHARED,
+        SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
+        hCard,
+        activeProtocol,
+      );
 
-        return device;
-      } catch (error) {
+      let cardHandle: number | null = null;
+      let protocol: number = 0;
+
+      if (ret === PcscErrorCode.SCARD_S_SUCCESS) {
+        // Reader and card accessible; disconnect immediately, we will open later in startSession
+        SCardDisconnect(hCard[0], SCARD_LEAVE_CARD);
+        cardHandle = null;
+        protocol = 0;
+      } else if (
+        ret === PcscErrorCode.SCARD_E_NO_SMARTCARD ||
+        ret === PcscErrorCode.SCARD_W_REMOVED_CARD
+      ) {
+        // Reader OK but no card
+        cardHandle = null;
+      } else if (ret === PcscErrorCode.SCARD_E_SHARING_VIOLATION) {
+        throw new SmartCardError("ALREADY_CONNECTED", "Device is currently in use");
+      } else {
         throw new SmartCardError(
           "PLATFORM_ERROR",
-          `Failed to acquire device ${id}`,
-          error instanceof Error ? error : undefined,
+          "Failed to acquire device",
+          new Error(`PC/SC return code: 0x${ret.toString(16)}`),
         );
       }
+
+      const device = new PcscDevice(
+        this,
+        id,
+        this.context,
+        cardHandle,
+        protocol,
+        () => {
+          this.acquiredDevices.delete(id);
+        },
+      );
+
+      this.acquiredDevices.set(id, device);
+      return device;
     });
   }
 }
