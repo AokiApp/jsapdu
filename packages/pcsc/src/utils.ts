@@ -130,7 +130,7 @@ export function pcscErrorToSmartCardError(pcscError: number): SmartCardError {
   );
 }
 
-export async function ensureScardSuccess(scardStatus: number) {
+export function ensureScardSuccess(scardStatus: number) {
   if (scardStatus !== PcscErrorCode.SCARD_S_SUCCESS) {
     throw pcscErrorToSmartCardError(scardStatus);
   }
@@ -238,7 +238,7 @@ export async function callSCardStatus(cardHandle: number): Promise<SCardStatusRe
   );
   
   if (ret !== 0 && ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER) {
-    await ensureScardSuccess(ret);
+    ensureScardSuccess(ret);
   }
 
   // Second call: allocate buffer and get actual data
@@ -252,7 +252,7 @@ export async function callSCardStatus(cardHandle: number): Promise<SCardStatusRe
     atrBuffer,
     atrLength,
   );
-  await ensureScardSuccess(ret);
+  ensureScardSuccess(ret);
 
   // Parse results
   const readerName = readerNameBuffer.toString(encoding).replace(/\0+$/, '');
@@ -282,7 +282,7 @@ export async function callSCardListReaders(context: number): Promise<string[]> {
     return [];
   }
 
-  await ensureScardSuccess(ret);
+  ensureScardSuccess(ret);
 
   const readerBufferSize = pcchReaders[0];
   if (readerBufferSize === 0) {
@@ -293,7 +293,7 @@ export async function callSCardListReaders(context: number): Promise<string[]> {
   const readersBuffer = Buffer.alloc(readerBufferSize * charSize);
   pcchReaders[0] = readerBufferSize;
   ret = SCardListReaders(context, null, readersBuffer, pcchReaders);
-  await ensureScardSuccess(ret);
+  ensureScardSuccess(ret);
 
   // Parse reader names
   return readersBuffer

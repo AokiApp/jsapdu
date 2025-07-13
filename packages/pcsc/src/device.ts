@@ -223,7 +223,7 @@ export class PcscDevice extends SmartCardDevice {
         try {
           if (this.cardHandle !== null) {
             const ret = SCardDisconnect(this.cardHandle, SCARD_LEAVE_CARD);
-            await ensureScardSuccess(ret);
+            ensureScardSuccess(ret);
             this.cardHandle = null;
           }
         } finally {

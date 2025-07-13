@@ -49,7 +49,7 @@ export class PcscPlatform extends SmartCardPlatform {
         null,
         hContext,
       );
-      await ensureScardSuccess(ret);
+      ensureScardSuccess(ret);
 
       this.context = hContext[0];
       this.initialized = true;
@@ -85,7 +85,7 @@ export class PcscPlatform extends SmartCardPlatform {
         try {
           if (this.context !== null) {
             const ret = SCardReleaseContext(this.context);
-            await ensureScardSuccess(ret);
+            ensureScardSuccess(ret);
             this.context = null;
           }
         } finally {
@@ -181,7 +181,7 @@ export class PcscPlatform extends SmartCardPlatform {
           hCard,
           pdwActiveProtocol,
         );
-        await ensureScardSuccess(ret);
+        ensureScardSuccess(ret);
         const cardHandle = hCard[0];
         const activeProtocol = pdwActiveProtocol[0];
 

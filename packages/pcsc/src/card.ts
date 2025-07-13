@@ -92,7 +92,7 @@ export class PcscCard extends SmartCard {
 
     // Begin transaction to ensure exclusive access during APDU exchange
     let ret = SCardBeginTransaction(this.cardHandle);
-    await ensureScardSuccess(ret);
+    ensureScardSuccess(ret);
 
     try {
       // Transmit APDU
@@ -105,7 +105,7 @@ export class PcscCard extends SmartCard {
         responseBuffer,
         responseLength,
       );
-      await ensureScardSuccess(ret);
+      ensureScardSuccess(ret);
 
       // Extract response
       const actualLength = responseLength[0];
@@ -132,7 +132,7 @@ export class PcscCard extends SmartCard {
 
     // End transaction with reset disposition
     const ret = SCardEndTransaction(this.cardHandle, SCARD_RESET_CARD);
-    await ensureScardSuccess(ret);
+    ensureScardSuccess(ret);
 
     // Clear cached ATR since it may change after reset
     this.atr = null;
