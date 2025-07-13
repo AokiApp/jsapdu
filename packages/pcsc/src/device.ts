@@ -88,21 +88,21 @@ export class PcscDevice extends SmartCardDevice {
     try {
       // If we already have a card handle, check if it's still valid
       if (this.cardHandle !== null) {
-        // Allocate buffers for SCardStatus
         // --- Windowsワイドモード対応ここから ---
         const isWindows = process.platform === "win32";
         const charSize = isWindows ? 2 : 1;
         const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
         // --- ここまで ---
-        const readerNameBuffer = Buffer.alloc(256 * charSize);
-        const readerNameLength = [256];
+        // 1回目: 必要なバッファサイズを取得
+        let readerNameBuffer = null;
+        let readerNameLength = [0];
         const state = [0];
         const protocol = [0];
         const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
         const atrLength = [atrBuffer.length];
 
-        // Get card status
-        const ret = SCardStatus(
+        // Get required buffer size
+        let ret = SCardStatus(
           this.cardHandle,
           readerNameBuffer,
           readerNameLength,
@@ -111,7 +111,23 @@ export class PcscDevice extends SmartCardDevice {
           atrBuffer,
           atrLength,
         );
-
+        if (
+          ret !== PcscErrorCode.SCARD_S_SUCCESS &&
+          ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER
+        ) {
+          return false;
+        }
+        // 2回目: バッファを確保して再取得
+        readerNameBuffer = Buffer.alloc(readerNameLength[0]);
+        ret = SCardStatus(
+          this.cardHandle,
+          readerNameBuffer,
+          readerNameLength,
+          state,
+          protocol,
+          atrBuffer,
+          atrLength,
+        );
         // If the status is successful, the card is present
         return ret === PcscErrorCode.SCARD_S_SUCCESS;
       }

@@ -5,6 +5,7 @@ import {
   SmartCardError,
 } from "@aokiapp/interface";
 import {
+  PcscErrorCode, // ←追加
   SCARD_PCI_T0,
   SCARD_PCI_T1,
   SCARD_PROTOCOL_T0,
@@ -51,21 +52,21 @@ export class PcscCard extends SmartCard {
       return this.atr;
     }
 
-    // Allocate buffers for SCardStatus
     // --- Windowsワイドモード対応ここから ---
     const isWindows = process.platform === "win32";
     const charSize = isWindows ? 2 : 1;
     const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
     // --- ここまで ---
-    const readerNameBuffer = Buffer.alloc(256 * charSize);
-    const readerNameLength = [256];
+    // 1回目: 必要なバッファサイズを取得
+    let readerNameBuffer = null;
+    let readerNameLength = [0];
     const state = [0];
     const protocol = [0];
     const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
     const atrLength = [atrBuffer.length];
 
-    // Get card status
-    const ret = SCardStatus(
+    // Get required buffer size
+    let ret = SCardStatus(
       this.cardHandle,
       readerNameBuffer,
       readerNameLength,
@@ -74,7 +75,20 @@ export class PcscCard extends SmartCard {
       atrBuffer,
       atrLength,
     );
-
+    if (ret !== 0 && ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER) {
+      await ensureScardSuccess(ret);
+    }
+    // 2回目: バッファを確保して再取得
+    readerNameBuffer = Buffer.alloc(readerNameLength[0]);
+    ret = SCardStatus(
+      this.cardHandle,
+      readerNameBuffer,
+      readerNameLength,
+      state,
+      protocol,
+      atrBuffer,
+      atrLength,
+    );
     await ensureScardSuccess(ret);
 
     // Extract ATR
