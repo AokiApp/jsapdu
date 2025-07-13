@@ -38,4 +38,8 @@ export class ResponseApdu {
   public arrayBuffer(): ArrayBuffer {
     return this.data.buffer;
   }
+
+  public get sw(): number {
+    return (this.sw1 << 8) | this.sw2;
+  }
 }
