@@ -135,15 +135,21 @@ export class PcscPlatform extends SmartCardPlatform {
         return [];
       }
 
+      // --- Windowsワイドモード対応ここから ---
+      const isWindows = process.platform === "win32";
+      const charSize = isWindows ? 2 : 1;
+      const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
+      // --- ここまで ---
+
       // Allocate buffer and get reader names
-      const readersBuffer = Buffer.alloc(readerBufferSize);
+      const readersBuffer = Buffer.alloc(readerBufferSize * charSize);
       pcchReaders[0] = readerBufferSize;
       ret = SCardListReaders(this.context, null, readersBuffer, pcchReaders);
       await ensureScardSuccess(ret);
 
       // Parse reader names
       const readers = readersBuffer
-        .toString("utf8")
+        .toString(encoding)
         .split("\0")
         .filter((r) => r.length > 0);
 

@@ -1,4 +1,4 @@
-import { SmartCardDeviceInfo } from "../../interface/src/index.js";
+import { SmartCardDeviceInfo } from "@aokiapp/interface";
 
 /**
  * Implementation of SmartCardDeviceInfo for PC/SC

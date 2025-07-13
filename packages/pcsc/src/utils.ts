@@ -1,13 +1,9 @@
 import {
-  PcscErrorCode,
-  pcsc_stringify_error,
-} from "@aokiapp/pcsc-ffi-node/src/index.js";
-
-import {
   SmartCardError,
   SmartCardErrorCode,
   fromUnknownError,
-} from "../../interface/src/index.js";
+} from "@aokiapp/interface";
+import { PcscErrorCode, pcsc_stringify_error } from "@aokiapp/pcsc-ffi-node";
 
 /**
  * Maps PC/SC error codes to SmartCardErrorCode

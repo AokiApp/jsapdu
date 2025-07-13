@@ -1,4 +1,11 @@
 import {
+  EmulatedCard,
+  SmartCard,
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCardError,
+} from "@aokiapp/interface";
+import {
   PcscErrorCode,
   SCARD_LEAVE_CARD,
   SCARD_PROTOCOL_T0,
@@ -7,15 +14,8 @@ import {
   SCardConnect,
   SCardDisconnect,
   SCardStatus,
-} from "@aokiapp/pcsc-ffi-node/src/index.js";
+} from "@aokiapp/pcsc-ffi-node";
 
-import {
-  EmulatedCard,
-  SmartCard,
-  SmartCardDevice,
-  SmartCardDeviceInfo,
-  SmartCardError,
-} from "../../interface/src/index.js";
 import { PcscCard } from "./card.js";
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscPlatform } from "./platform.js";
@@ -89,8 +89,13 @@ export class PcscDevice extends SmartCardDevice {
       // If we already have a card handle, check if it's still valid
       if (this.cardHandle !== null) {
         // Allocate buffers for SCardStatus
-        const readerNameBuffer = Buffer.alloc(256);
-        const readerNameLength = [readerNameBuffer.length];
+        // --- Windowsワイドモード対応ここから ---
+        const isWindows = process.platform === "win32";
+        const charSize = isWindows ? 2 : 1;
+        const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
+        // --- ここまで ---
+        const readerNameBuffer = Buffer.alloc(256 * charSize);
+        const readerNameLength = [256];
         const state = [0];
         const protocol = [0];
         const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE

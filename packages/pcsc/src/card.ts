@@ -1,4 +1,10 @@
 import {
+  CommandApdu,
+  ResponseApdu,
+  SmartCard,
+  SmartCardError,
+} from "@aokiapp/interface";
+import {
   SCARD_PCI_T0,
   SCARD_PCI_T1,
   SCARD_PROTOCOL_T0,
@@ -8,14 +14,8 @@ import {
   SCardEndTransaction,
   SCardStatus,
   SCardTransmit,
-} from "@aokiapp/pcsc-ffi-node/src/index.js";
+} from "@aokiapp/pcsc-ffi-node";
 
-import {
-  CommandApdu,
-  ResponseApdu,
-  SmartCard,
-  SmartCardError,
-} from "../../interface/src/index.js";
 import { PcscDevice } from "./device.js";
 import { ensureScardSuccess } from "./utils.js";
 
@@ -52,8 +52,13 @@ export class PcscCard extends SmartCard {
     }
 
     // Allocate buffers for SCardStatus
-    const readerNameBuffer = Buffer.alloc(256);
-    const readerNameLength = [readerNameBuffer.length];
+    // --- Windowsワイドモード対応ここから ---
+    const isWindows = process.platform === "win32";
+    const charSize = isWindows ? 2 : 1;
+    const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
+    // --- ここまで ---
+    const readerNameBuffer = Buffer.alloc(256 * charSize);
+    const readerNameLength = [256];
     const state = [0];
     const protocol = [0];
     const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
