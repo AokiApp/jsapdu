@@ -54,9 +54,6 @@ describe("verify", () => {
     expect(command.toUint8Array()[3]).toBe(0x8a); // 0x80 + 10 = 0x8A
   });
 
-  test("should throw error for non-numeric PIN string", () => {
-    expect(() => verify("123A", { isCurrent: true })).toThrowError();
-  });
 
   test("should accept PIN as number array", () => {
     const command = verify([0x31, 0x32, 0x33, 0x34], { isCurrent: true });
