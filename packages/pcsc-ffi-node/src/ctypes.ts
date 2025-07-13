@@ -3,7 +3,6 @@
  * @description This module defines the data types, structures, and constants used for interacting with the PC/SC API.
  * These definitions are based on the Microsoft WinSCard API and are used by Koffi to correctly marshal data between Node.js and the native PC/SC library.
  */
-
 import koffi from "koffi";
 
 /**

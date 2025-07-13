@@ -1,0 +1,31 @@
+{
+  "name": "@aokiapp/pcsc",
+  "version": "1.0.0",
+  "description": "PC/SC Smart Card Platform Implementation",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "tsc --build --clean",
+    "test": "node --test"
+  },
+  "keywords": [
+    "pcsc",
+    "smartcard",
+    "platform"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aokiapp/interface": "^1.0.0",
+    "@aokiapp/pcsc-ffi-node": "^0.0.0"
+  }
+}

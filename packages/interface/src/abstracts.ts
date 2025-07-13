@@ -22,14 +22,6 @@ export abstract class SmartCardPlatform {
   protected initialized: boolean = false;
 
   /**
-   * List of devices acquired by the platform
-   * @protected
-   * @type {SmartCardDevice[]}
-   * @default []
-   */
-  protected devices: SmartCardDevice[] = [];
-
-  /**
    * @constructor
    */
   protected constructor() {}

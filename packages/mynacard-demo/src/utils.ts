@@ -1,5 +1,5 @@
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
-import { PcscPlatform } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
 import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 
 /**
@@ -67,7 +67,7 @@ export async function askPassword(query: string): Promise<string> {
 export async function getPlatform() {
   if (typeof process !== "undefined" && process.versions?.node) {
     await Promise.resolve(); // consume async context
-    return new PcscPlatform();
+    return PcscPlatformManager.getInstance().getPlatform();
   } else {
     throw new Error("Unsupported platform");
   }

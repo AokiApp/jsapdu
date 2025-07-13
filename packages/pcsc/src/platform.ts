@@ -1,0 +1,238 @@
+import {
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCardError,
+  SmartCardPlatform,
+} from "@aokiapp/interface";
+import {
+  PcscErrorCode,
+  SCARD_PROTOCOL_T0,
+  SCARD_PROTOCOL_T1,
+  SCARD_SCOPE_SYSTEM,
+  SCARD_SHARE_SHARED,
+  SCardConnect,
+  SCardEstablishContext,
+  SCardListReaders,
+  SCardReleaseContext,
+} from "@aokiapp/pcsc-ffi-node";
+
+import { PcscDeviceInfo } from "./device-info.js";
+import { PcscDevice } from "./device.js";
+import { AsyncMutex, ensureScardSuccess } from "./utils.js";
+
+/**
+ * Implementation of SmartCardPlatform for PC/SC
+ */
+export class PcscPlatform extends SmartCardPlatform {
+  private context: number | null = null;
+  private acquiredDevices: Map<string, PcscDevice> = new Map();
+  private mutex = new AsyncMutex();
+
+  /**
+   * Creates a new PcscPlatform instance
+   */
+  constructor() {
+    super();
+  }
+
+  /**
+   * Initialize the platform
+   * @throws {SmartCardError} If initialization fails or platform is already initialized
+   */
+  public async init(): Promise<void> {
+    this.assertNotInitialized();
+
+    try {
+      // Establish PC/SC context
+      const hContext = [0];
+      const ret = SCardEstablishContext(
+        SCARD_SCOPE_SYSTEM,
+        null,
+        null,
+        hContext,
+      );
+      await ensureScardSuccess(ret);
+
+      this.context = hContext[0];
+      this.initialized = true;
+    } catch (error) {
+      throw new SmartCardError(
+        "PLATFORM_ERROR",
+        "Failed to initialize PC/SC platform",
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  /**
+   * Release the platform and all acquired devices
+   * @throws {SmartCardError} If release fails or platform is not initialized
+   */
+  public async release(): Promise<void> {
+    await this.mutex.lock(async () => {
+      this.assertInitialized();
+      let deviceReleaseError: Error | undefined = undefined;
+      try {
+        // Release all acquired devices
+        const releasePromises = Array.from(this.acquiredDevices.values()).map(
+          (device) =>
+            device.release().catch((e) => {
+              deviceReleaseError = e;
+            }),
+        );
+        await Promise.all(releasePromises);
+        this.acquiredDevices.clear();
+      } finally {
+        // Release PC/SC context regardless of device release result
+        try {
+          if (this.context !== null) {
+            const ret = SCardReleaseContext(this.context);
+            await ensureScardSuccess(ret);
+            this.context = null;
+          }
+        } finally {
+          this.initialized = false;
+        }
+      }
+      if (deviceReleaseError) {
+        throw new SmartCardError(
+          "PLATFORM_ERROR",
+          "Failed to release one or more devices during platform release",
+          deviceReleaseError,
+        );
+      }
+    });
+  }
+
+  /**
+   * Get device information for all available readers
+   * @throws {SmartCardError} If platform is not initialized or operation fails
+   */
+  public async getDeviceInfo(): Promise<SmartCardDeviceInfo[]> {
+    this.assertInitialized();
+
+    if (this.context === null) {
+      throw new SmartCardError(
+        "NOT_INITIALIZED",
+        "PC/SC context is not initialized",
+      );
+    }
+
+    try {
+      // First call to get buffer size
+      const pcchReaders = [0];
+      let ret = SCardListReaders(this.context, null, null, pcchReaders);
+
+      // Handle case where no readers are available
+      if (ret === PcscErrorCode.SCARD_E_NO_READERS_AVAILABLE) {
+        return [];
+      }
+
+      await ensureScardSuccess(ret);
+
+      const readerBufferSize = pcchReaders[0];
+      if (readerBufferSize === 0) {
+        return [];
+      }
+
+      // Allocate buffer and get reader names
+      const readersBuffer = Buffer.alloc(readerBufferSize);
+      pcchReaders[0] = readerBufferSize;
+      ret = SCardListReaders(this.context, null, readersBuffer, pcchReaders);
+      await ensureScardSuccess(ret);
+
+      // Parse reader names
+      const readers = readersBuffer
+        .toString("utf8")
+        .split("\0")
+        .filter((r) => r.length > 0);
+
+      // Create device info objects
+      return readers.map((readerName) => new PcscDeviceInfo(readerName));
+    } catch (error) {
+      throw new SmartCardError(
+        "PLATFORM_ERROR",
+        "Failed to get device information",
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  /**
+   * Acquire a device by its ID
+   * @param id - Device ID to acquire
+   * @throws {SmartCardError} If platform is not initialized or device acquisition fails
+   */
+  public async acquireDevice(id: string): Promise<SmartCardDevice> {
+    return await this.mutex.lock(async () => {
+      this.assertInitialized();
+
+      if (this.context === null) {
+        throw new SmartCardError(
+          "NOT_INITIALIZED",
+          "PC/SC context is not initialized",
+        );
+      }
+
+      // Check if device is already acquired
+      if (this.acquiredDevices.has(id)) {
+        const device = this.acquiredDevices.get(id)!;
+        if (device.isActive()) {
+          throw new SmartCardError(
+            "ALREADY_CONNECTED",
+            `Device ${id} is already acquired`,
+          );
+        } else {
+          // Remove inactive device
+          this.acquiredDevices.delete(id);
+        }
+      }
+
+      try {
+        // Verify that the reader exists
+        const deviceInfos = await this.getDeviceInfo();
+        const deviceInfo = deviceInfos.find((info) => info.id === id);
+
+        if (!deviceInfo) {
+          throw new SmartCardError("READER_ERROR", `Device ${id} not found`);
+        }
+
+        // Acquire (connect) the device here
+        const hCard = [0];
+        const pdwActiveProtocol = [0];
+        const ret = SCardConnect(
+          this.context,
+          id,
+          SCARD_SHARE_SHARED,
+          SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
+          hCard,
+          pdwActiveProtocol,
+        );
+        await ensureScardSuccess(ret);
+        const cardHandle = hCard[0];
+        const activeProtocol = pdwActiveProtocol[0];
+
+        // コールバックでrelease時にMapから外す仕組みを渡す
+        const device = new PcscDevice(
+          this,
+          id,
+          this.context,
+          cardHandle,
+          activeProtocol,
+          () => {
+            this.acquiredDevices.delete(id);
+          },
+        );
+        this.acquiredDevices.set(id, device);
+
+        return device;
+      } catch (error) {
+        throw new SmartCardError(
+          "PLATFORM_ERROR",
+          `Failed to acquire device ${id}`,
+          error instanceof Error ? error : undefined,
+        );
+      }
+    });
+  }
+}

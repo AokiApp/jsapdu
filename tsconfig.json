@@ -5,6 +5,7 @@
     { "path": "./packages/apdu-utils" },
     { "path": "./packages/interface" },
     { "path": "./packages/pcsc" },
+    { "path": "./packages/pcsc-ffi-node" },
     { "path": "./packages/tlv-parser" },
     { "path": "./packages/mynacard" },
     { "path": "./packages/mynacard-demo" }

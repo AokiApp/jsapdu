@@ -1,0 +1,27 @@
+{
+  "name": "pcsc-ffi-demo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Demo scripts for pcsc-ffi package.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "pcsc",
+    "ffi",
+    "demo",
+    "smartcard"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
