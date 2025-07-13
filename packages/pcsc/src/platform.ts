@@ -5,20 +5,18 @@ import {
   SmartCardPlatform,
 } from "@aokiapp/interface";
 import {
-  PcscErrorCode,
   SCARD_PROTOCOL_T0,
   SCARD_PROTOCOL_T1,
   SCARD_SCOPE_SYSTEM,
   SCARD_SHARE_SHARED,
   SCardConnect,
   SCardEstablishContext,
-  SCardListReaders,
   SCardReleaseContext,
 } from "@aokiapp/pcsc-ffi-node";
 
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscDevice } from "./device.js";
-import { AsyncMutex, ensureScardSuccess } from "./utils.js";
+import { AsyncMutex, ensureScardSuccess, callSCardListReaders } from "./utils.js";
 
 /**
  * Implementation of SmartCardPlatform for PC/SC
@@ -119,39 +117,8 @@ export class PcscPlatform extends SmartCardPlatform {
     }
 
     try {
-      // First call to get buffer size
-      const pcchReaders = [0];
-      let ret = SCardListReaders(this.context, null, null, pcchReaders);
-
-      // Handle case where no readers are available
-      if (ret === PcscErrorCode.SCARD_E_NO_READERS_AVAILABLE) {
-        return [];
-      }
-
-      await ensureScardSuccess(ret);
-
-      const readerBufferSize = pcchReaders[0];
-      if (readerBufferSize === 0) {
-        return [];
-      }
-
-      // --- Windowsワイドモード対応ここから ---
-      const isWindows = process.platform === "win32";
-      const charSize = isWindows ? 2 : 1;
-      const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
-      // --- ここまで ---
-
-      // Allocate buffer and get reader names
-      const readersBuffer = Buffer.alloc(readerBufferSize * charSize);
-      pcchReaders[0] = readerBufferSize;
-      ret = SCardListReaders(this.context, null, readersBuffer, pcchReaders);
-      await ensureScardSuccess(ret);
-
-      // Parse reader names
-      const readers = readersBuffer
-        .toString(encoding)
-        .split("\0")
-        .filter((r) => r.length > 0);
+      // Get reader names using helper function
+      const readers = await callSCardListReaders(this.context);
 
       // Create device info objects
       return readers.map((readerName) => new PcscDeviceInfo(readerName));

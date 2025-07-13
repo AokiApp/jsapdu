@@ -3,7 +3,12 @@ import {
   SmartCardErrorCode,
   fromUnknownError,
 } from "@aokiapp/interface";
-import { PcscErrorCode, pcsc_stringify_error } from "@aokiapp/pcsc-ffi-node";
+import { 
+  PcscErrorCode, 
+  pcsc_stringify_error,
+  SCardStatus,
+  SCardListReaders
+} from "@aokiapp/pcsc-ffi-node";
 
 /**
  * Maps PC/SC error codes to SmartCardErrorCode
@@ -176,4 +181,123 @@ export function hexStringToUint8Array(hex: string): Uint8Array {
   }
 
   return result;
+}
+
+/**
+ * Platform-specific encoding configuration for PC/SC
+ */
+export interface PlatformConfig {
+  charSize: number;
+  encoding: BufferEncoding;
+}
+
+/**
+ * Get platform-specific configuration for Windows wide mode support
+ */
+export function getPlatformConfig(): PlatformConfig {
+  const isWindows = process.platform === "win32";
+  return {
+    charSize: isWindows ? 2 : 1,
+    encoding: isWindows ? "utf16le" : "utf8",
+  };
+}
+
+/**
+ * Result of SCardStatus call
+ */
+export interface SCardStatusResult {
+  readerName: string;
+  state: number;
+  protocol: number;
+  atr: Uint8Array;
+}
+
+/**
+ * Call SCardStatus with automatic buffer size handling
+ */
+export async function callSCardStatus(cardHandle: number): Promise<SCardStatusResult> {
+  const { charSize, encoding } = getPlatformConfig();
+  
+  // First call: get required buffer sizes
+  let readerNameBuffer = null;
+  let readerNameLength = [0];
+  const state = [0];
+  const protocol = [0];
+  const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
+  const atrLength = [atrBuffer.length];
+
+  // Get required buffer size
+  let ret = SCardStatus(
+    cardHandle,
+    readerNameBuffer,
+    readerNameLength,
+    state,
+    protocol,
+    atrBuffer,
+    atrLength,
+  );
+  
+  if (ret !== 0 && ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER) {
+    await ensureScardSuccess(ret);
+  }
+
+  // Second call: allocate buffer and get actual data
+  readerNameBuffer = Buffer.alloc(readerNameLength[0] * charSize);
+  ret = SCardStatus(
+    cardHandle,
+    readerNameBuffer,
+    readerNameLength,
+    state,
+    protocol,
+    atrBuffer,
+    atrLength,
+  );
+  await ensureScardSuccess(ret);
+
+  // Parse results
+  const readerName = readerNameBuffer.toString(encoding).replace(/\0+$/, '');
+  const atrSize = atrLength[0];
+  const atr = new Uint8Array(atrBuffer.slice(0, atrSize));
+
+  return {
+    readerName,
+    state: state[0],
+    protocol: protocol[0],
+    atr,
+  };
+}
+
+/**
+ * Call SCardListReaders with automatic buffer size handling
+ */
+export async function callSCardListReaders(context: number): Promise<string[]> {
+  const { charSize, encoding } = getPlatformConfig();
+  
+  // First call to get buffer size
+  const pcchReaders = [0];
+  let ret = SCardListReaders(context, null, null, pcchReaders);
+
+  // Handle case where no readers are available
+  if (ret === PcscErrorCode.SCARD_E_NO_READERS_AVAILABLE) {
+    return [];
+  }
+
+  await ensureScardSuccess(ret);
+
+  const readerBufferSize = pcchReaders[0];
+  if (readerBufferSize === 0) {
+    return [];
+  }
+
+  // Second call: allocate buffer and get reader names
+  const readersBuffer = Buffer.alloc(readerBufferSize * charSize);
+  pcchReaders[0] = readerBufferSize;
+  ret = SCardListReaders(context, null, readersBuffer, pcchReaders);
+  await ensureScardSuccess(ret);
+
+  // Parse reader names
+  return readersBuffer
+    .toString(encoding)
+    .split("\0")
+    .filter((r) => r.length > 0);
 }

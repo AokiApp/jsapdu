@@ -13,13 +13,12 @@ import {
   SCARD_SHARE_SHARED,
   SCardConnect,
   SCardDisconnect,
-  SCardStatus,
 } from "@aokiapp/pcsc-ffi-node";
 
 import { PcscCard } from "./card.js";
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscPlatform } from "./platform.js";
-import { ensureScardSuccess } from "./utils.js";
+import { ensureScardSuccess, callSCardStatus } from "./utils.js";
 import { AsyncMutex } from "./utils.js";
 
 /**
@@ -88,48 +87,12 @@ export class PcscDevice extends SmartCardDevice {
     try {
       // If we already have a card handle, check if it's still valid
       if (this.cardHandle !== null) {
-        // --- Windowsワイドモード対応ここから ---
-        const isWindows = process.platform === "win32";
-        const charSize = isWindows ? 2 : 1;
-        const encoding: BufferEncoding = isWindows ? "utf16le" : "utf8";
-        // --- ここまで ---
-        // 1回目: 必要なバッファサイズを取得
-        let readerNameBuffer = null;
-        let readerNameLength = [0];
-        const state = [0];
-        const protocol = [0];
-        const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
-        const atrLength = [atrBuffer.length];
-
-        // Get required buffer size
-        let ret = SCardStatus(
-          this.cardHandle,
-          readerNameBuffer,
-          readerNameLength,
-          state,
-          protocol,
-          atrBuffer,
-          atrLength,
-        );
-        if (
-          ret !== PcscErrorCode.SCARD_S_SUCCESS &&
-          ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER
-        ) {
-          return false;
+        try {
+          await callSCardStatus(this.cardHandle);
+          return true; // If status call succeeds, card is present
+        } catch {
+          return false; // If status call fails, card is not present or handle is invalid
         }
-        // 2回目: バッファを確保して再取得
-        readerNameBuffer = Buffer.alloc(readerNameLength[0]);
-        ret = SCardStatus(
-          this.cardHandle,
-          readerNameBuffer,
-          readerNameLength,
-          state,
-          protocol,
-          atrBuffer,
-          atrLength,
-        );
-        // If the status is successful, the card is present
-        return ret === PcscErrorCode.SCARD_S_SUCCESS;
       }
 
       // If we don't have a card handle, try to connect to the card
