@@ -166,11 +166,11 @@ export const PUCHAR = koffi.pointer(UCHAR);
  * @description Represents a handle to the PC/SC resource manager context.
  * This handle is the first thing you acquire and the last thing you release.
  *
- * On Windows: typedef ULONG_PTR SCARDCONTEXT (pointer-sized: 64-bit on x64)
- * On pcsc-lite: typedef LONG SCARDCONTEXT (32-bit)
+ * On Windows x64, this is a `ULONG_PTR`, which is a 64-bit unsigned integer.
+ * On 64-bit Linux with pcsc-lite, this is a `LONG`, which is a 64-bit signed integer.
  *
- * Since we only support 64-bit platforms (AMD64/AArch64), we use uint64 for consistency
- * and compatibility with Windows x64.
+ * We use `uint64` for consistency across all supported 64-bit platforms. As handles are
+ * opaque values, treating them as unsigned is safe and avoids potential sign-related issues.
  */
 export const SCARDCONTEXT = koffi.types.uint64;
 
@@ -184,11 +184,11 @@ export const LPSCARDCONTEXT = koffi.pointer(SCARDCONTEXT);
  * @description Represents a handle to a specific smart card connection.
  * This handle is obtained from `SCardConnect` and used for all subsequent card operations.
  *
- * On Windows: typedef ULONG_PTR SCARDHANDLE (pointer-sized: 64-bit on x64)
- * On pcsc-lite: typedef LONG SCARDHANDLE (32-bit)
+ * On Windows x64, this is a `ULONG_PTR`, which is a 64-bit unsigned integer.
+ * On 64-bit Linux with pcsc-lite, this is a `LONG`, which is a 64-bit signed integer.
  *
- * Since we only support 64-bit platforms (AMD64/AArch64), we use uint64 for consistency
- * and compatibility with Windows x64.
+ * We use `uint64` for consistency across all supported 64-bit platforms. As handles are
+ * opaque values, treating them as unsigned is safe and avoids potential sign-related issues.
  */
 export const SCARDHANDLE = koffi.types.uint64;
 

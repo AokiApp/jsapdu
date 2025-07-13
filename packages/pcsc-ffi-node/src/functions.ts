@@ -16,6 +16,8 @@ import {
   LPSCARDHANDLE,
   LPCSTR,
   LPSTR,
+  LPCWSTR,
+  LPWSTR,
   LPDWORD,
   LPBYTE,
   LPCBYTE,
@@ -24,6 +26,9 @@ import {
 } from "./ctypes";
 import { lib } from "./ffi";
 import koffi, { TypeSpec } from "koffi";
+import { KoffiTypedFn } from "./types";
+
+const isWindows = process.platform === "win32";
 
 /**
  * @description Helper function to define PC/SC function prototypes with proper calling conventions.
@@ -42,12 +47,15 @@ function defProto(
   args: TypeSpec[],
   WinApi?: "WINAPI",
 ) {
-  if (process.platform === "win32" && WinApi === "WINAPI") {
+  if (isWindows && WinApi === "WINAPI") {
     return lib.func("__stdcall", name, result, args);
   } else {
     return lib.func(name, result, args);
   }
 }
+
+// Platform-specific type aliases for string pointers
+const [LPCSTR_P, LPSTR_P] = isWindows ? [LPCWSTR, LPWSTR] : [LPCSTR, LPSTR];
 
 /**
  * @description Establishes the resource manager context (the scope) for PC/SC operations.
@@ -61,7 +69,14 @@ function defProto(
  * @param {LPSCARDCONTEXT} phContext - A pointer to receive the new context handle.
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardEstablishContext = defProto(
+export const SCardEstablishContext: KoffiTypedFn<
+  (
+    dwScope: "DWORD",
+    pvReserved1: "LPCVOID@alwaysNull",
+    pvReserved2: "LPCVOID@alwaysNull",
+    phContext: "LPSCARDCONTEXT@out",
+  ) => "LONG"
+> = defProto(
   "SCardEstablishContext",
   LONG,
   [DWORD, LPCVOID, LPCVOID, koffi.out(LPSCARDCONTEXT)],
@@ -77,12 +92,9 @@ export const SCardEstablishContext = defProto(
  * @param {SCARDCONTEXT} hContext - The context handle to release.
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardReleaseContext = defProto(
-  "SCardReleaseContext",
-  LONG,
-  [SCARDCONTEXT],
-  "WINAPI",
-);
+export const SCardReleaseContext: KoffiTypedFn<
+  (hContext: "SCARDCONTEXT") => "LONG"
+> = defProto("SCardReleaseContext", LONG, [SCARDCONTEXT], "WINAPI");
 
 /**
  * @description Lists the available smart card readers in the system.
@@ -96,10 +108,17 @@ export const SCardReleaseContext = defProto(
  * @param {LPDWORD} pcchReaders - Pointer to the buffer size (in/out parameter).
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardListReaders = defProto(
-  process.platform === "win32" ? "SCardListReadersA" : "SCardListReaders",
+export const SCardListReaders: KoffiTypedFn<
+  (
+    hContext: "SCARDCONTEXT",
+    mszGroups: "LPCSTR@nullable",
+    mszReaders: "LPSTR@nullable",
+    pcchReaders: "LPDWORD@inout",
+  ) => "LONG"
+> = defProto(
+  isWindows ? "SCardListReadersW" : "SCardListReaders",
   LONG,
-  [SCARDCONTEXT, LPCSTR, LPSTR, koffi.inout(LPDWORD)],
+  [SCARDCONTEXT, LPCSTR_P, LPSTR_P, koffi.inout(LPDWORD)],
   "WINAPI",
 );
 
@@ -116,12 +135,21 @@ export const SCardListReaders = defProto(
  * @param {LPDWORD} pdwActiveProtocol - Pointer to receive the active protocol.
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardConnect = defProto(
-  process.platform === "win32" ? "SCardConnectA" : "SCardConnect",
+export const SCardConnect: KoffiTypedFn<
+  (
+    hContext: "SCARDCONTEXT",
+    szReader: "LPCSTR",
+    dwShareMode: "DWORD",
+    dwPreferredProtocols: "DWORD",
+    phCard: "LPSCARDHANDLE@out",
+    pdwActiveProtocol: "LPDWORD@out",
+  ) => "LONG"
+> = defProto(
+  isWindows ? "SCardConnectW" : "SCardConnect",
   LONG,
   [
     SCARDCONTEXT,
-    LPCSTR,
+    LPCSTR_P,
     DWORD,
     DWORD,
     koffi.out(LPSCARDHANDLE),
@@ -139,12 +167,9 @@ export const SCardConnect = defProto(
  * @param {DWORD} dwDisposition - Action to perform on the card (SCARD_LEAVE_CARD, SCARD_RESET_CARD, etc.).
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardDisconnect = defProto(
-  "SCardDisconnect",
-  LONG,
-  [SCARDHANDLE, DWORD],
-  "WINAPI",
-);
+export const SCardDisconnect: KoffiTypedFn<
+  (hCard: "SCARDHANDLE", dwDisposition: "DWORD") => "LONG"
+> = defProto("SCardDisconnect", LONG, [SCARDHANDLE, DWORD], "WINAPI");
 
 /**
  * @description Sends an APDU (Application Protocol Data Unit) to a smart card and receives the response.
@@ -160,17 +185,27 @@ export const SCardDisconnect = defProto(
  * @param {LPDWORD} pcbRecvLength - Pointer to the receive buffer size (in/out parameter).
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardTransmit = defProto(
+export const SCardTransmit: KoffiTypedFn<
+  (
+    hCard: "SCARDHANDLE",
+    pioSendPci: "LPCSCARD_IO_REQUEST",
+    pbSendBuffer: "LPCBYTE",
+    cbSendLength: "DWORD",
+    pioRecvPci: "LPSCARD_IO_REQUEST@nullable@inout",
+    pbRecvBuffer: "LPBYTE@out",
+    pcbRecvLength: "LPDWORD@inout",
+  ) => "LONG"
+> = defProto(
   "SCardTransmit",
   LONG,
   [
     SCARDHANDLE,
-    LPCSCARD_IO_REQUEST, // pioSendPci (input)
-    LPCBYTE, // pbSendBuffer (input)
-    DWORD, // cbSendLength (input)
-    koffi.inout(LPSCARD_IO_REQUEST), // pioRecvPci (in/out, optional)
-    LPBYTE, // pbRecvBuffer (output)
-    koffi.inout(LPDWORD), // pcbRecvLength (in/out)
+    LPCSCARD_IO_REQUEST,
+    LPCBYTE,
+    DWORD,
+    koffi.inout(LPSCARD_IO_REQUEST),
+    LPBYTE,
+    koffi.inout(LPDWORD),
   ],
   "WINAPI",
 );
@@ -192,17 +227,27 @@ export const SCardTransmit = defProto(
  * Note: While the Windows SDK allows NULL for optional parameters, this binding requires
  * actual buffers and arrays for output parameters. Use appropriately sized buffers.
  */
-export const SCardStatus = defProto(
-  process.platform === "win32" ? "SCardStatusA" : "SCardStatus",
+export const SCardStatus: KoffiTypedFn<
+  (
+    hCard: "SCARDHANDLE",
+    mszReaderNames: "LPSTR@nullable@out",
+    pcchReaderLen: "LPDWORD@nullable@inout",
+    pdwState: "LPDWORD@nullable@out",
+    pdwProtocol: "LPDWORD@nullable@out",
+    pbAtr: "LPBYTE@nullable@out",
+    pcbAtrLen: "LPDWORD@nullable@inout",
+  ) => "LONG"
+> = defProto(
+  isWindows ? "SCardStatusW" : "SCardStatus",
   LONG,
   [
     SCARDHANDLE,
-    LPSTR, // mszReaderNames (buffer)
-    koffi.inout(LPDWORD), // pcchReaderLen (in/out)
-    koffi.out(LPDWORD), // pdwState (out)
-    koffi.out(LPDWORD), // pdwProtocol (out)
-    LPBYTE, // pbAtr (buffer)
-    koffi.inout(LPDWORD), // pcbAtrLen (in/out)
+    LPSTR_P,
+    koffi.inout(LPDWORD),
+    koffi.out(LPDWORD),
+    koffi.out(LPDWORD),
+    LPBYTE,
+    koffi.inout(LPDWORD),
   ],
   "WINAPI",
 );
@@ -215,12 +260,9 @@ export const SCardStatus = defProto(
  * @param {SCARDHANDLE} hCard - The card handle from SCardConnect.
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardBeginTransaction = defProto(
-  "SCardBeginTransaction",
-  LONG,
-  [SCARDHANDLE],
-  "WINAPI",
-);
+export const SCardBeginTransaction: KoffiTypedFn<
+  (hCard: "SCARDHANDLE") => "LONG"
+> = defProto("SCardBeginTransaction", LONG, [SCARDHANDLE], "WINAPI");
 
 /**
  * @description Ends a transaction on a smart card.
@@ -231,12 +273,9 @@ export const SCardBeginTransaction = defProto(
  * @param {DWORD} dwDisposition - Action to perform on the card (SCARD_LEAVE_CARD, SCARD_RESET_CARD, etc.).
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardEndTransaction = defProto(
-  "SCardEndTransaction",
-  LONG,
-  [SCARDHANDLE, DWORD],
-  "WINAPI",
-);
+export const SCardEndTransaction: KoffiTypedFn<
+  (hCard: "SCARDHANDLE", dwDisposition: "DWORD") => "LONG"
+> = defProto("SCardEndTransaction", LONG, [SCARDHANDLE, DWORD], "WINAPI");
 
 /**
  * @description Cancels any pending operations on the specified context.
@@ -246,9 +285,5 @@ export const SCardEndTransaction = defProto(
  * @param {SCARDCONTEXT} hContext - The context handle from SCardEstablishContext.
  * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
  */
-export const SCardCancel = defProto(
-  "SCardCancel",
-  LONG,
-  [SCARDCONTEXT],
-  "WINAPI",
-);
+export const SCardCancel: KoffiTypedFn<(hContext: "SCARDCONTEXT") => "LONG"> =
+  defProto("SCardCancel", LONG, [SCARDCONTEXT], "WINAPI");
