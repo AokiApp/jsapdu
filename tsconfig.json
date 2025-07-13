@@ -7,8 +7,7 @@
     { "path": "./packages/pcsc" },
     { "path": "./packages/pcsc-ffi-node" },
     { "path": "./packages/tlv-parser" },
-    { "path": "./packages/mynacard" },
-    { "path": "./packages/mynacard-demo" }
+    { "path": "./packages/mynacard" }
   ],
   "include": ["eslint.config.mjs", "vitest.config.ts"],
   "compilerOptions": {

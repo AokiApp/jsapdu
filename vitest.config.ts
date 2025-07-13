@@ -1,5 +1,10 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: { workspace: ["packages/*"] },
+  test: {
+    include: [
+      "packages/**/*.test.ts",
+      "examples/mynacard-e2e/*.test.ts"
+    ]
+  },
 });
