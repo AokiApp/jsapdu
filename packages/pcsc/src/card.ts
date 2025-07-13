@@ -97,9 +97,16 @@ export class PcscCard extends SmartCard {
     const commandBytes = apdu.toUint8Array();
     const commandBuffer = Buffer.from(commandBytes);
 
-    // Prepare response buffer
-    const responseBuffer = Buffer.alloc(258); // Max response size (256 data bytes + 2 status bytes)
+    // --- 修正ここから ---
+    // レスポンスバッファサイズをAPDUのLe値に応じて確保
+    let responseBufferSize = 258;
+    if (apdu.le && apdu.le > 0) {
+      responseBufferSize = apdu.le + 2; // SW1/SW2分
+      if (responseBufferSize > 65538) responseBufferSize = 65538;
+    }
+    const responseBuffer = Buffer.alloc(responseBufferSize);
     const responseLength = [responseBuffer.length];
+    // --- 修正ここまで ---
 
     // Select protocol
     const pioSendPci =
