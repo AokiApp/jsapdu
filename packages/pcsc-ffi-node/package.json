@@ -4,7 +4,7 @@
   "description": "PC/SC FFI library for Node.js",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/src/index.d.ts",
   "files": [
     "dist",
     "package.json"

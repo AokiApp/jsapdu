@@ -1,5 +1,5 @@
 {
-  "name": "pcsc-ffi-demo",
+  "name": "pcsc-ffi",
   "private": true,
   "version": "0.0.0",
   "description": "Demo scripts for pcsc-ffi package.",
@@ -20,7 +20,9 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@aokiapp/pcsc-ffi-node": "file:../../packages/pcsc-ffi-node"
+  },
   "devDependencies": {
     "typescript": "^5.8.3"
   }
