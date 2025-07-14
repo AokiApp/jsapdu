@@ -23,6 +23,7 @@ import {
   LPCBYTE,
   LPCSCARD_IO_REQUEST,
   LPSCARD_IO_REQUEST,
+  LPSCARD_READERSTATE,
 } from "./ctypes";
 import { lib } from "./ffi";
 import koffi, { TypeSpec } from "koffi";
@@ -287,3 +288,33 @@ export const SCardEndTransaction: KoffiTypedFn<
  */
 export const SCardCancel: KoffiTypedFn<(hContext: "SCARDCONTEXT") => "LONG"> =
   defProto("SCardCancel", LONG, [SCARDCONTEXT], "WINAPI");
+
+/**
+ * @description Waits for a change in the state of a reader.
+ * This function blocks until the state of one or more readers changes, or the timeout elapses.
+ *
+ * @see https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetstatuschangea
+ * @param {SCARDCONTEXT} hContext - The context handle from SCardEstablishContext.
+ * @param {DWORD} dwTimeout - The maximum amount of time (in milliseconds) to wait for a state change, or INFINITE.
+ * @param {LPSCARD_READERSTATE} rgReaderStates - Array of SCARD_READERSTATE structures (in/out parameter).
+ * @param {DWORD} cReaders - Number of elements in rgReaderStates.
+ * @returns {LONG} A status code, `SCARD_S_SUCCESS` on success.
+ */
+export const SCardGetStatusChange: KoffiTypedFn<
+  (
+    hContext: "SCARDCONTEXT",
+    dwTimeout: "DWORD",
+    rgReaderStates: "LPSCARD_READERSTATE@inout",
+    cReaders: "DWORD"
+  ) => "LONG"
+> = defProto(
+  isWindows ? "SCardGetStatusChangeW" : "SCardGetStatusChange",
+  LONG,
+  [
+    SCARDCONTEXT,
+    DWORD,
+    koffi.inout(LPSCARD_READERSTATE),
+    DWORD,
+  ],
+  "WINAPI"
+);

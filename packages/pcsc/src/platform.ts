@@ -167,7 +167,7 @@ export class PcscPlatform extends SmartCardPlatform {
       // Try to open the reader to verify availability and, if possible, obtain a handle
       const hCard = [0];
       const activeProtocol = [0];
-      const ret = SCardConnect(
+      const _ret = SCardConnect(
         this.context,
         id,
         SCARD_SHARE_SHARED,
@@ -175,6 +175,7 @@ export class PcscPlatform extends SmartCardPlatform {
         hCard,
         activeProtocol,
       );
+      const ret = _ret < 0 ? _ret + 0x100000000 : _ret;
 
       let cardHandle: number | null = null;
       let protocol: number = 0;

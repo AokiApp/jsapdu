@@ -53,7 +53,7 @@ describe('randr.md claims verification', () => {
         card = await device.startSession();
         return true; // Successfully acquired and started session
       } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.cause || e}`);
       }
     }
     expect.fail('カードセッションを開始できませんでした:\n' + errorMsgs.join('\n'));

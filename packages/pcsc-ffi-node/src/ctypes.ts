@@ -12,23 +12,28 @@ import koffi from "koffi";
  * They form the building blocks for more complex structures and function signatures.
  */
 
-/**
- * @description Represents a 32-bit unsigned integer.
- * This is commonly used for status codes, flags, and lengths.
- *
- * Note: While wintypes.h defines DWORD as 'unsigned long' on some platforms,
- * we use uint32 for consistency across all platforms, ensuring DWORD is always 32-bit
- * as expected by the PC/SC specification and Windows compatibility.
- */
-export const DWORD = koffi.types.uint32;
+// Platform detection for type sizing
+const isWindows = process.platform === "win32";
 
 /**
- * @description Represents a signed 32-bit integer.
- * In the context of PC/SC, this is often used for return codes from functions.
- * Using int32 ensures consistent 32-bit size across all platforms (Windows, Linux, macOS).
- * On Windows, LONG is always 32-bit. On Unix systems, we need to match this for compatibility.
+ * @description Represents a 32-bit unsigned integer on Windows, 64-bit on Linux/macOS.
+ * This is commonly used for status codes, flags, and lengths.
+ *
+ * Note: According to pcsc-lite's wintypes.h, DWORD is defined as 'unsigned long'.
+ * On Windows, 'unsigned long' is 32-bit, but on Linux/macOS it's 64-bit.
+ * This size difference is critical for proper struct layout alignment.
  */
-export const LONG = koffi.types.int32;
+export const DWORD = isWindows ? koffi.types.uint32 : koffi.types.uint64;
+
+/**
+ * @description Represents a signed 32-bit integer on Windows, 64-bit on Linux/macOS.
+ * In the context of PC/SC, this is often used for return codes from functions.
+ *
+ * Note: According to pcsc-lite's wintypes.h, LONG is defined as 'long'.
+ * On Windows, 'long' is 32-bit, but on Linux/macOS it's 64-bit.
+ * This size difference is critical for proper struct layout alignment.
+ */
+export const LONG = isWindows ? koffi.types.int32 : koffi.types.int64;
 
 /**
  * @description Represents a pointer to a constant void (untyped memory).
@@ -122,10 +127,13 @@ export const UCHAR = koffi.types.uint8;
 export const USHORT = koffi.types.uint16;
 
 /**
- * @description Represents an unsigned 32-bit integer.
- * Equivalent to uint32_t in C. Same as DWORD for consistency.
+ * @description Represents an unsigned 32-bit integer on Windows, 64-bit on Linux/macOS.
+ * Equivalent to 'unsigned long' in C. Same as DWORD for consistency.
+ *
+ * Note: According to pcsc-lite's wintypes.h, ULONG is defined as 'unsigned long'.
+ * On Windows, 'unsigned long' is 32-bit, but on Linux/macOS it's 64-bit.
  */
-export const ULONG = koffi.types.uint32;
+export const ULONG = isWindows ? koffi.types.uint32 : koffi.types.uint64;
 
 /**
  * @description Represents an unsigned 16-bit word.
@@ -135,9 +143,10 @@ export const WORD = koffi.types.uint16;
 
 /**
  * @description Represents a boolean value.
- * Using int32 to match the Windows SDK definition (int).
+ * According to pcsc-lite's wintypes.h, BOOL is defined as 'short' (16-bit).
+ * On Windows, BOOL is typically 'int' (32-bit), but for pcsc-lite compatibility we use 'short'.
  */
-export const BOOL = koffi.types.int32;
+export const BOOL = koffi.types.int16;
 
 /**
  * @description Represents a pointer to ULONG.
@@ -165,13 +174,13 @@ export const PUCHAR = koffi.pointer(UCHAR);
  * @description Represents a handle to the PC/SC resource manager context.
  * This handle is the first thing you acquire and the last thing you release.
  *
- * On Windows x64, this is a `ULONG_PTR`, which is a 64-bit unsigned integer.
- * On 64-bit Linux with pcsc-lite, this is a `LONG`, which is a 64-bit signed integer.
+ * According to pcsc-lite's pcsclite.h, this is defined as 'LONG'.
+ * On Windows, this would be a ULONG_PTR (64-bit unsigned integer).
+ * On Linux/macOS with pcsc-lite, this is a LONG (64-bit signed integer).
  *
- * We use `uint64` for consistency across all supported 64-bit platforms. As handles are
- * opaque values, treating them as unsigned is safe and avoids potential sign-related issues.
+ * We use LONG for cross-platform compatibility with pcsc-lite.
  */
-export const SCARDCONTEXT = koffi.types.uint64;
+export const SCARDCONTEXT = LONG;
 
 /**
  * @description Represents a pointer to a `SCARDCONTEXT`. This is used for output parameters
@@ -183,13 +192,13 @@ export const LPSCARDCONTEXT = koffi.pointer(SCARDCONTEXT);
  * @description Represents a handle to a specific smart card connection.
  * This handle is obtained from `SCardConnect` and used for all subsequent card operations.
  *
- * On Windows x64, this is a `ULONG_PTR`, which is a 64-bit unsigned integer.
- * On 64-bit Linux with pcsc-lite, this is a `LONG`, which is a 64-bit signed integer.
+ * According to pcsc-lite's pcsclite.h, this is defined as 'LONG'.
+ * On Windows, this would be a ULONG_PTR (64-bit unsigned integer).
+ * On Linux/macOS with pcsc-lite, this is a LONG (64-bit signed integer).
  *
- * We use `uint64` for consistency across all supported 64-bit platforms. As handles are
- * opaque values, treating them as unsigned is safe and avoids potential sign-related issues.
+ * We use LONG for cross-platform compatibility with pcsc-lite.
  */
-export const SCARDHANDLE = koffi.types.uint64;
+export const SCARDHANDLE = LONG;
 
 /**
  * @description Represents a pointer to a `SCARDHANDLE`. This is used for output parameters
@@ -245,10 +254,10 @@ export const MAX_READERNAME = 128;
 
 /**
  * @description Maximum ATR size
- * Windows SDK uses 36 bytes, pcsc-lite uses 33 bytes.
- * Using 36 bytes for compatibility with both platforms.
+ * pcsc-lite uses 33 bytes, Windows SDK uses 36 bytes.
+ * Using 33 bytes to match pcsc-lite for proper struct layout.
  */
-export const MAX_ATR_SIZE = 36;
+export const MAX_ATR_SIZE = 33;
 
 /**
  * ## PC/SC Structures
@@ -260,13 +269,12 @@ export const MAX_ATR_SIZE = 36;
  * @description Protocol Control Information (PCI) structure
  * Used in SCardTransmit to specify protocol parameters
  *
- * Note: While PCSC Lite defines cbPciLength as 'unsigned long' on some platforms,
- * we use DWORD (uint32) for both fields to ensure cross-platform consistency.
- * This matches the Windows SDK definition and ensures struct layout compatibility.
+ * Note: According to pcsc-lite's pcsclite.h, both fields are defined as 'unsigned long'.
+ * This matches our ULONG definition which is platform-dependent (32-bit on Windows, 64-bit on Linux/macOS).
  */
 export const SCARD_IO_REQUEST = koffi.struct("SCARD_IO_REQUEST", {
-  dwProtocol: DWORD, // Protocol identifier
-  cbPciLength: DWORD, // Protocol Control Information Length
+  dwProtocol: ULONG, // Protocol identifier
+  cbPciLength: ULONG, // Protocol Control Information Length
 });
 
 /**
@@ -308,9 +316,12 @@ export const SCARD_PCI_RAW = {
 
 /**
  * @description Reader state structure for SCardGetStatusChange
+ *
+ * Note: According to pcsc-lite's pcsclite.h, szReader is 'const char *' and
+ * all DWORD fields follow the platform-dependent DWORD definition.
  */
 export const SCARD_READERSTATE = koffi.struct("SCARD_READERSTATE", {
-  szReader: LPCSTR, // Reader name
+  szReader: "const char*", // Reader name (const char* in pcsc-lite)
   pvUserData: LPVOID, // User defined data
   dwCurrentState: DWORD, // Current state of reader at time of call
   dwEventState: DWORD, // State of reader after state change

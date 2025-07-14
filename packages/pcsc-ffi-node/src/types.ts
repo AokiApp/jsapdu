@@ -11,6 +11,16 @@ import { IKoffiCType } from "koffi";
 
 // Feel free to add to this list as new PC/SC types appear.
 
+// SCARD_READERSTATE interface for SCardGetStatusChange
+interface SCARD_READERSTATE {
+  szReader: string;
+  pvUserData: any;
+  dwCurrentState: number;
+  dwEventState: number;
+  cbAtr: number;
+  rgbAtr: Uint8Array;
+}
+
 type CTypeAliasMap = {
   // -- Standard WinTypes ----------------------------------------------------
   DWORD: number;
@@ -42,6 +52,9 @@ type CTypeAliasMap = {
   // a lightweight JS object literal containing the expected fields (e.g. `{ dwProtocol, cbPciLength }`).
   LPCSCARD_IO_REQUEST: Buffer | number | Record<string, unknown>;
   LPSCARD_IO_REQUEST: Buffer | number | Record<string, unknown>;
+  
+  // SCARD_READERSTATE structures for SCardGetStatusChange
+  LPSCARD_READERSTATE: SCARD_READERSTATE[];
 };
 
 type CTypeAlias = keyof CTypeAliasMap;

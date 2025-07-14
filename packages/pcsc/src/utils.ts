@@ -7,7 +7,21 @@ import {
   PcscErrorCode, 
   pcsc_stringify_error,
   SCardStatus,
-  SCardListReaders
+  SCardListReaders,
+  SCardGetStatusChange,
+  MAX_ATR_SIZE,
+  SCARD_STATE_UNAWARE,
+  SCARD_STATE_PRESENT,
+  SCARD_STATE_INUSE,
+  SCARD_STATE_MUTE,
+  SCARD_STATE_UNAVAILABLE,
+  SCARD_STATE_EMPTY,
+  SCARD_STATE_EXCLUSIVE,
+  SCARD_STATE_UNPOWERED,
+  SCARD_STATE_ATRMATCH,
+  SCARD_STATE_CHANGED,
+  SCARD_STATE_UNKNOWN,
+  SCARD_STATE_IGNORE,
 } from "@aokiapp/pcsc-ffi-node";
 
 /**
@@ -300,4 +314,65 @@ export async function callSCardListReaders(context: number): Promise<string[]> {
     .toString(encoding)
     .split("\0")
     .filter((r) => r.length > 0);
+}
+
+// 状態ビット→ラベル
+const STATE_FLAGS: [number, string][] = [
+  [SCARD_STATE_PRESENT, "present"],
+  [SCARD_STATE_INUSE, "inuse"],
+  [SCARD_STATE_MUTE, "mute"],
+  [SCARD_STATE_UNAVAILABLE, "unavailable"],
+  [SCARD_STATE_EMPTY, "empty"],
+  [SCARD_STATE_EXCLUSIVE, "exclusive"],
+  [SCARD_STATE_UNPOWERED, "unpowered"],
+  [SCARD_STATE_ATRMATCH, "atrmatch"],
+  [SCARD_STATE_CHANGED, "changed"],
+  [SCARD_STATE_UNKNOWN, "unknown"],
+  [SCARD_STATE_IGNORE, "ignore"],
+];
+
+function parseStateFlags(dwEventState: number): string[] {
+  return STATE_FLAGS.filter(([flag]) => (dwEventState & flag) !== 0).map(([, label]) => label);
+}
+
+function atrToHex(atr: Uint8Array): string {
+  return Array.from(atr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+}
+
+/**
+ * Queries the current state of a smart card reader using SCardGetStatusChange (timeout=0),
+ * and returns a JavaScript-esque object.
+ * @param hContext PC/SC context handle
+ * @param readerName Name of the reader to query
+ * @returns {Promise<{ reader: string, state: string[], atr: string, atrBytes: Uint8Array }>} State info
+ * @throws SmartCardError on failure
+ */
+export async function getReaderCurrentState(
+  hContext: number,
+  readerName: string
+): Promise<{ reader: string; state: string[]; atr: string; atrBytes: Uint8Array }> {
+  debugger; 
+  const states = [
+    {
+      szReader: readerName,
+      pvUserData: null,
+      dwCurrentState: SCARD_STATE_UNAWARE,
+      dwEventState: 0,
+      cbAtr: 0,
+      rgbAtr: new Uint8Array(MAX_ATR_SIZE),
+    },
+  ];
+  const ret = SCardGetStatusChange(hContext, 0, states , states.length);
+  ensureScardSuccess(ret);
+  const s = states[0];
+  const atrBytes = s.rgbAtr instanceof Uint8Array ? s.rgbAtr.slice(0, s.cbAtr) : new Uint8Array(s.rgbAtr).slice(0, s.cbAtr);
+  return {
+    reader: s.szReader,
+    state: parseStateFlags(s.dwEventState),
+    atr: atrToHex(atrBytes),
+    atrBytes,
+  };
 }

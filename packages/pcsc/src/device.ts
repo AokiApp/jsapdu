@@ -18,7 +18,7 @@ import {
 import { PcscCard } from "./card.js";
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscPlatform } from "./platform.js";
-import { ensureScardSuccess, callSCardStatus } from "./utils.js";
+import { ensureScardSuccess, callSCardStatus, getReaderCurrentState } from "./utils.js";
 import { AsyncMutex } from "./utils.js";
 
 /**
@@ -129,29 +129,11 @@ export class PcscDevice extends SmartCardDevice {
         return true;
       }
 
-      // Otherwise attempt a short-lived connection to detect presence
-      const hCard = [0];
-      const activeProtocol = [0];
-      const ret = SCardConnect(
-        this.context,
-        this.readerName,
-        SCARD_SHARE_SHARED,
-        SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
-        hCard,
-        activeProtocol,
-      );
-
-      if (
-        ret === PcscErrorCode.SCARD_E_NO_SMARTCARD ||
-        ret === PcscErrorCode.SCARD_W_REMOVED_CARD
-      ) {
-        return false;
-      }
-
-      ensureScardSuccess(ret);
-      // Card present – disconnect the probing handle
-      SCardDisconnect(hCard[0], SCARD_LEAVE_CARD);
-      return true;
+      // Use getReaderCurrentState to check card presence without connecting
+      const readerState = await getReaderCurrentState(this.context, this.readerName);
+      
+      // Check if card is present based on state flags
+      return readerState.state.includes("present") && !readerState.state.includes("empty");
     } catch (error) {
       if (error instanceof SmartCardError && error.code === "CARD_NOT_PRESENT") {
         return false;
