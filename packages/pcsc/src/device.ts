@@ -18,7 +18,11 @@ import {
 import { PcscCard } from "./card.js";
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscPlatform } from "./platform.js";
-import { ensureScardSuccess, callSCardStatus, getReaderCurrentState } from "./utils.js";
+import {
+  callSCardStatus,
+  ensureScardSuccess,
+  getReaderCurrentState,
+} from "./utils.js";
 import { AsyncMutex } from "./utils.js";
 
 /**
@@ -87,7 +91,7 @@ export class PcscDevice extends SmartCardDevice {
     try {
       const hCard = [0];
       const activeProtocol = [0];
-      const ret = SCardConnect(
+      const _ret = SCardConnect(
         this.context,
         this.readerName,
         SCARD_SHARE_SHARED,
@@ -95,6 +99,7 @@ export class PcscDevice extends SmartCardDevice {
         hCard,
         activeProtocol,
       );
+      const ret = _ret < 0 ? _ret + 0x100000000 : _ret;
 
       if (ret === PcscErrorCode.SCARD_S_SUCCESS) {
         // Reader is free; disconnect immediately and return true
@@ -130,12 +135,21 @@ export class PcscDevice extends SmartCardDevice {
       }
 
       // Use getReaderCurrentState to check card presence without connecting
-      const readerState = await getReaderCurrentState(this.context, this.readerName);
-      
+      const readerState = await getReaderCurrentState(
+        this.context,
+        this.readerName,
+      );
+
       // Check if card is present based on state flags
-      return readerState.state.includes("present") && !readerState.state.includes("empty");
+      return (
+        readerState.state.includes("present") &&
+        !readerState.state.includes("empty")
+      );
     } catch (error) {
-      if (error instanceof SmartCardError && error.code === "CARD_NOT_PRESENT") {
+      if (
+        error instanceof SmartCardError &&
+        error.code === "CARD_NOT_PRESENT"
+      ) {
         return false;
       }
       throw error;
@@ -153,7 +167,10 @@ export class PcscDevice extends SmartCardDevice {
       }
 
       if (!(await this.isCardPresent())) {
-        throw new SmartCardError("CARD_NOT_PRESENT", "No card present in reader");
+        throw new SmartCardError(
+          "CARD_NOT_PRESENT",
+          "No card present in reader",
+        );
       }
 
       // Open a connection to the card if we don't have one yet
