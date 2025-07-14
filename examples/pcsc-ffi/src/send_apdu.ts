@@ -20,7 +20,7 @@ import {
   pcsc_stringify_error,
 } from "@aokiapp/pcsc-ffi-node";
 
-export async function runSendApduDemo() {
+export function runSendApduDemo() {
   const hContext = [0];
   let ret: number;
 

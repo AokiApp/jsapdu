@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CommandApdu } from "@aokiapp/interface";
+import {
+  CommandApdu,
+  SmartCard,
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCardPlatform,
+} from "@aokiapp/interface";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 
 const KENHOJO_AP_AID = [
@@ -11,10 +17,10 @@ const PUBLIC_FILES: { name: string; fid: number[] }[] = [
   { name: "中間証明書", fid: [0x00, 0x04] },
 ];
 
-let platform: any;
-let device: any;
-let card: any;
-let deviceInfos: any[] = [];
+let platform: SmartCardPlatform;
+let device: SmartCardDevice | null;
+let card: SmartCard | null;
+let deviceInfos: SmartCardDeviceInfo[] = [];
 
 beforeEach(async () => {
   const platformManager = PcscPlatformManager.getInstance();
@@ -42,7 +48,7 @@ describe("KENHOJO_AP 公開領域 E2Eテスト", () => {
     for (const { name, fid } of PUBLIC_FILES) {
       it(`${name} (FID=${fid.map((b) => b.toString(16).padStart(2, "0")).join("")}) のREAD BINARY`, async () => {
         if (deviceInfos.length === 0) return;
-        let errorMsgs: string[] = [];
+        const errorMsgs: string[] = [];
         for (let i = 0; i < deviceInfos.length; i++) {
           try {
             device = await platform.acquireDevice(deviceInfos[i].id);
@@ -88,8 +94,12 @@ describe("KENHOJO_AP 公開領域 E2Eテスト", () => {
               ).toBeGreaterThanOrEqual(0);
             }
             return;
-          } catch (e: any) {
-            errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+          } catch (e) {
+            const errMsg =
+              e && typeof e === "object" && "message" in e
+                ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+                : `[${deviceInfos[i].id}] ${String(e)}`;
+            errorMsgs.push(errMsg);
           }
         }
         if (errorMsgs.length > 0) {

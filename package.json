@@ -14,7 +14,7 @@
   "devDependencies": {
     "@eslint/js": "^9.24.0",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
-    "eslint": "^9.24.0",
+    "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.1",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",

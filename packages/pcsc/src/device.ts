@@ -82,12 +82,11 @@ export class PcscDevice extends SmartCardDevice {
   /**
    * Check whether the reader itself is available (irrespective of card presence)
    */
-  public async isDeviceAvailable(): Promise<boolean> {
+  public isDeviceAvailable(): Promise<boolean> {
     // If this device instance already has an active session, it's available by definition
     if (this.isSessionActive()) {
-      return true;
+      return Promise.resolve(true);
     }
-
     try {
       const hCard = [0];
       const activeProtocol = [0];
@@ -100,25 +99,19 @@ export class PcscDevice extends SmartCardDevice {
         activeProtocol,
       );
       const ret = _ret < 0 ? _ret + 0x100000000 : _ret;
-
       if (ret === PcscErrorCode.SCARD_S_SUCCESS) {
-        // Reader is free; disconnect immediately and return true
         SCardDisconnect(hCard[0], SCARD_LEAVE_CARD);
-        return true;
+        return Promise.resolve(true);
       }
-
-      // Reader exists, card might be absent; still considered available
       if (
         ret === PcscErrorCode.SCARD_E_NO_SMARTCARD ||
         ret === PcscErrorCode.SCARD_W_REMOVED_CARD
       ) {
-        return true;
+        return Promise.resolve(true);
       }
-
-      // Sharing violation or other errors mean reader is busy/unavailable
-      return false;
+      return Promise.resolve(false);
     } catch {
-      return false;
+      return Promise.resolve(false);
     }
   }
 
@@ -215,7 +208,7 @@ export class PcscDevice extends SmartCardDevice {
    * Start an HCE session
    * @throws {SmartCardError} Always throws as PC/SC doesn't support HCE
    */
-  public async startHceSession(): Promise<EmulatedCard> {
+  public startHceSession(): Promise<EmulatedCard> {
     throw new SmartCardError(
       "UNSUPPORTED_OPERATION",
       "PC/SC does not support Host Card Emulation",
@@ -235,8 +228,8 @@ export class PcscDevice extends SmartCardDevice {
       try {
         // Release the card if we have one
         if (this.card !== null && this.card.isActive()) {
-          await this.card.release().catch((e) => {
-            cardReleaseError = e;
+          await this.card.release().catch((e: unknown) => {
+            cardReleaseError = e as Error;
           });
         }
       } finally {

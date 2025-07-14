@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CommandApdu } from "@aokiapp/interface";
+import {
+  CommandApdu,
+  SmartCard,
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCardPlatform,
+} from "@aokiapp/interface";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 
 // AIDs from randr.md
@@ -11,10 +17,10 @@ const KENHOJO_AP_AID = [
   0xd3, 0x92, 0x10, 0x00, 0x31, 0x00, 0x01, 0x01, 0x04, 0x08,
 ]; // 券面事項入力補助AP
 
-let platform: any;
-let device: any;
-let card: any;
-let deviceInfos: any[] = [];
+let platform: SmartCardPlatform;
+let device: SmartCardDevice | null;
+let card: SmartCard | null;
+let deviceInfos: SmartCardDeviceInfo[] = [];
 
 beforeEach(async () => {
   const platformManager = PcscPlatformManager.getInstance();
@@ -48,7 +54,7 @@ describe("randr.md claims verification", () => {
       expect(info.id, `リーダー${idx}:`).toBeDefined();
     });
 
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
@@ -59,8 +65,20 @@ describe("randr.md claims verification", () => {
         }
         card = await device.startSession();
         return true; // Successfully acquired and started session
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.cause || e}`);
+      } catch (e) {
+        let causeMsg = "";
+        if (e && typeof e === "object" && "cause" in e && e.cause) {
+          if (e.cause instanceof Error) {
+            causeMsg = e.cause.message;
+          } else {
+            causeMsg = String(e.cause);
+          }
+        } else if (e && typeof e === "object" && "message" in e) {
+          causeMsg = String((e as Error).message);
+        } else {
+          causeMsg = String(e);
+        }
+        errorMsgs.push(`[${deviceInfos[i].id}] ${causeMsg}`);
       }
     }
     expect.fail(
@@ -82,6 +100,7 @@ describe("randr.md claims verification", () => {
         Buffer.from(JPKI_AP_AID),
         0x00,
       );
+      if (!card) throw new Error("Card session not started");
       const selectJpkiApResponse = await card.transmit(selectJpkiApCommand);
       expect(selectJpkiApResponse.sw).toBe(0x9000);
       // Construct 80 A2 00 C1 command with dummy data
@@ -95,6 +114,7 @@ describe("randr.md claims verification", () => {
         dummyData,
         0x00,
       );
+      if (!card) throw new Error("Card session not started");
       const response = await card.transmit(command80A200C1);
 
       // Expect 6D 00 (Instruction code not supported or invalid)
@@ -115,6 +135,7 @@ describe("randr.md claims verification", () => {
         Buffer.from(KENHOJO_AP_AID),
         0x00,
       );
+      if (!card) throw new Error("Card session not started");
       const selectKenhojoApResponse = await card.transmit(
         selectKenhojoApCommand,
       );
@@ -132,6 +153,7 @@ describe("randr.md claims verification", () => {
         dummyHash,
         0x00,
       ); // Le=0x00 means expect all data
+      if (!card) throw new Error("Card session not started");
       const response = await card.transmit(command802A0500);
 
       // Expect 90 00 (Success)
@@ -154,6 +176,7 @@ describe("randr.md claims verification", () => {
         Buffer.from(KENHOJO_AP_AID),
         0x00,
       );
+      if (!card) throw new Error("Card session not started");
       const selectKenhojoApResponse = await card.transmit(
         selectKenhojoApCommand,
       );
@@ -171,6 +194,7 @@ describe("randr.md claims verification", () => {
         dummyHash,
         0x00,
       ); // Le=0x00 means expect all data
+      if (!card) throw new Error("Card session not started");
       const response = await card.transmit(command802A0000);
 
       // Expect 90 00 (Success)

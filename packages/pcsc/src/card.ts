@@ -8,7 +8,6 @@ import {
   SCARD_PCI_T0,
   SCARD_PCI_T1,
   SCARD_PROTOCOL_T0,
-  SCARD_PROTOCOL_T1,
   SCARD_RESET_CARD,
   SCardEndTransaction,
   SCardTransmit,
@@ -59,7 +58,7 @@ export class PcscCard extends SmartCard {
    * Transmit APDU command to the card
    * @throws {SmartCardError} If transmission fails
    */
-  public async transmit(apdu: CommandApdu): Promise<ResponseApdu> {
+  public transmit(apdu: CommandApdu): Promise<ResponseApdu> {
     if (!this.active) {
       throw new SmartCardError("NOT_CONNECTED", "Card session is not active");
     }
@@ -106,14 +105,14 @@ export class PcscCard extends SmartCard {
     const responseBytes = new Uint8Array(responseBuffer.slice(0, actualLength));
 
     // Create ResponseApdu
-    return ResponseApdu.fromUint8Array(responseBytes);
+    return Promise.resolve(ResponseApdu.fromUint8Array(responseBytes));
   }
 
   /**
    * Reset the card
    * @throws {SmartCardError} If reset fails
    */
-  public async reset(): Promise<void> {
+  public reset(): Promise<void> {
     if (!this.active) {
       throw new SmartCardError("NOT_CONNECTED", "Card session is not active");
     }
@@ -124,21 +123,23 @@ export class PcscCard extends SmartCard {
 
     // Clear cached ATR since it may change after reset
     this.atr = null;
+    return Promise.resolve();
   }
 
   /**
    * Release the session
    * @throws {SmartCardError} If release fails
    */
-  public async release(): Promise<void> {
+  public release(): Promise<void> {
     if (!this.active) {
-      return; // Already released
+      return Promise.resolve(); // Already released
     }
 
     this.active = false;
 
     // The actual disconnection is handled by the device
     // This just marks the card as inactive
+    return Promise.resolve();
   }
 
   /**

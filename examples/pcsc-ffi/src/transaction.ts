@@ -15,7 +15,7 @@ import {
   pcsc_stringify_error,
 } from "@aokiapp/pcsc-ffi-node";
 
-export async function runTransactionDemo() {
+export function runTransactionDemo() {
   const hContext = [0];
   let ret: number;
 

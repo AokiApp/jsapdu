@@ -76,7 +76,6 @@ export function mapPcscErrorToSmartCardErrorCode(
     case PcscErrorCode.SCARD_W_CANCELLED_BY_USER:
       return "PLATFORM_ERROR";
     case PcscErrorCode.SCARD_E_NOT_READY:
-    case PcscErrorCode.SCARD_E_NOT_TRANSACTED:
       return "PLATFORM_ERROR";
     case PcscErrorCode.SCARD_E_INVALID_ATR:
       return "INVALID_PARAMETER";

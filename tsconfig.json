@@ -8,7 +8,14 @@
     { "path": "./packages/tlv-parser" },
     { "path": "./packages/mynacard" }
   ],
-  "include": ["eslint.config.mjs", "vitest.config.ts"],
+  "include": [
+    "vitest.config.ts",
+    "examples/mynacard-e2e/*.ts",
+    "examples/mynacard-e2e/*.js",
+    "packages/pcsc/tests/*.ts",
+    "packages/pcsc/tests/*.js",
+    "vitest.config.js"
+  ],
   "compilerOptions": {
     "allowJs": true
   }

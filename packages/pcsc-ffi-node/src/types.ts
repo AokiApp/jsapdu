@@ -1,5 +1,3 @@
-import { IKoffiCType } from "koffi";
-
 // Mapping of C/FFI type aliases (as string literals used in `KoffiTypedFn`) to their
 // corresponding JavaScript-side representations.  These JS types follow the
 // conventions we rely on when calling the native PC/SC functions with Koffi:
@@ -14,7 +12,7 @@ import { IKoffiCType } from "koffi";
 // SCARD_READERSTATE interface for SCardGetStatusChange
 interface SCARD_READERSTATE {
   szReader: string;
-  pvUserData: any;
+  pvUserData: unknown;
   dwCurrentState: number;
   dwEventState: number;
   cbAtr: number;
@@ -27,7 +25,7 @@ type CTypeAliasMap = {
   LONG: number;
 
   // Pointers / handles ------------------------------------------------------
-  LPCVOID: any;
+  LPCVOID: unknown;
 
   SCARDCONTEXT: number | bigint;
   LPSCARDCONTEXT: (number | bigint)[];

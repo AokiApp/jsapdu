@@ -1,12 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CommandApdu } from "@aokiapp/interface";
+import {
+  CommandApdu,
+  SmartCard,
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCardPlatform,
+} from "@aokiapp/interface";
 import { PcscPlatformManager } from "@aokiapp/pcsc";
 
-let platform: any;
-let device: any;
-let card: any;
-let deviceInfos: any[] = [];
+let platform: SmartCardPlatform;
+let device: SmartCardDevice | null;
+let card: SmartCard | null;
+let deviceInfos: SmartCardDeviceInfo[] = [];
 
 beforeEach(async () => {
   const platformManager = PcscPlatformManager.getInstance();
@@ -31,14 +37,18 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
   it("カードリーダーが取得できる", async () => {
     if (deviceInfos.length === 0) return;
     let acquired = false;
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
         acquired = true;
         break;
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+      } catch (e) {
+        const errMsg =
+          e && typeof e === "object" && "message" in e
+            ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+            : `[${deviceInfos[i].id}] ${String(e)}`;
+        errorMsgs.push(errMsg);
       }
     }
     if (!acquired && errorMsgs.length > 0) {
@@ -49,7 +59,7 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
 
   it("カードが挿入されている", async () => {
     if (deviceInfos.length === 0) return;
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
@@ -58,8 +68,12 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
           expect(isCardPresent).toBe(true);
           return;
         }
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+      } catch (e) {
+        const errMsg =
+          e && typeof e === "object" && "message" in e
+            ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+            : `[${deviceInfos[i].id}] ${String(e)}`;
+        errorMsgs.push(errMsg);
       }
     }
     if (errorMsgs.length > 0) {
@@ -73,7 +87,7 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
 
   it("ATRが取得できる", async () => {
     if (deviceInfos.length === 0) return;
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
@@ -83,8 +97,12 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
         const atr = await card.getAtr();
         expect(atr.length, "ATR長が0").toBeGreaterThan(0);
         return;
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+      } catch (e) {
+        const errMsg =
+          e && typeof e === "object" && "message" in e
+            ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+            : `[${deviceInfos[i].id}] ${String(e)}`;
+        errorMsgs.push(errMsg);
       }
     }
     if (errorMsgs.length > 0) {
@@ -96,7 +114,7 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
 
   it("SELECT FILEのレスポンスが取得できる", async () => {
     if (deviceInfos.length === 0) return;
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
@@ -115,8 +133,12 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
         expect(selectResp.sw1, "sw1がnumber型でない").toBeTypeOf("number");
         expect(selectResp.sw2, "sw2がnumber型でない").toBeTypeOf("number");
         return;
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+      } catch (e) {
+        const errMsg =
+          e && typeof e === "object" && "message" in e
+            ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+            : `[${deviceInfos[i].id}] ${String(e)}`;
+        errorMsgs.push(errMsg);
       }
     }
     if (errorMsgs.length > 0) {
@@ -131,7 +153,7 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
 
   it("READ BINARYのレスポンスが取得できる", async () => {
     if (deviceInfos.length === 0) return;
-    let errorMsgs: string[] = [];
+    const errorMsgs: string[] = [];
     for (let i = 0; i < deviceInfos.length; i++) {
       try {
         device = await platform.acquireDevice(deviceInfos[i].id);
@@ -150,8 +172,12 @@ describe("マイナンバーカード E2Eテスト（独立型）", () => {
         expect(readResp.sw1, "sw1がnumber型でない").toBeTypeOf("number");
         expect(readResp.sw2, "sw2がnumber型でない").toBeTypeOf("number");
         return;
-      } catch (e: any) {
-        errorMsgs.push(`[${deviceInfos[i].id}] ${e?.message || e}`);
+      } catch (e) {
+        const errMsg =
+          e && typeof e === "object" && "message" in e
+            ? `[${deviceInfos[i].id}] ${(e as Error).message}`
+            : `[${deviceInfos[i].id}] ${String(e)}`;
+        errorMsgs.push(errMsg);
       }
     }
     if (errorMsgs.length > 0) {
