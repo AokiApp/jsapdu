@@ -190,7 +190,7 @@ export class PcscDevice extends SmartCardDevice {
         this.activeProtocol = activeProtocol[0];
       }
 
-      this.card = new PcscCard(this, this.cardHandle!, this.activeProtocol);
+      this.card = new PcscCard(this, this.cardHandle, this.activeProtocol);
       return this.card;
     });
   }

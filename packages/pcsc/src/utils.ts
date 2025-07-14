@@ -236,7 +236,7 @@ export async function callSCardStatus(
 
   // First call: get required buffer sizes
   let readerNameBuffer = null;
-  let readerNameLength = [0];
+  const readerNameLength = [0];
   const state = [0];
   const protocol = [0];
   const atrBuffer = Buffer.alloc(36); // MAX_ATR_SIZE
