@@ -44,7 +44,7 @@ export class PcscPlatform extends SmartCardPlatform {
    * Initialize the platform
    * @throws {SmartCardError} If initialization fails or platform is already initialized
    */
-  public async init(): Promise<void> {
+  public init(): Promise<void> {
     this.assertNotInitialized();
 
     try {
@@ -60,6 +60,7 @@ export class PcscPlatform extends SmartCardPlatform {
 
       this.context = hContext[0];
       this.initialized = true;
+      return Promise.resolve();
     } catch (error) {
       throw new SmartCardError(
         "PLATFORM_ERROR",
@@ -82,7 +83,8 @@ export class PcscPlatform extends SmartCardPlatform {
         const releasePromises = Array.from(this.acquiredDevices.values()).map(
           (device) =>
             device.release().catch((e) => {
-              deviceReleaseError = e;
+              deviceReleaseError =
+                e instanceof Error ? e : new Error(String(e));
             }),
         );
         await Promise.all(releasePromises);

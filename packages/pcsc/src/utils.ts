@@ -1,8 +1,4 @@
-import {
-  SmartCardError,
-  SmartCardErrorCode,
-  fromUnknownError,
-} from "@aokiapp/interface";
+import { SmartCardError, SmartCardErrorCode } from "@aokiapp/interface";
 import {
   MAX_ATR_SIZE,
   PcscErrorCode,
@@ -81,8 +77,6 @@ export function mapPcscErrorToSmartCardErrorCode(
       return "INVALID_PARAMETER";
     case PcscErrorCode.SCARD_E_DUPLICATE_READER:
       return "RESOURCE_LIMIT";
-    case PcscErrorCode.SCARD_E_CARD_UNSUPPORTED:
-      return "UNSUPPORTED_OPERATION";
     case PcscErrorCode.SCARD_E_NO_SUCH_CERTIFICATE:
     case PcscErrorCode.SCARD_E_CERTIFICATE_UNAVAILABLE:
       return "CARD_NOT_PRESENT";
@@ -228,7 +222,7 @@ export interface SCardStatusResult {
 /**
  * Call SCardStatus with automatic buffer size handling
  */
-export async function callSCardStatus(
+export function callSCardStatus(
   cardHandle: number,
 ): Promise<SCardStatusResult> {
   const { charSize, encoding } = getPlatformConfig();
@@ -274,18 +268,18 @@ export async function callSCardStatus(
   const atrSize = atrLength[0];
   const atr = new Uint8Array(atrBuffer.slice(0, atrSize));
 
-  return {
+  return Promise.resolve({
     readerName,
     state: state[0],
     protocol: protocol[0],
     atr,
-  };
+  });
 }
 
 /**
  * Call SCardListReaders with automatic buffer size handling
  */
-export async function callSCardListReaders(context: number): Promise<string[]> {
+export function callSCardListReaders(context: number): Promise<string[]> {
   const { charSize, encoding } = getPlatformConfig();
 
   // First call to get buffer size
@@ -294,14 +288,14 @@ export async function callSCardListReaders(context: number): Promise<string[]> {
 
   // Handle case where no readers are available
   if (ret === PcscErrorCode.SCARD_E_NO_READERS_AVAILABLE) {
-    return [];
+    return Promise.resolve([]);
   }
 
   ensureScardSuccess(ret);
 
   const readerBufferSize = pcchReaders[0];
   if (readerBufferSize === 0) {
-    return [];
+    return Promise.resolve([]);
   }
 
   // Second call: allocate buffer and get reader names
@@ -311,10 +305,12 @@ export async function callSCardListReaders(context: number): Promise<string[]> {
   ensureScardSuccess(ret);
 
   // Parse reader names
-  return readersBuffer
-    .toString(encoding)
-    .split("\0")
-    .filter((r) => r.length > 0);
+  return Promise.resolve(
+    readersBuffer
+      .toString(encoding)
+      .split("\0")
+      .filter((r) => r.length > 0),
+  );
 }
 
 // 状態ビット→ラベル
@@ -353,7 +349,7 @@ function atrToHex(atr: Uint8Array): string {
  * @returns {Promise<{ reader: string, state: string[], atr: string, atrBytes: Uint8Array }>} State info
  * @throws SmartCardError on failure
  */
-export async function getReaderCurrentState(
+export function getReaderCurrentState(
   hContext: number,
   readerName: string,
 ): Promise<{
@@ -379,10 +375,10 @@ export async function getReaderCurrentState(
     s.rgbAtr instanceof Uint8Array
       ? s.rgbAtr.slice(0, s.cbAtr)
       : new Uint8Array(s.rgbAtr).slice(0, s.cbAtr);
-  return {
+  return Promise.resolve({
     reader: s.szReader,
     state: parseStateFlags(s.dwEventState),
     atr: atrToHex(atrBytes),
     atrBytes,
-  };
+  });
 }

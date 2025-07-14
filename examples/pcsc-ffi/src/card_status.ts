@@ -16,7 +16,7 @@ import {
   pcsc_stringify_error,
 } from "@aokiapp/pcsc-ffi-node";
 
-export async function runCardStatusDemo() {
+export function runCardStatusDemo() {
   console.log("Starting card_status demo...");
 
   const hContext = [0];

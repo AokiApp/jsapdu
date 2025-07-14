@@ -60,7 +60,7 @@ describe("JPKI_AP 公開証明書ファイル E2Eテスト", () => {
             Uint8Array.from(JPKI_AP_AID),
             null,
           );
-          const selectResp = await card.transmit(selectApdu);
+          await card.transmit(selectApdu);
           // 公開証明書ファイル SELECT
           const selectFileApdu = new CommandApdu(
             0x00,
@@ -70,7 +70,7 @@ describe("JPKI_AP 公開証明書ファイル E2Eテスト", () => {
             Uint8Array.from(fid),
             null,
           );
-          const selectFileResp = await card.transmit(selectFileApdu);
+          await card.transmit(selectFileApdu);
           // READ BINARY
           const readBinaryApdu = new CommandApdu(
             0x00,

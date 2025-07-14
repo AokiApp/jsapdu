@@ -71,14 +71,22 @@ describe("randr.md claims verification", () => {
           if (e.cause instanceof Error) {
             causeMsg = e.cause.message;
           } else {
-            causeMsg = String(e.cause);
+            if (typeof e.cause === "string") {
+              causeMsg = e.cause;
+            } else {
+              try {
+                causeMsg = JSON.stringify(e.cause);
+              } catch {
+                causeMsg = "Unknown cause";
+              }
+            }
           }
         } else if (e && typeof e === "object" && "message" in e) {
           causeMsg = String((e as Error).message);
         } else {
           causeMsg = String(e);
         }
-        errorMsgs.push(`[${deviceInfos[i].id}] ${causeMsg}`);
+        errorMsgs.push(`[${deviceInfos[i].id}] ${String(causeMsg)}`);
       }
     }
     expect.fail(

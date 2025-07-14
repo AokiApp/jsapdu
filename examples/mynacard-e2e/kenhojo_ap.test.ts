@@ -64,7 +64,7 @@ describe("KENHOJO_AP 公開領域 E2Eテスト", () => {
               Uint8Array.from(KENHOJO_AP_AID),
               null,
             );
-            const selectResp = await card.transmit(selectApdu);
+            await card.transmit(selectApdu);
             // 公開ファイル SELECT
             const selectFileApdu = new CommandApdu(
               0x00,
@@ -74,7 +74,7 @@ describe("KENHOJO_AP 公開領域 E2Eテスト", () => {
               Uint8Array.from(fid),
               null,
             );
-            const selectFileResp = await card.transmit(selectFileApdu);
+            await card.transmit(selectFileApdu);
             // READ BINARY
             const readBinaryApdu = new CommandApdu(
               0x00,
