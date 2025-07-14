@@ -10,13 +10,12 @@ import {
   SCARD_PROTOCOL_T0,
   SCARD_PROTOCOL_T1,
   SCARD_RESET_CARD,
-  SCardBeginTransaction,
   SCardEndTransaction,
   SCardTransmit,
 } from "@aokiapp/pcsc-ffi-node";
 
 import { PcscDevice } from "./device.js";
-import { ensureScardSuccess, callSCardStatus } from "./utils.js";
+import { callSCardStatus, ensureScardSuccess } from "./utils.js";
 
 /**
  * Implementation of SmartCard for PC/SC
@@ -90,35 +89,24 @@ export class PcscCard extends SmartCard {
       cbPciLength: 8, // sizeof(SCARD_IO_REQUEST)
     };
 
-    // Begin transaction to ensure exclusive access during APDU exchange
-    let ret = SCardBeginTransaction(this.cardHandle);
+    // Transmit APDU (no explicit PC/SC transaction)
+    const ret = SCardTransmit(
+      this.cardHandle,
+      pioSendPci,
+      commandBuffer,
+      commandBuffer.length,
+      pioRecvPci,
+      responseBuffer,
+      responseLength,
+    );
     ensureScardSuccess(ret);
 
-    try {
-      // Transmit APDU
-      ret = SCardTransmit(
-        this.cardHandle,
-        pioSendPci,
-        commandBuffer,
-        commandBuffer.length,
-        pioRecvPci,
-        responseBuffer,
-        responseLength,
-      );
-      ensureScardSuccess(ret);
+    // Extract response
+    const actualLength = responseLength[0];
+    const responseBytes = new Uint8Array(responseBuffer.slice(0, actualLength));
 
-      // Extract response
-      const actualLength = responseLength[0];
-      const responseBytes = new Uint8Array(
-        responseBuffer.slice(0, actualLength),
-      );
-
-      // Create ResponseApdu
-      return ResponseApdu.fromUint8Array(responseBytes);
-    } finally {
-      // End transaction
-      SCardEndTransaction(this.cardHandle, 0); // SCARD_LEAVE_CARD
-    }
+    // Create ResponseApdu
+    return ResponseApdu.fromUint8Array(responseBytes);
   }
 
   /**

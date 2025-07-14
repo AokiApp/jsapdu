@@ -3,25 +3,25 @@ import {
   SmartCardErrorCode,
   fromUnknownError,
 } from "@aokiapp/interface";
-import { 
-  PcscErrorCode, 
-  pcsc_stringify_error,
-  SCardStatus,
-  SCardListReaders,
-  SCardGetStatusChange,
+import {
   MAX_ATR_SIZE,
-  SCARD_STATE_UNAWARE,
-  SCARD_STATE_PRESENT,
-  SCARD_STATE_INUSE,
-  SCARD_STATE_MUTE,
-  SCARD_STATE_UNAVAILABLE,
-  SCARD_STATE_EMPTY,
-  SCARD_STATE_EXCLUSIVE,
-  SCARD_STATE_UNPOWERED,
+  PcscErrorCode,
   SCARD_STATE_ATRMATCH,
   SCARD_STATE_CHANGED,
-  SCARD_STATE_UNKNOWN,
+  SCARD_STATE_EMPTY,
+  SCARD_STATE_EXCLUSIVE,
   SCARD_STATE_IGNORE,
+  SCARD_STATE_INUSE,
+  SCARD_STATE_MUTE,
+  SCARD_STATE_PRESENT,
+  SCARD_STATE_UNAVAILABLE,
+  SCARD_STATE_UNAWARE,
+  SCARD_STATE_UNKNOWN,
+  SCARD_STATE_UNPOWERED,
+  SCardGetStatusChange,
+  SCardListReaders,
+  SCardStatus,
+  pcsc_stringify_error,
 } from "@aokiapp/pcsc-ffi-node";
 
 /**
@@ -229,9 +229,11 @@ export interface SCardStatusResult {
 /**
  * Call SCardStatus with automatic buffer size handling
  */
-export async function callSCardStatus(cardHandle: number): Promise<SCardStatusResult> {
+export async function callSCardStatus(
+  cardHandle: number,
+): Promise<SCardStatusResult> {
   const { charSize, encoding } = getPlatformConfig();
-  
+
   // First call: get required buffer sizes
   let readerNameBuffer = null;
   let readerNameLength = [0];
@@ -250,7 +252,7 @@ export async function callSCardStatus(cardHandle: number): Promise<SCardStatusRe
     atrBuffer,
     atrLength,
   );
-  
+
   if (ret !== 0 && ret !== PcscErrorCode.SCARD_E_INSUFFICIENT_BUFFER) {
     ensureScardSuccess(ret);
   }
@@ -269,7 +271,7 @@ export async function callSCardStatus(cardHandle: number): Promise<SCardStatusRe
   ensureScardSuccess(ret);
 
   // Parse results
-  const readerName = readerNameBuffer.toString(encoding).replace(/\0+$/, '');
+  const readerName = readerNameBuffer.toString(encoding).replace(/\0+$/, "");
   const atrSize = atrLength[0];
   const atr = new Uint8Array(atrBuffer.slice(0, atrSize));
 
@@ -286,7 +288,7 @@ export async function callSCardStatus(cardHandle: number): Promise<SCardStatusRe
  */
 export async function callSCardListReaders(context: number): Promise<string[]> {
   const { charSize, encoding } = getPlatformConfig();
-  
+
   // First call to get buffer size
   const pcchReaders = [0];
   let ret = SCardListReaders(context, null, null, pcchReaders);
@@ -332,7 +334,9 @@ const STATE_FLAGS: [number, string][] = [
 ];
 
 function parseStateFlags(dwEventState: number): string[] {
-  return STATE_FLAGS.filter(([flag]) => (dwEventState & flag) !== 0).map(([, label]) => label);
+  return STATE_FLAGS.filter(([flag]) => (dwEventState & flag) !== 0).map(
+    ([, label]) => label,
+  );
 }
 
 function atrToHex(atr: Uint8Array): string {
@@ -352,9 +356,13 @@ function atrToHex(atr: Uint8Array): string {
  */
 export async function getReaderCurrentState(
   hContext: number,
-  readerName: string
-): Promise<{ reader: string; state: string[]; atr: string; atrBytes: Uint8Array }> {
-  debugger; 
+  readerName: string,
+): Promise<{
+  reader: string;
+  state: string[];
+  atr: string;
+  atrBytes: Uint8Array;
+}> {
   const states = [
     {
       szReader: readerName,
@@ -365,10 +373,13 @@ export async function getReaderCurrentState(
       rgbAtr: new Uint8Array(MAX_ATR_SIZE),
     },
   ];
-  const ret = SCardGetStatusChange(hContext, 0, states , states.length);
+  const ret = SCardGetStatusChange(hContext, 0, states, states.length);
   ensureScardSuccess(ret);
   const s = states[0];
-  const atrBytes = s.rgbAtr instanceof Uint8Array ? s.rgbAtr.slice(0, s.cbAtr) : new Uint8Array(s.rgbAtr).slice(0, s.cbAtr);
+  const atrBytes =
+    s.rgbAtr instanceof Uint8Array
+      ? s.rgbAtr.slice(0, s.cbAtr)
+      : new Uint8Array(s.rgbAtr).slice(0, s.cbAtr);
   return {
     reader: s.szReader,
     state: parseStateFlags(s.dwEventState),
