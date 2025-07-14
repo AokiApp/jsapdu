@@ -5,21 +5,25 @@ import {
   SmartCardPlatform,
 } from "@aokiapp/interface";
 import {
+  PcscErrorCode,
+  SCARD_LEAVE_CARD,
   SCARD_PROTOCOL_T0,
   SCARD_PROTOCOL_T1,
   SCARD_SCOPE_SYSTEM,
   SCARD_SHARE_SHARED,
-  PcscErrorCode,
   SCardConnect,
+  SCardDisconnect,
   SCardEstablishContext,
   SCardReleaseContext,
-  SCARD_LEAVE_CARD,
-  SCardDisconnect,
 } from "@aokiapp/pcsc-ffi-node";
 
 import { PcscDeviceInfo } from "./device-info.js";
 import { PcscDevice } from "./device.js";
-import { AsyncMutex, ensureScardSuccess, callSCardListReaders } from "./utils.js";
+import {
+  AsyncMutex,
+  callSCardListReaders,
+  ensureScardSuccess,
+} from "./utils.js";
 
 /**
  * Implementation of SmartCardPlatform for PC/SC
@@ -152,7 +156,10 @@ export class PcscPlatform extends SmartCardPlatform {
 
       // Already acquired?
       if (this.acquiredDevices.has(id)) {
-        throw new SmartCardError("ALREADY_CONNECTED", "Device is already acquired");
+        throw new SmartCardError(
+          "ALREADY_CONNECTED",
+          "Device is already acquired",
+        );
       }
 
       // Ensure the requested reader exists
@@ -192,7 +199,10 @@ export class PcscPlatform extends SmartCardPlatform {
         // Reader OK but no card
         cardHandle = null;
       } else if (ret === PcscErrorCode.SCARD_E_SHARING_VIOLATION) {
-        throw new SmartCardError("ALREADY_CONNECTED", "Device is currently in use");
+        throw new SmartCardError(
+          "ALREADY_CONNECTED",
+          "Device is currently in use",
+        );
       } else {
         throw new SmartCardError(
           "PLATFORM_ERROR",

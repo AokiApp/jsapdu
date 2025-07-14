@@ -4,7 +4,6 @@
  * It uses Koffi's `load` function to dynamically link to the appropriate shared library (`.dll`, `.so`, or `.framework`).
  * This abstracts away the platform-specific details of where the PC/SC implementation resides.
  */
-
 import koffi from "koffi";
 
 /**

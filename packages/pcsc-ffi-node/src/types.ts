@@ -52,7 +52,7 @@ type CTypeAliasMap = {
   // a lightweight JS object literal containing the expected fields (e.g. `{ dwProtocol, cbPciLength }`).
   LPCSCARD_IO_REQUEST: Buffer | number | Record<string, unknown>;
   LPSCARD_IO_REQUEST: Buffer | number | Record<string, unknown>;
-  
+
   // SCARD_READERSTATE structures for SCardGetStatusChange
   LPSCARD_READERSTATE: SCARD_READERSTATE[];
 };

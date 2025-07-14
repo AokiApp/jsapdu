@@ -5,28 +5,28 @@
  * from the `types` module to create JavaScript functions that can call directly into the native PC/SC code.
  * Each function is defined with its exact native signature, including the return type and the types of its parameters.
  */
+import koffi, { TypeSpec } from "koffi";
 
 import {
   DWORD,
   LONG,
-  LPCVOID,
-  LPSCARDCONTEXT,
-  SCARDCONTEXT,
-  SCARDHANDLE,
-  LPSCARDHANDLE,
-  LPCSTR,
-  LPSTR,
-  LPCWSTR,
-  LPWSTR,
-  LPDWORD,
   LPBYTE,
   LPCBYTE,
   LPCSCARD_IO_REQUEST,
+  LPCSTR,
+  LPCVOID,
+  LPCWSTR,
+  LPDWORD,
+  LPSCARDCONTEXT,
+  LPSCARDHANDLE,
   LPSCARD_IO_REQUEST,
   LPSCARD_READERSTATE,
+  LPSTR,
+  LPWSTR,
+  SCARDCONTEXT,
+  SCARDHANDLE,
 } from "./ctypes";
 import { lib } from "./ffi";
-import koffi, { TypeSpec } from "koffi";
 import { KoffiTypedFn } from "./types";
 
 const isWindows = process.platform === "win32";
@@ -305,16 +305,11 @@ export const SCardGetStatusChange: KoffiTypedFn<
     hContext: "SCARDCONTEXT",
     dwTimeout: "DWORD",
     rgReaderStates: "LPSCARD_READERSTATE@inout",
-    cReaders: "DWORD"
+    cReaders: "DWORD",
   ) => "LONG"
 > = defProto(
   isWindows ? "SCardGetStatusChangeW" : "SCardGetStatusChange",
   LONG,
-  [
-    SCARDCONTEXT,
-    DWORD,
-    koffi.inout(LPSCARD_READERSTATE),
-    DWORD,
-  ],
-  "WINAPI"
+  [SCARDCONTEXT, DWORD, koffi.inout(LPSCARD_READERSTATE), DWORD],
+  "WINAPI",
 );

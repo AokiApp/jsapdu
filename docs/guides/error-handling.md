@@ -3,6 +3,7 @@
 ## Overview
 
 jsapdu provides a comprehensive error handling system designed to:
+
 - Provide structured error information
 - Enable proper error recovery
 - Protect sensitive information
@@ -34,6 +35,7 @@ try {
 ### Specialized Error Types
 
 1. ResourceError - For resource limitation issues:
+
 ```typescript
 try {
   await device.startSession();
@@ -48,27 +50,27 @@ try {
 ```
 
 2. TimeoutError - For operation timeouts:
+
 ```typescript
 try {
   await card.transmit(command);
 } catch (error) {
   if (error instanceof TimeoutError) {
     console.error(
-      `Operation ${error.operationType} timed out after ${error.timeoutMs}ms`
+      `Operation ${error.operationType} timed out after ${error.timeoutMs}ms`,
     );
   }
 }
 ```
 
 3. ValidationError - For invalid parameters:
+
 ```typescript
 try {
   await card.transmit(command);
 } catch (error) {
   if (error instanceof ValidationError) {
-    console.error(
-      `Invalid ${error.parameter}: ${error.value}`
-    );
+    console.error(`Invalid ${error.parameter}: ${error.value}`);
   }
 }
 ```
@@ -77,26 +79,27 @@ try {
 
 The library uses the following error codes:
 
-| Code | Description | Common Causes |
-|------|-------------|---------------|
-| NOT_INITIALIZED | Platform not initialized | Using platform before init() |
-| ALREADY_INITIALIZED | Platform already initialized | Calling init() twice |
-| NO_READERS | No card readers found | Hardware not connected |
-| READER_ERROR | Card reader error | Hardware/driver issues |
-| NOT_CONNECTED | Not connected to card | Using card before connection |
-| ALREADY_CONNECTED | Already connected to card | Connecting twice |
-| CARD_NOT_PRESENT | No card in reader | Missing or removed card |
-| TRANSMISSION_ERROR | APDU transmission failed | Communication issues |
-| PROTOCOL_ERROR | Protocol-level error | Invalid APDU format |
-| TIMEOUT | Operation timed out | Slow card/reader response |
-| RESOURCE_LIMIT | Resource limit reached | Too many connections |
-| INVALID_PARAMETER | Invalid parameter | Wrong APDU parameters |
-| UNSUPPORTED_OPERATION | Operation not supported | Platform limitations |
-| PLATFORM_ERROR | Platform-specific error | Various platform issues |
+| Code                  | Description                  | Common Causes                |
+| --------------------- | ---------------------------- | ---------------------------- |
+| NOT_INITIALIZED       | Platform not initialized     | Using platform before init() |
+| ALREADY_INITIALIZED   | Platform already initialized | Calling init() twice         |
+| NO_READERS            | No card readers found        | Hardware not connected       |
+| READER_ERROR          | Card reader error            | Hardware/driver issues       |
+| NOT_CONNECTED         | Not connected to card        | Using card before connection |
+| ALREADY_CONNECTED     | Already connected to card    | Connecting twice             |
+| CARD_NOT_PRESENT      | No card in reader            | Missing or removed card      |
+| TRANSMISSION_ERROR    | APDU transmission failed     | Communication issues         |
+| PROTOCOL_ERROR        | Protocol-level error         | Invalid APDU format          |
+| TIMEOUT               | Operation timed out          | Slow card/reader response    |
+| RESOURCE_LIMIT        | Resource limit reached       | Too many connections         |
+| INVALID_PARAMETER     | Invalid parameter            | Wrong APDU parameters        |
+| UNSUPPORTED_OPERATION | Operation not supported      | Platform limitations         |
+| PLATFORM_ERROR        | Platform-specific error      | Various platform issues      |
 
 ## Best Practices
 
 1. Always catch SmartCardError:
+
 ```typescript
 try {
   // Operation
@@ -110,6 +113,7 @@ try {
 ```
 
 2. Use error codes for specific handling:
+
 ```typescript
 try {
   // Operation
@@ -123,13 +127,14 @@ try {
         // Handle timeout
         break;
       default:
-        // Handle other errors
+      // Handle other errors
     }
   }
 }
 ```
 
 3. Safe error messages in production:
+
 ```typescript
 try {
   // Operation
@@ -137,7 +142,7 @@ try {
   if (error instanceof SmartCardError) {
     // Use getSafeMessage() for user display
     console.error(error.getSafeMessage());
-    
+
     // Use getDebugInfo() only in development
     if (process.env.NODE_ENV === "development") {
       console.debug(error.getDebugInfo());
@@ -147,6 +152,7 @@ try {
 ```
 
 4. Resource cleanup in error cases:
+
 ```typescript
 let card;
 try {
@@ -162,12 +168,13 @@ try {
 ```
 
 5. Using async dispose pattern:
+
 ```typescript
 async function example() {
   await using platform = manager.getPlatform();
   await using device = (await platform.getDevices())[0].acquireDevice();
   await using card = await device.startSession();
-  
+
   // Resources automatically cleaned up even if error occurs
   await card.transmit(command);
 }
@@ -203,13 +210,14 @@ try {
 ## Error Recovery
 
 1. Transient Errors:
+
 ```typescript
 async function withRetry<T>(
   operation: () => Promise<T>,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<T> {
   let lastError;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await operation();
@@ -224,12 +232,13 @@ async function withRetry<T>(
       throw error;
     }
   }
-  
+
   throw lastError;
 }
 ```
 
 2. Resource Cleanup:
+
 ```typescript
 try {
   await card.transmit(command);
@@ -241,3 +250,4 @@ try {
     }
   }
 }
+```

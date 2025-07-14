@@ -1,11 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/pcsc';
-import { CommandApdu } from '@aokiapp/interface';
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const KENHOJO_AP_AID = [0xA0,0x00,0x00,0x00,0x59,0x01,0x02,0x01,0x00,0x02];
+import { CommandApdu } from "@aokiapp/interface";
+import { PcscPlatformManager } from "@aokiapp/pcsc";
+
+const KENHOJO_AP_AID = [
+  0xa0, 0x00, 0x00, 0x00, 0x59, 0x01, 0x02, 0x01, 0x00, 0x02,
+];
 const PUBLIC_FILES: { name: string; fid: number[] }[] = [
-  { name: 'AP基本情報', fid: [0x00, 0x05] },
-  { name: '中間証明書', fid: [0x00, 0x04] },
+  { name: "AP基本情報", fid: [0x00, 0x05] },
+  { name: "中間証明書", fid: [0x00, 0x04] },
 ];
 
 let platform: any;
@@ -28,16 +31,16 @@ afterEach(async () => {
   if (platform) await platform.release().catch(() => {});
 });
 
-describe('KENHOJO_AP 公開領域 E2Eテスト', () => {
-  it('リーダーが1つ以上取得できる', () => {
-    expect(deviceInfos.length, 'リーダーが見つかりません').toBeGreaterThan(0);
+describe("KENHOJO_AP 公開領域 E2Eテスト", () => {
+  it("リーダーが1つ以上取得できる", () => {
+    expect(deviceInfos.length, "リーダーが見つかりません").toBeGreaterThan(0);
   });
 
   if (PUBLIC_FILES.length === 0) {
-    it.skip('PIN不要で読めるファイルが未設定のためスキップ', () => {});
+    it.skip("PIN不要で読めるファイルが未設定のためスキップ", () => {});
   } else {
     for (const { name, fid } of PUBLIC_FILES) {
-      it(`${name} (FID=${fid.map(b=>b.toString(16).padStart(2,'0')).join('')}) のREAD BINARY`, async () => {
+      it(`${name} (FID=${fid.map((b) => b.toString(16).padStart(2, "0")).join("")}) のREAD BINARY`, async () => {
         if (deviceInfos.length === 0) return;
         let errorMsgs: string[] = [];
         for (let i = 0; i < deviceInfos.length; i++) {
@@ -48,29 +51,41 @@ describe('KENHOJO_AP 公開領域 E2Eテスト', () => {
             card = await device.startSession();
             // KENHOJO_AP SELECT
             const selectApdu = new CommandApdu(
-              0x00, 0xA4, 0x04, 0x00,
+              0x00,
+              0xa4,
+              0x04,
+              0x00,
               Uint8Array.from(KENHOJO_AP_AID),
-              null
+              null,
             );
             const selectResp = await card.transmit(selectApdu);
             // 公開ファイル SELECT
             const selectFileApdu = new CommandApdu(
-              0x00, 0xA4, 0x02, 0x0C,
+              0x00,
+              0xa4,
+              0x02,
+              0x0c,
               Uint8Array.from(fid),
-              null
+              null,
             );
             const selectFileResp = await card.transmit(selectFileApdu);
             // READ BINARY
             const readBinaryApdu = new CommandApdu(
-              0x00, 0xB0, 0x00, 0x00,
+              0x00,
+              0xb0,
+              0x00,
+              0x00,
               null,
-              0x10
+              0x10,
             );
             const readResp = await card.transmit(readBinaryApdu);
-            expect(readResp.sw1, 'sw1がnumber型でない').toBeTypeOf('number');
-            expect(readResp.sw2, 'sw2がnumber型でない').toBeTypeOf('number');
+            expect(readResp.sw1, "sw1がnumber型でない").toBeTypeOf("number");
+            expect(readResp.sw2, "sw2がnumber型でない").toBeTypeOf("number");
             if (readResp.data) {
-              expect(readResp.data.length, 'レスポンスデータ長が0').toBeGreaterThanOrEqual(0);
+              expect(
+                readResp.data.length,
+                "レスポンスデータ長が0",
+              ).toBeGreaterThanOrEqual(0);
             }
             return;
           } catch (e: any) {
@@ -78,11 +93,16 @@ describe('KENHOJO_AP 公開領域 E2Eテスト', () => {
           }
         }
         if (errorMsgs.length > 0) {
-          expect.fail(`${name} (FID=${fid.map(b=>b.toString(16).padStart(2,'0')).join('')}) のREAD BINARYが取得できませんでした:\n` + errorMsgs.join('\n'));
+          expect.fail(
+            `${name} (FID=${fid.map((b) => b.toString(16).padStart(2, "0")).join("")}) のREAD BINARYが取得できませんでした:\n` +
+              errorMsgs.join("\n"),
+          );
         } else {
-          expect.fail(`${name} (FID=${fid.map(b=>b.toString(16).padStart(2,'0')).join('')}) のREAD BINARYが取得できませんでした`);
+          expect.fail(
+            `${name} (FID=${fid.map((b) => b.toString(16).padStart(2, "0")).join("")}) のREAD BINARYが取得できませんでした`,
+          );
         }
       });
     }
   }
-}); 
+});
