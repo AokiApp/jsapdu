@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "smartcard-mcp": {
+      "command": "node",
+      "args": [
+        "/home/user/codes/aokiapp/jsapdu/examples/smartcard-mcp/dist/index.js"
+      ],
+      "alwaysAllow": [
+        "listReaders",
+        "transmitApdu",
+        "connectToCard",
+        "forceReleaseReader"
+      ],
+      "disabled": true
+    },
+    "smartcard-mcp-http": {
+      "type": "streamable-http",
+      "url": "http://localhost:8080/mcp",
+      "note": "For Streamable HTTP connections, add this URL directly in your MCP Client"
+    }
+  }
+}
