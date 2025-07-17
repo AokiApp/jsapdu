@@ -22,6 +22,7 @@ export default tseslint.config(
       "eslint.config.mjs",
       "vitest.config.js",
       "packages/pcsc/tests/*.js",
+      "examples/mynacard-e2e/debug-pcsc.cjs",
     ],
   },
   {
