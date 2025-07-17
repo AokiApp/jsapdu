@@ -39,7 +39,7 @@ export const LONG = isWindows ? koffi.types.int32 : koffi.types.int64;
  * @description Represents a pointer to a constant void (untyped memory).
  * This is used for generic data pointers that are not modified by the function.
  */
-export const LPCVOID = "void*";
+export const LPCVOID = "const void*";
 
 /**
  * @description Represents a pointer to void (untyped memory).
@@ -72,7 +72,7 @@ export const LPSTR = "char*";
  * Used for input string parameters in Windows W (Wide) functions.
  * Not used in current implementation but provided for completeness.
  */
-export const LPCWSTR = "const char16_t*";
+export const LPCWSTR = "const wchar_t*";
 
 /**
  * @description Represents a pointer to a mutable wide null-terminated string (UTF-16).
@@ -80,6 +80,12 @@ export const LPCWSTR = "const char16_t*";
  * Not used in current implementation but provided for completeness.
  */
 export const LPWSTR = "char16_t*";
+
+// Platform-specific type aliases for string pointers
+
+export const [LPCSTR_P, LPSTR_P] = isWindows
+  ? [LPCWSTR, LPWSTR]
+  : [LPCSTR, LPSTR];
 
 /**
  * @description Represents a pointer to a DWORD.
@@ -164,6 +170,11 @@ export const PDWORD = koffi.pointer(DWORD);
 export const PUCHAR = koffi.pointer(UCHAR);
 
 /**
+ * @description Represents a pointer to ULONG_PTR.
+ */
+export const ULONG_PTR = isWindows ? koffi.types.uint64 : koffi.types.uint32;
+
+/**
  * ## PC/SC Specific Types
  *
  * These are handle types defined by the PC/SC standard. They are essentially pointers or identifiers
@@ -177,10 +188,8 @@ export const PUCHAR = koffi.pointer(UCHAR);
  * According to pcsc-lite's pcsclite.h, this is defined as 'LONG'.
  * On Windows, this would be a ULONG_PTR (64-bit unsigned integer).
  * On Linux/macOS with pcsc-lite, this is a LONG (64-bit signed integer).
- *
- * We use LONG for cross-platform compatibility with pcsc-lite.
  */
-export const SCARDCONTEXT = LONG;
+export const SCARDCONTEXT = isWindows ? ULONG_PTR : LONG;
 
 /**
  * @description Represents a pointer to a `SCARDCONTEXT`. This is used for output parameters
@@ -195,10 +204,8 @@ export const LPSCARDCONTEXT = koffi.pointer(SCARDCONTEXT);
  * According to pcsc-lite's pcsclite.h, this is defined as 'LONG'.
  * On Windows, this would be a ULONG_PTR (64-bit unsigned integer).
  * On Linux/macOS with pcsc-lite, this is a LONG (64-bit signed integer).
- *
- * We use LONG for cross-platform compatibility with pcsc-lite.
  */
-export const SCARDHANDLE = LONG;
+export const SCARDHANDLE = isWindows ? ULONG_PTR : LONG;
 
 /**
  * @description Represents a pointer to a `SCARDHANDLE`. This is used for output parameters
@@ -321,7 +328,7 @@ export const SCARD_PCI_RAW = {
  * all DWORD fields follow the platform-dependent DWORD definition.
  */
 export const SCARD_READERSTATE = koffi.struct("SCARD_READERSTATE", {
-  szReader: "const char*", // Reader name (const char* in pcsc-lite)
+  szReader: LPCSTR_P,
   pvUserData: LPVOID, // User defined data
   dwCurrentState: DWORD, // Current state of reader at time of call
   dwEventState: DWORD, // State of reader after state change
