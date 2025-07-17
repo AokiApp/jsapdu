@@ -560,7 +560,6 @@ interface ErrorInfo {
 - **実行環境**: Node.js 18+
 - **開発言語**: TypeScript 5+
 - **フレームワーク**: FastMCP
-- **テストフレームワーク**: Jest
 - **ビルドツール**: esbuild
 
 #### 10.1.2 開発ツール
