@@ -42,16 +42,6 @@ function atrToHex(atr: Uint8Array): string {
     .toUpperCase();
 }
 
-/**
- * Map PC/SC protocol to our protocol type
- */
-function mapProtocol(pcscProtocol: number): "T=0" | "T=1" | "T=CL" {
-  // Based on PC/SC protocol constants
-  if (pcscProtocol === 1) return "T=0";
-  if (pcscProtocol === 2) return "T=1";
-  return "T=CL"; // Default for contactless or unknown
-}
-
 export default makeTool(
   "connectToCard",
   `### 概要

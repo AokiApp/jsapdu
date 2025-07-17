@@ -1,7 +1,7 @@
 /**
  * APDU Status Code interpretation utilities
  */
-import { StatusCodeCategory, StatusCodeInfo } from "../types.js";
+import { StatusCodeInfo } from "../types.js";
 
 /**
  * APDU Status Code lookup table based on ISO 7816-4
@@ -238,7 +238,7 @@ export function lookupStatusCode(sw: string): StatusCodeInfo {
       meaning: "未知のステータスコード",
       action: "カード仕様書を確認してください",
     };
-  } catch (error) {
+  } catch {
     // Invalid format
     return {
       sw: sw,

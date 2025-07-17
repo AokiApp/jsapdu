@@ -4,23 +4,13 @@ import { ZodType, z } from "zod";
 
 import { SmartCardMcpSessionStruct } from "../types";
 
-/**
- * MCPツール定義のための型
- */
-export interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: ZodType;
-  execute: (input: unknown, context: Context<any>) => Promise<unknown>;
-}
-
 function convertContext(context: Context<SmartCardMcpSessionStruct>) {
   if (!context.session) {
     context.session = {} as SmartCardMcpSessionStruct;
   }
   return {
     ...context,
-    session: context.session as SmartCardMcpSessionStruct,
+    session: context.session,
   };
 }
 
@@ -62,7 +52,7 @@ export function makeTool<InputArg extends ZodType, OutputArg extends ZodType>(
           text: JSON.stringify(parsedResult.data, null, 2),
         };
       } catch (error) {
-        let msg =
+        const msg =
           error && typeof error === "object" && "message" in error
             ? (error as Error).message
             : String(error);

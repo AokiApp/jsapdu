@@ -3,27 +3,6 @@ import { FastMCP } from "fastmcp";
 import * as tools from "./tools/index.js";
 import { SmartCardMcpSessionStruct } from "./types.js";
 
-// Ensure global darkhole object exists
-if (!globalThis.darkhole) {
-  globalThis.darkhole = {
-    debug: (...args: any[]) => {},
-    info: (...args: any[]) => {},
-    warn: (...args: any[]) => {},
-    error: (...args: any[]) => {},
-    log: (...args: any[]) => {},
-  };
-}
-
-// declare global darkhole object
-declare global {
-  var darkhole: {
-    debug: (...args: any[]) => void;
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
-    log: (...args: any[]) => void;
-  };
-}
 export const server = new FastMCP<SmartCardMcpSessionStruct>({
   name: "mcp-server-smartcard",
   version: "1.0.0",
@@ -43,14 +22,10 @@ export const server = new FastMCP<SmartCardMcpSessionStruct>({
 
 セッション管理はFastMCPの機能を使用し、クライアントごとに独立したカード接続状態を管理します。
   `.trim(),
-  async authenticate() {
-    return {} satisfies SmartCardMcpSessionStruct;
-  },
 });
 
 // Register all tools
-for (const [toolName, tool] of Object.entries(tools)) {
-  globalThis.darkhole.log(`Registering tool: ${toolName}`);
+for (const [, tool] of Object.entries(tools)) {
   server.addTool(tool);
 }
 
@@ -62,27 +37,17 @@ export function startServer() {
   const transportType =
     (process.env.TRANSPORT_TYPE as "stdio" | "httpStream") || "stdio";
   const port = parseInt(process.env.PORT || "8080", 10);
-  const logLevel =
-    (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error") || "info";
 
-  globalThis.darkhole.log(`Starting Smart Card MCP Server...`);
-  globalThis.darkhole.log(`Transport: ${transportType}`);
-
-  if (transportType === "httpStream") {
-    globalThis.darkhole.log(`Port: ${port}`);
-  }
-
-  globalThis.darkhole.log(`Log Level: ${logLevel}`);
-  globalThis.darkhole.log(`Registered ${Object.keys(tools).length} tools`);
-
-  server.start({
-    transportType,
-    ...(transportType === "httpStream" && {
-      httpStream: {
-        port,
-      },
-    }),
-  });
-
-  globalThis.darkhole.log("Smart Card MCP Server started successfully!");
+  server
+    .start({
+      transportType,
+      ...(transportType === "httpStream" && {
+        httpStream: {
+          port,
+        },
+      }),
+    })
+    .catch(() => {
+      process.exit(1);
+    });
 }

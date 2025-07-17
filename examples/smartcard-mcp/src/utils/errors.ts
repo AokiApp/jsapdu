@@ -94,7 +94,5 @@ export function logError(error: unknown, context: string, logger?: any): void {
             }
           : error,
     });
-  } else {
-    globalThis.darkhole.error(`[${context}] ${errorCode}: ${message}`);
   }
 }
