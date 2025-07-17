@@ -13,16 +13,14 @@ import {
   LPBYTE,
   LPCBYTE,
   LPCSCARD_IO_REQUEST,
-  LPCSTR,
+  LPCSTR_P,
   LPCVOID,
-  LPCWSTR,
   LPDWORD,
   LPSCARDCONTEXT,
   LPSCARDHANDLE,
   LPSCARD_IO_REQUEST,
   LPSCARD_READERSTATE,
-  LPSTR,
-  LPWSTR,
+  LPSTR_P,
   SCARDCONTEXT,
   SCARDHANDLE,
 } from "./ctypes";
@@ -54,9 +52,6 @@ function defProto(
     return lib.func(name, result, args);
   }
 }
-
-// Platform-specific type aliases for string pointers
-const [LPCSTR_P, LPSTR_P] = isWindows ? [LPCWSTR, LPWSTR] : [LPCSTR, LPSTR];
 
 /**
  * @description Establishes the resource manager context (the scope) for PC/SC operations.
