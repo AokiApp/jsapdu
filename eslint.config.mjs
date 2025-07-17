@@ -18,7 +18,6 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
-      ".private.local/",
       "eslint.config.mjs",
       "vitest.config.js",
       "packages/pcsc/tests/*.js",

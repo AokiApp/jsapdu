@@ -4,6 +4,7 @@
  * It uses the `lib` object (the loaded native library) from the `ffi` module and the data types
  * from the `types` module to create JavaScript functions that can call directly into the native PC/SC code.
  * Each function is defined with its exact native signature, including the return type and the types of its parameters.
+ * Borrowed from pcsclite, Windows SDK.
  */
 import koffi, { TypeSpec } from "koffi";
 
