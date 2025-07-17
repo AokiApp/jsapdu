@@ -22,6 +22,9 @@ export const server = new FastMCP<SmartCardMcpSessionStruct>({
 
 セッション管理はFastMCPの機能を使用し、クライアントごとに独立したカード接続状態を管理します。
   `.trim(),
+  authenticate() {
+    return Promise.resolve({}); // これがないとセッションストアをアンカーできない
+  },
 });
 
 // Register all tools
