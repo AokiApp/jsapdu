@@ -9,6 +9,7 @@ The Smart Card MCP server currently implements a **dual-session architecture** t
 ## Current Architecture
 
 ### Dual Session Model
+
 ```
 MCP Client (Claude/ChatGPT)
     ↓
@@ -18,6 +19,7 @@ Card Reader Connections
 ```
 
 ### Current API Pattern
+
 ```typescript
 // Connect (state stored in FastMCP session)
 connectToCard({ readerId: "reader1" })
@@ -36,6 +38,7 @@ disconnectFromCard()
 FastMCP already provides robust session management:
 
 ### Session Features
+
 - **1:1 Client-Session Mapping**: Each MCP client gets its own session
 - **Session Context Storage**: `context.session` object for storing state
 - **Automatic Cleanup**: Sessions cleaned up on client disconnect
@@ -43,6 +46,7 @@ FastMCP already provides robust session management:
 - **Event Handling**: Connect/disconnect events available
 
 ### Example Usage
+
 ```typescript
 // Store connection state in FastMCP session
 server.addTool({
@@ -52,28 +56,29 @@ server.addTool({
     session.cardConnection = {
       readerId: args.readerId,
       atr: "...",
-      protocol: "T=0"
+      protocol: "T=0",
     };
     return { success: true };
-  }
+  },
 });
 
 // Access stored state in other tools
 server.addTool({
-  name: "transmitApdu", 
+  name: "transmitApdu",
   execute: async (args, { session }) => {
     const connection = session.cardConnection;
     if (!connection) {
       throw new Error("No active card connection");
     }
     // Use connection...
-  }
+  },
 });
 ```
 
 ## Problems with Current Dual-Session Approach
 
 ### Single Session Model
+
 ```
 MCP Client (Claude/ChatGPT)
     ↓
@@ -83,6 +88,7 @@ Card Reader Connection
 ```
 
 ### Simplified API Pattern
+
 ```typescript
 // Connect (state stored in FastMCP session)
 connectToCard({ readerId: "reader1" })
@@ -99,16 +105,19 @@ disconnectFromCard()
 ### Implementation Strategy
 
 #### Option A: Single Active Connection
+
 - Each MCP session maintains one active card connection
 - Simplest to implement and understand
 - Covers 90% of use cases
 
 #### Option B: Multi-Reader with Context
+
 - Store multiple connections in session context
 - Use `readerId` parameter to specify which reader
 - Default to "current" connection if not specified
 
 #### Option C: Stateless with Reader Selection
+
 - No persistent connections
 - Each tool specifies `readerId`
 - PC/SC handles connection lifecycle
@@ -119,19 +128,23 @@ disconnectFromCard()
 - SessionManager等の独自セッション管理を廃止
 - FastMCPのcontext.sessionのみでカード接続状態を管理
 - ドキュメント・サンプル・設計も全て統一済み
+
 ## Benefits of Simplification
 
 ### For Users
+
 - **Simpler API**: No session management required
 - **Less Error-Prone**: Can't use wrong sessionId
 - **More Intuitive**: Matches typical MCP tool patterns
 
 ### For Developers
+
 - **Less Code**: Remove SessionManager complexity
 - **Easier Testing**: Fewer state combinations
 - **Better Maintainability**: Single source of truth for state
 
 ### For Documentation
+
 - **Clearer Examples**: Focus on smart card operations, not session management
 - **Reduced Cognitive Load**: Fewer concepts to explain
 - **Better User Experience**: Faster time to first success

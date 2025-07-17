@@ -87,6 +87,7 @@ Follow the client-specific instructions for connecting to an MCP server.
 Lists all available smart card readers connected to the system.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp listReaders
 ```
@@ -96,9 +97,11 @@ Lists all available smart card readers connected to the system.
 Connects to a smart card reader and establishes a session with the card.
 
 **Parameters:**
+
 - `readerId` (optional): ID of the reader to connect to. If not provided, connects to the first available reader.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp connect
 ```
@@ -108,6 +111,7 @@ Connects to a smart card reader and establishes a session with the card.
 Gets information about the connected smart card, including the ATR (Answer To Reset).
 
 **Example:**
+
 ```
 /mcp smartcard-mcp getCardInfo
 ```
@@ -117,6 +121,7 @@ Gets information about the connected smart card, including the ATR (Answer To Re
 Transmits an APDU command to the smart card.
 
 **Parameters:**
+
 - `cla`: Class byte (CLA) in hexadecimal format (e.g., '00')
 - `ins`: Instruction byte (INS) in hexadecimal format (e.g., 'A4')
 - `p1`: Parameter 1 (P1) in hexadecimal format (e.g., '04')
@@ -125,16 +130,17 @@ Transmits an APDU command to the smart card.
 - `le` (optional): Expected response length (Le). If not provided, no Le is sent.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp transmitApdu --cla 00 --ins A4 --p1 04 --p2 00 --data 3F00
 ```
-
 
 ### `resetCard`
 
 Resets the smart card.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp resetCard
 ```
@@ -144,6 +150,7 @@ Resets the smart card.
 Disconnects from the smart card.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp disconnect
 ```
@@ -153,6 +160,7 @@ Disconnects from the smart card.
 Releases all smart card resources.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp release
 ```
@@ -164,6 +172,7 @@ Releases all smart card resources.
 Information about the connected smart card.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp access smartcard://info
 ```
@@ -173,6 +182,7 @@ Information about the connected smart card.
 List of available smart card readers.
 
 **Example:**
+
 ```
 /mcp smartcard-mcp access smartcard://readers
 ```
@@ -182,9 +192,11 @@ List of available smart card readers.
 Information about a specific reader.
 
 **Parameters:**
+
 - `readerId`: ID of the reader
 
 **Example:**
+
 ```
 /mcp smartcard-mcp access smartcard://reader/MyReader
 ```
@@ -194,9 +206,11 @@ Information about a specific reader.
 APDU command/response history.
 
 **Parameters:**
+
 - `count`: Number of history entries to retrieve (5, 10, 20, or all)
 
 **Example:**
+
 ```
 /mcp smartcard-mcp access smartcard://apdu-history/10
 ```

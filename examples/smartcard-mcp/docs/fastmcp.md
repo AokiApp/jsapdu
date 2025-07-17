@@ -68,7 +68,9 @@ npm install fastmcp
 
 ```ts
 import { FastMCP } from "fastmcp";
-import { z } from "zod"; // Or any validation library that supports Standard Schema
+import { z } from "zod";
+
+// Or any validation library that supports Standard Schema
 
 const server = new FastMCP({
   name: "My Server",
@@ -1169,9 +1171,9 @@ server.addTool({
 FastMCP includes built-in support for OAuth discovery endpoints, supporting both **MCP Specification 2025-03-26** and **MCP Specification 2025-06-18** for OAuth integration. This makes it easy to integrate with OAuth authorization flows by providing standard discovery endpoints that comply with RFC 8414 (OAuth 2.0 Authorization Server Metadata) and RFC 9470 (OAuth 2.0 Protected Resource Metadata):
 
 ```ts
+import fastJwt from "fast-jwt";
 import { FastMCP } from "fastmcp";
 import { buildGetJwks } from "get-jwks";
-import fastJwt from "fast-jwt";
 
 const server = new FastMCP({
   name: "My Server",
@@ -1323,8 +1325,8 @@ server.start({
 A client that would connect to this may look something like this:
 
 ```ts
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const transport = new StreamableHTTPClientTransport(
   new URL(`http://localhost:8080/mcp`),
