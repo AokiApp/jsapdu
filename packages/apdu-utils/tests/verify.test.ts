@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { verify } from "../src";
 
-const TEST_PIN = "1234";
+const TEST_PIN = "1234"; // Example PIN data, it is a test card PIN, not the production card PIN
 const PIN_DIGITS = [0x31, 0x32, 0x33, 0x34]; // ASCII for "1234"
 
 describe("verify", () => {
