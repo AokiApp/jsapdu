@@ -32,6 +32,7 @@ Thank you for your interest in contributing to jsapdu! This guide will help you 
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/jsapdu.git
    cd jsapdu
@@ -73,7 +74,7 @@ npm run format
 jsapdu/
 ├── packages/                    # Monorepo packages
 │   ├── interface/              # Core abstractions
-│   ├── pcsc/                   # PC/SC implementation  
+│   ├── pcsc/                   # PC/SC implementation
 │   ├── pcsc-ffi-node/          # Native PC/SC bindings
 │   ├── apdu-utils/             # APDU utilities
 │   ├── tlv-parser/             # TLV data parsing
@@ -98,10 +99,10 @@ jsapdu/
 ```mermaid
 graph TD
     A[mynacard] --> B[tlv-parser]
-    C[apdu-utils] --> D[interface] 
+    C[apdu-utils] --> D[interface]
     E[pcsc] --> D
     E --> F[pcsc-ffi-node]
-    
+
     B -.-> D
     A -.-> C
 ```
@@ -138,6 +139,7 @@ git commit -m "docs(mynacard): add PIN management examples"
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -147,6 +149,7 @@ git commit -m "docs(mynacard): add PIN management examples"
 - `chore`: Maintenance tasks
 
 **Scopes:**
+
 - `interface`: Core abstractions
 - `pcsc`: PC/SC implementation
 - `apdu-utils`: APDU utilities
@@ -188,23 +191,23 @@ packages/PACKAGE_NAME/
 ### Writing Tests
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { CommandApdu } from '../src/index.js';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { CommandApdu } from "../src/index.js";
 
-describe('CommandApdu', () => {
-  it('should create valid APDU command', () => {
+describe("CommandApdu", () => {
+  it("should create valid APDU command", () => {
     const apdu = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 0x00);
-    
+
     expect(apdu.cla).toBe(0x00);
     expect(apdu.ins).toBe(0xa4);
     expect(apdu.p1).toBe(0x04);
     expect(apdu.p2).toBe(0x00);
   });
 
-  it('should serialize to correct byte array', () => {
+  it("should serialize to correct byte array", () => {
     const apdu = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 0x00);
     const bytes = apdu.toUint8Array();
-    
+
     expect(bytes).toEqual(new Uint8Array([0x00, 0xa4, 0x04, 0x00, 0x00]));
   });
 });
@@ -215,10 +218,10 @@ describe('CommandApdu', () => {
 For tests requiring SmartCard hardware:
 
 ```typescript
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
-describe('Hardware Tests', () => {
+describe("Hardware Tests", () => {
   let platform;
   let device;
   let card;
@@ -228,17 +231,17 @@ describe('Hardware Tests', () => {
     const manager = PcscPlatformManager.getInstance();
     platform = manager.getPlatform();
     await platform.init();
-    
+
     const devices = await platform.getDeviceInfo();
     if (devices.length === 0) {
-      throw new Error('No card readers found for testing');
+      throw new Error("No card readers found for testing");
     }
-    
+
     device = await platform.acquireDevice(devices[0].id);
     if (!(await device.isCardPresent())) {
-      throw new Error('No card present for testing');
+      throw new Error("No card present for testing");
     }
-    
+
     card = await device.startSession();
   });
 
@@ -249,7 +252,7 @@ describe('Hardware Tests', () => {
     await platform?.release();
   });
 
-  it('should read card ATR', async () => {
+  it("should read card ATR", async () => {
     const atr = await card.getAtr();
     expect(atr.length).toBeGreaterThan(0);
   });
@@ -272,7 +275,9 @@ describe('Hardware Tests', () => {
  * @returns Promise that resolves to the platform instance
  * @throws {SmartCardError} When platform initialization fails
  */
-async function connectToPlatform(platformType: string): Promise<SmartCardPlatform> {
+async function connectToPlatform(
+  platformType: string,
+): Promise<SmartCardPlatform> {
   // Implementation
 }
 ```
@@ -290,7 +295,7 @@ try {
   throw new SmartCardError(
     "TRANSMISSION_ERROR",
     "Failed to transmit APDU command",
-    error instanceof Error ? error : undefined
+    error instanceof Error ? error : undefined,
   );
 }
 
@@ -312,7 +317,7 @@ async function example() {
   await using platform = manager.getPlatform();
   await using device = await platform.acquireDevice(deviceId);
   await using card = await device.startSession();
-  
+
   // Use card...
   // Resources automatically cleaned up
 }
@@ -320,18 +325,18 @@ async function example() {
 // ✅ Acceptable - manual cleanup
 async function example() {
   let platform, device, card;
-  
+
   try {
     platform = manager.getPlatform();
     await platform.init();
-    
+
     device = await platform.acquireDevice(deviceId);
     card = await device.startSession();
-    
+
     // Use card...
   } finally {
     await card?.release();
-    await device?.release();  
+    await device?.release();
     await platform?.release();
   }
 }
@@ -353,6 +358,7 @@ npm run format
 ```
 
 Configuration files:
+
 - ESLint: `eslint.config.mjs`
 - Prettier: `.prettierrc`
 - TypeScript: `tsconfig.json` (per package)
@@ -362,6 +368,7 @@ Configuration files:
 ### Pull Request Process
 
 1. **Ensure tests pass**:
+
    ```bash
    npm test
    npm run lint
@@ -382,20 +389,24 @@ Configuration files:
 
 ```markdown
 ## Description
+
 Brief description of the changes made.
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing performed
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Comments added to complex code
@@ -410,6 +421,7 @@ Brief description of the changes made.
 To add support for a new SmartCard platform:
 
 1. **Create platform package**:
+
    ```bash
    mkdir packages/your-platform
    cd packages/your-platform
@@ -417,18 +429,23 @@ To add support for a new SmartCard platform:
    ```
 
 2. **Implement abstractions**:
+
    ```typescript
-   import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
-   
+   import {
+     SmartCardPlatform,
+     SmartCardDevice,
+     SmartCard,
+   } from "@aokiapp/jsapdu-interface";
+
    export class YourPlatform extends SmartCardPlatform {
      async init(): Promise<void> {
        // Initialize platform
      }
-     
+
      async getDeviveInfo(): Promise<SmartCardDeviceInfo[]> {
        // Get available devices
      }
-     
+
      // Implement other required methods
    }
    ```
@@ -442,10 +459,11 @@ To add support for a new SmartCard platform:
 To add support for a new SmartCard type:
 
 1. **Define constants**:
+
    ```typescript
    // Application Identifier
    export const YOUR_CARD_AP = [0x01, 0x02, 0x03, 0x04];
-   
+
    // Elementary Files
    export const YOUR_CARD_AP_EF = {
      FILE1: 0x01,
@@ -454,14 +472,16 @@ To add support for a new SmartCard type:
    ```
 
 2. **Create TLV schemas**:
+
    ```typescript
    export const schemaYourCardData = Schema.constructed("yourCardData", [
      Schema.primitive("field1", decoder1),
-     Schema.primitive("field2", decoder2)
+     Schema.primitive("field2", decoder2),
    ]);
    ```
 
 3. **Add utility functions**:
+
    ```typescript
    export async function readYourCardData(card: SmartCard, pin: string) {
      // Implementation
@@ -477,11 +497,12 @@ To add support for a new SmartCard type:
 To add new APDU utility functions:
 
 1. **Implement function**:
+
    ```typescript
    export function yourCommand(
      param1: number,
      param2: string,
-     options?: YourCommandOptions
+     options?: YourCommandOptions,
    ): CommandApdu {
      // Validate parameters
      // Build and return CommandApdu
@@ -489,6 +510,7 @@ To add new APDU utility functions:
    ```
 
 2. **Add parameter validation**:
+
    ```typescript
    if (param1 < 0 || param1 > 255) {
      throw new Error("Invalid parameter range");
@@ -496,14 +518,15 @@ To add new APDU utility functions:
    ```
 
 3. **Write comprehensive tests**:
+
    ```typescript
-   describe('yourCommand', () => {
-     it('should create correct APDU', () => {
+   describe("yourCommand", () => {
+     it("should create correct APDU", () => {
        const cmd = yourCommand(0x01, "test");
        expect(cmd.toUint8Array()).toEqual(expectedBytes);
      });
-     
-     it('should validate parameters', () => {
+
+     it("should validate parameters", () => {
        expect(() => yourCommand(-1, "test")).toThrow();
      });
    });
@@ -518,32 +541,35 @@ To add new APDU utility functions:
 - Provide usage examples
 - Document error conditions
 
-```typescript
+````typescript
 /**
  * Creates a SELECT command for directory files (applications)
- * 
+ *
  * @param aid - Application Identifier (1-16 bytes)
  * @param requestFci - Whether to request File Control Information
  * @returns CommandApdu ready for transmission
  * @throws {Error} When AID length is invalid
- * 
+ *
  * @example
  * ```typescript
  * const cmd = selectDf("A0000000041010", true);
  * const response = await card.transmit(cmd);
  * ```
  */
-function selectDf(aid: string | number[] | Uint8Array, requestFci = false): CommandApdu {
+function selectDf(
+  aid: string | number[] | Uint8Array,
+  requestFci = false,
+): CommandApdu {
   // Implementation
 }
-```
+````
 
 ### README Updates
 
 When adding new packages or features:
 
 1. Update the main README
-2. Update package-specific READMEs  
+2. Update package-specific READMEs
 3. Add to API documentation
 4. Include in guides as appropriate
 
@@ -560,11 +586,11 @@ async function example() {
   const manager = PcscPlatformManager.getInstance();
   await using platform = manager.getPlatform();
   await platform.init();
-  
+
   const devices = await platform.getDeviceInfo();
   await using device = await platform.acquireDevice(devices[0].id);
   await using card = await device.startSession();
-  
+
   const response = await card.transmit(selectDf("A0000000041010"));
   console.log("Success:", response.sw === 0x9000);
 }
@@ -595,24 +621,30 @@ example().catch(console.error);
 ## [1.1.0] - 2024-01-15
 
 ### Added
+
 - New platform support for WebUSB
 - Additional APDU utility functions
 
 ### Changed
+
 - Improved error messages for PIN verification
 - Updated TypeScript to version 5.0
 
 ### Fixed
+
 - Memory leak in PC/SC device cleanup
 - TLV parsing for edge cases
 
 ### Deprecated
+
 - Old platform initialization method
 
 ### Removed
+
 - Support for Node.js 16
 
 ### Security
+
 - Enhanced PIN handling security
 ```
 
@@ -634,6 +666,7 @@ example().catch(console.error);
 ### Maintainer Contact
 
 For questions about contributing, reach out to the maintainers through:
+
 - GitHub issues (preferred)
 - GitHub discussions
 - Email: [contact information]

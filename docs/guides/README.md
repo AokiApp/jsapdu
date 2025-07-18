@@ -5,6 +5,7 @@ Comprehensive guides for implementing SmartCard applications with jsapdu.
 ## Available Guides
 
 ### 🎌 MynaCard Integration
+
 **[MynaCard Guide](./mynacard.md)** - Complete guide for Japanese government MynaCard integration
 
 - Reading personal information (個人情報読み取り)
@@ -14,6 +15,7 @@ Comprehensive guides for implementing SmartCard applications with jsapdu.
 - Bilingual documentation (日英対応)
 
 ### 🧪 Testing & Development
+
 **[Testing Guide](./testing.md)** - Comprehensive testing strategies for SmartCard applications
 
 - Unit testing with mocks
@@ -30,21 +32,22 @@ Comprehensive guides for implementing SmartCard applications with jsapdu.
 - Release management
 
 ### 🛠️ Technical Guides
-**[Error Handling Guide](./error-handling.md)** - Best practices for error management *(Coming Soon)*
+
+**[Error Handling Guide](./error-handling.md)** - Best practices for error management _(Coming Soon)_
 
 - Structured error handling
 - Recovery strategies
 - Logging and debugging
 - Security considerations
 
-**[Troubleshooting Guide](./troubleshooting.md)** - Common issues and solutions *(Coming Soon)*
+**[Troubleshooting Guide](./troubleshooting.md)** - Common issues and solutions _(Coming Soon)_
 
 - Hardware setup issues
 - Platform-specific problems
 - Authentication failures
 - Performance optimization
 
-**[Extending Platforms Guide](./extending-platforms.md)** - Adding new platform support *(Coming Soon)*
+**[Extending Platforms Guide](./extending-platforms.md)** - Adding new platform support _(Coming Soon)_
 
 - Platform abstraction implementation
 - Native binding integration
@@ -54,19 +57,25 @@ Comprehensive guides for implementing SmartCard applications with jsapdu.
 ## Guide Categories
 
 ### Getting Started
+
 For developers new to jsapdu or SmartCard development:
+
 - Start with [Getting Started](../getting-started.md)
 - Review [Architecture Overview](../architecture/README.md)
 - Try [Basic Examples](../examples/README.md)
 
 ### Domain-Specific
+
 For specific use cases and integrations:
+
 - **Japanese Government**: [MynaCard Guide](./mynacard.md)
 - **Custom Cards**: [Extending Platforms Guide](./extending-platforms.md)
 - **Testing**: [Testing Guide](./testing.md)
 
 ### Advanced Topics
+
 For experienced developers and contributors:
+
 - **Contributing**: [Contributing Guide](../CONTRIBUTING.md)
 - **Error Handling**: [Error Handling Guide](./error-handling.md)
 - **Performance**: [Troubleshooting Guide](./troubleshooting.md)
@@ -74,6 +83,7 @@ For experienced developers and contributors:
 ## Cross-References
 
 ### Related API Documentation
+
 - [Complete API Reference](../api/README.md)
 - [Interface Package](../../packages/interface/README.md) - Core abstractions
 - [PCSC Package](../../packages/pcsc/README.md) - Platform implementation
@@ -82,12 +92,14 @@ For experienced developers and contributors:
 - [TLV Parser Package](../../packages/tlv-parser/README.md) - Data parsing
 
 ### Related Examples
+
 - [Examples Overview](../examples/README.md)
 - [MynaCard Examples](../../examples/mynacard/)
 - [PC/SC Examples](../../examples/pcsc-ffi/)
 - [End-to-End Tests](../../examples/mynacard-e2e/)
 
 ### Architecture & Design
+
 - [Architecture Documentation](../architecture/README.md)
 - [Core Concepts](../architecture/README.md#core-components)
 - [Design Patterns](../architecture/README.md#extension-points)
@@ -107,6 +119,7 @@ See the [Contributing Guide](../CONTRIBUTING.md) for detailed instructions.
 ## Guide Writing Standards
 
 ### Structure
+
 - **Overview**: Brief description and use case
 - **Prerequisites**: Required knowledge and setup
 - **Step-by-step instructions**: Clear, actionable steps
@@ -115,6 +128,7 @@ See the [Contributing Guide](../CONTRIBUTING.md) for detailed instructions.
 - **Cross-references**: Links to related documentation
 
 ### Code Examples
+
 - Always provide complete, runnable examples
 - Include error handling
 - Use proper resource management
@@ -122,7 +136,9 @@ See the [Contributing Guide](../CONTRIBUTING.md) for detailed instructions.
 - Test examples before publishing
 
 ### Japanese Integration
+
 For MynaCard and other Japanese-specific content:
+
 - Provide English explanations for Japanese terms
 - Include both English and Japanese field names
 - Reference official Japanese documentation

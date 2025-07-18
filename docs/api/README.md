@@ -5,9 +5,11 @@ Complete API documentation for all jsapdu packages.
 ## Core Packages
 
 ### [@aokiapp/jsapdu-interface](./interface.md)
+
 Core abstractions and interfaces for platform-agnostic SmartCard communication.
 
 **Key Classes:**
+
 - [`SmartCardPlatformManager`](./interface.md#smartcardplatformmanager) - Platform manager abstraction
 - [`SmartCardPlatform`](./interface.md#smartcardplatform) - Platform interface
 - [`SmartCardDevice`](./interface.md#smartcarddevice) - Device abstraction
@@ -17,18 +19,22 @@ Core abstractions and interfaces for platform-agnostic SmartCard communication.
 - [`SmartCardError`](./interface.md#smartcarderror) - Error handling system
 
 ### [@aokiapp/jsapdu-pcsc](./pcsc.md)
+
 PC/SC platform implementation for desktop environments.
 
 **Key Classes:**
+
 - [`PcscPlatformManager`](./pcsc.md#pcscplatformmanager) - PC/SC platform manager
 - [`PcscPlatform`](./pcsc.md#pcscplatform) - PC/SC platform implementation
 - [`PcscDevice`](./pcsc.md#pcscdevice) - PC/SC device implementation
 - [`PcscCard`](./pcsc.md#pcsccard) - PC/SC card communication
 
 ### [@aokiapp/apdu-utils](./apdu-utils.md)
+
 Utility functions for building common APDU commands.
 
 **Key Functions:**
+
 - [`selectDf()`](./apdu-utils.md#selectdf) - Select directory file (application)
 - [`selectEf()`](./apdu-utils.md#selectef) - Select elementary file
 - [`readEfBinaryFull()`](./apdu-utils.md#readefbinaryfull) - Read complete file
@@ -36,22 +42,27 @@ Utility functions for building common APDU commands.
 - [`verify()`](./apdu-utils.md#verify) - PIN verification
 
 ### [@aokiapp/tlv-parser](./tlv-parser.md)
+
 TLV (Tag-Length-Value) data parsing with schema support.
 
 **Key Classes:**
+
 - [`BasicTLVParser`](./tlv-parser.md#basictlvparser) - Basic TLV parsing
 - [`SchemaParser`](./tlv-parser.md#schemaparser) - Schema-based parsing
 - [`Schema`](./tlv-parser.md#schema) - Schema definition utilities
 
 ### [@aokiapp/mynacard](./mynacard.md)
+
 Japanese MynaCard support with specialized functionality.
 
 **Key Constants:**
+
 - [`JPKI_AP`](./mynacard.md#jpki_ap) - JPKI application constants
-- [`KENHOJO_AP`](./mynacard.md#kenhojo_ap) - Kenhojo application constants  
+- [`KENHOJO_AP`](./mynacard.md#kenhojo_ap) - Kenhojo application constants
 - [`KENKAKU_AP`](./mynacard.md#kenkaku_ap) - Kenkaku application constants
 
 **Key Schemas:**
+
 - [`schemaKenhojoBasicFour`](./mynacard.md#schemakenhojobasicfour) - Basic four information
 - [`schemaCertificate`](./mynacard.md#schemacertificate) - Certificate structure
 - [`schemaKenhojoSignature`](./mynacard.md#schemakenhojosignature) - Signature structure
@@ -59,9 +70,11 @@ Japanese MynaCard support with specialized functionality.
 ## Low-Level Packages
 
 ### [@aokiapp/pcsc-ffi-node](./pcsc-ffi-node.md)
+
 Native PC/SC bindings through Foreign Function Interface.
 
 **Key Functions:**
+
 - [`SCardEstablishContext()`](./pcsc-ffi-node.md#scardestablishcontext) - Initialize PC/SC
 - [`SCardConnect()`](./pcsc-ffi-node.md#scardconnect) - Connect to card
 - [`SCardTransmit()`](./pcsc-ffi-node.md#scardtransmit) - Send APDU commands
@@ -72,6 +85,7 @@ Native PC/SC bindings through Foreign Function Interface.
 ### Common Usage Patterns
 
 #### Basic Card Connection
+
 ```typescript
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
@@ -85,6 +99,7 @@ await using card = await device.startSession();
 ```
 
 #### APDU Command Construction
+
 ```typescript
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import { selectDf, readEfBinaryFull } from "@aokiapp/apdu-utils";
@@ -98,12 +113,13 @@ const cmd3 = readEfBinaryFull(0x01);
 ```
 
 #### TLV Data Parsing
+
 ```typescript
 import { SchemaParser, Schema } from "@aokiapp/tlv-parser";
 
 const schema = Schema.constructed("data", [
   Schema.primitive("field1", decoder1),
-  Schema.primitive("field2", decoder2)
+  Schema.primitive("field2", decoder2),
 ]);
 
 const parser = new SchemaParser(schema);
@@ -111,8 +127,13 @@ const result = parser.parse(buffer);
 ```
 
 #### MynaCard Operations
+
 ```typescript
-import { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } from "@aokiapp/mynacard";
+import {
+  KENHOJO_AP,
+  KENHOJO_AP_EF,
+  schemaKenhojoBasicFour,
+} from "@aokiapp/mynacard";
 import { verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 
 await card.transmit(selectDf(KENHOJO_AP));
@@ -124,8 +145,13 @@ const info = parser.parse(data.arrayBuffer());
 ```
 
 ### Error Handling
+
 ```typescript
-import { SmartCardError, ResourceError, TimeoutError } from "@aokiapp/jsapdu-interface";
+import {
+  SmartCardError,
+  ResourceError,
+  TimeoutError,
+} from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);
@@ -146,6 +172,7 @@ try {
 ```
 
 ### Resource Management
+
 ```typescript
 // Automatic cleanup (recommended)
 await using platform = manager.getPlatform();
@@ -165,6 +192,7 @@ try {
 ## Type Definitions
 
 ### Core Types
+
 ```typescript
 // Platform abstractions
 type SmartCardPlatformManager = abstract class;
@@ -185,6 +213,7 @@ type SmartCardDeviceInfo = abstract class;
 ```
 
 ### Utility Types
+
 ```typescript
 // TLV parsing
 type BasicTLVParser = class;

@@ -17,6 +17,7 @@ npm install @aokiapp/jsapdu-interface
 ### Platform Abstractions
 
 #### SmartCardPlatformManager
+
 ```typescript
 import { SmartCardPlatformManager } from "@aokiapp/jsapdu-interface";
 
@@ -27,6 +28,7 @@ abstract class SmartCardPlatformManager {
 ```
 
 #### SmartCardPlatform
+
 ```typescript
 // Main platform interface
 abstract class SmartCardPlatform {
@@ -40,6 +42,7 @@ abstract class SmartCardPlatform {
 ### Device and Card Abstractions
 
 #### SmartCardDevice
+
 ```typescript
 abstract class SmartCardDevice {
   public abstract isSessionActive(): boolean;
@@ -52,6 +55,7 @@ abstract class SmartCardDevice {
 ```
 
 #### SmartCard
+
 ```typescript
 abstract class SmartCard {
   public abstract getAtr(): Promise<Uint8Array>;
@@ -64,17 +68,18 @@ abstract class SmartCard {
 ### APDU Command System
 
 #### CommandApdu
+
 ```typescript
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 // Create APDU commands
 const selectCommand = new CommandApdu(
   0x00, // CLA
-  0xa4, // INS  
+  0xa4, // INS
   0x04, // P1
   0x00, // P2
   Buffer.from("A0000000041010", "hex"), // Data
-  0x00  // Le
+  0x00, // Le
 );
 
 // Serialize to bytes
@@ -86,6 +91,7 @@ const parsed = CommandApdu.fromUint8Array(bytes);
 ```
 
 #### ResponseApdu
+
 ```typescript
 import { ResponseApdu } from "@aokiapp/jsapdu-interface";
 
@@ -100,8 +106,14 @@ console.log("Data:", response.data);
 ### Error Handling
 
 #### Structured Error System
+
 ```typescript
-import { SmartCardError, ResourceError, TimeoutError, ValidationError } from "@aokiapp/jsapdu-interface";
+import {
+  SmartCardError,
+  ResourceError,
+  TimeoutError,
+  ValidationError,
+} from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);
@@ -122,6 +134,7 @@ try {
 ```
 
 #### Error Codes
+
 - `NOT_INITIALIZED` - Platform not initialized
 - `CARD_NOT_PRESENT` - No card in reader
 - `TRANSMISSION_ERROR` - APDU transmission failed
@@ -134,6 +147,7 @@ try {
 ### Resource Management
 
 #### Automatic Cleanup
+
 ```typescript
 // Using Symbol.asyncDispose
 await using platform = manager.getPlatform();
@@ -144,12 +158,13 @@ await using card = await device.startSession();
 ```
 
 #### Manual Cleanup
+
 ```typescript
 try {
   await platform.init();
   const device = await platform.acquireDevice(deviceId);
   const card = await device.startSession();
-  
+
   // Use card...
 } finally {
   await card?.release();
@@ -165,7 +180,14 @@ import { INS } from "@aokiapp/jsapdu-interface";
 
 // Common instruction bytes
 const selectCommand = new CommandApdu(0x00, INS.SELECT, 0x04, 0x00, aid);
-const readCommand = new CommandApdu(0x00, INS.READ_BINARY, 0x00, 0x00, null, 256);
+const readCommand = new CommandApdu(
+  0x00,
+  INS.READ_BINARY,
+  0x00,
+  0x00,
+  null,
+  256,
+);
 const verifyCommand = new CommandApdu(0x00, INS.VERIFY, 0x00, 0x80, pinData);
 ```
 
@@ -183,6 +205,7 @@ const bytes3 = toUint8Array(existingUint8Array); // Pass through
 ## Implementation Notes
 
 ### Platform Implementation
+
 When implementing a new platform:
 
 1. Extend `SmartCardPlatformManager`
@@ -191,12 +214,14 @@ When implementing a new platform:
 4. Handle platform-specific errors by converting to `SmartCardError`
 
 ### Error Handling Best Practices
+
 - Always use structured error codes
 - Provide safe error messages for user display
 - Include debug information for development
 - Convert platform-specific errors using `fromUnknownError()`
 
 ### Resource Management
+
 - Implement `Symbol.asyncDispose` for automatic cleanup
 - Ensure proper error handling in release methods
 - Track resource state to prevent double-release

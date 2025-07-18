@@ -22,37 +22,45 @@ async function example() {
   // Get platform instance (singleton)
   const manager = PcscPlatformManager.getInstance();
   const platform = manager.getPlatform();
-  
+
   // Initialize PC/SC context
   await platform.init();
-  
+
   try {
     // List available readers
     const devices = await platform.getDeviceInfo();
-    console.log("Available readers:", devices.map(d => d.friendlyName));
-    
+    console.log(
+      "Available readers:",
+      devices.map((d) => d.friendlyName),
+    );
+
     // Connect to first reader
     const device = await platform.acquireDevice(devices[0].id);
-    
+
     // Check card presence
     if (await device.isCardPresent()) {
       // Start card session
       const card = await device.startSession();
-      
+
       // Get card ATR
       const atr = await card.getAtr();
       console.log("ATR:", Buffer.from(atr).toString("hex"));
-      
+
       // Send APDU command
-      const command = new CommandApdu(0x00, 0xa4, 0x04, 0x00, 
-        Buffer.from("A0000000041010", "hex"));
+      const command = new CommandApdu(
+        0x00,
+        0xa4,
+        0x04,
+        0x00,
+        Buffer.from("A0000000041010", "hex"),
+      );
       const response = await card.transmit(command);
-      
+
       console.log("Response SW:", response.sw.toString(16));
-      
+
       await card.release();
     }
-    
+
     await device.release();
   } finally {
     await platform.release();
@@ -63,6 +71,7 @@ async function example() {
 ## Platform Manager
 
 ### PcscPlatformManager
+
 ```typescript
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
@@ -74,6 +83,7 @@ const platform = manager.getPlatform();
 ## Platform Operations
 
 ### Initialization
+
 ```typescript
 // Initialize PC/SC context (required before any operations)
 await platform.init();
@@ -85,6 +95,7 @@ if (platform.isInitialized()) {
 ```
 
 ### Device Discovery
+
 ```typescript
 // Get all available card readers
 const deviceInfos = await platform.getDeviceInfo();
@@ -98,6 +109,7 @@ for (const info of deviceInfos) {
 ```
 
 ### Device Acquisition
+
 ```typescript
 // Acquire exclusive access to a reader
 const device = await platform.acquireDevice(deviceInfo.id);
@@ -112,6 +124,7 @@ const hasCard = await device.isCardPresent();
 ## Device Operations
 
 ### Session Management
+
 ```typescript
 // Start card communication session
 const card = await device.startSession();
@@ -126,6 +139,7 @@ await device.waitForCardPresence(30000); // 30 second timeout
 ```
 
 ### Card Communication
+
 ```typescript
 // Get Answer To Reset (ATR)
 const atr = await card.getAtr();
@@ -141,34 +155,36 @@ await card.reset();
 ## Resource Management
 
 ### Automatic Cleanup
+
 ```typescript
 async function withAutoCleanup() {
   const manager = PcscPlatformManager.getInstance();
-  
+
   // Automatic resource cleanup with Symbol.asyncDispose
   await using platform = manager.getPlatform();
   await platform.init();
-  
+
   await using device = await platform.acquireDevice(deviceId);
   await using card = await device.startSession();
-  
+
   // Use card...
   // Resources automatically released when scope exits
 }
 ```
 
 ### Manual Cleanup
+
 ```typescript
 async function withManualCleanup() {
   let platform, device, card;
-  
+
   try {
     platform = manager.getPlatform();
     await platform.init();
-    
+
     device = await platform.acquireDevice(deviceId);
     card = await device.startSession();
-    
+
     // Use card...
   } finally {
     // Clean up in reverse order
@@ -182,6 +198,7 @@ async function withManualCleanup() {
 ## Error Handling
 
 ### PC/SC Specific Errors
+
 ```typescript
 import { SmartCardError } from "@aokiapp/jsapdu-interface";
 
@@ -211,6 +228,7 @@ try {
 ```
 
 ### Common Issues
+
 - **"Platform not initialized"**: Call `await platform.init()` first
 - **"No card readers found"**: Check hardware connection and drivers
 - **"Already connected"**: Another process is using the reader
@@ -219,17 +237,20 @@ try {
 ## Platform Details
 
 ### Supported Systems
+
 - **Windows**: Uses WinSCard.dll via PC/SC
-- **macOS**: Uses PC/SC framework 
+- **macOS**: Uses PC/SC framework
 - **Linux**: Uses libpcsclite via PC/SC
 
 ### Supported Readers
+
 - USB CCID-compliant readers
 - Built-in contactless readers (NFC)
 - External contactless readers
 - Multi-slot readers
 
 ### Protocol Support
+
 - **Contact**: ISO 7816 T=0, T=1
 - **Contactless**: ISO 14443 Type A/B via PC/SC
 - **Protocols**: Automatic protocol negotiation
@@ -237,6 +258,7 @@ try {
 ## Advanced Usage
 
 ### Reader State Monitoring
+
 ```typescript
 // Check detailed reader state
 const readerState = await getReaderCurrentState(context, readerName);
@@ -245,6 +267,7 @@ console.log("ATR changed:", readerState.atrChanged);
 ```
 
 ### Transaction Control
+
 ```typescript
 // Manual transaction management (advanced)
 await card.beginTransaction();
@@ -257,6 +280,7 @@ try {
 ```
 
 ### Multiple Readers
+
 ```typescript
 // Work with multiple readers simultaneously
 const devices = await platform.getDeviceInfo();
@@ -282,6 +306,7 @@ for (const session of sessions) {
 ## Debugging
 
 ### Enable PC/SC Logging
+
 ```bash
 # Windows - Enable PC/SC logging
 sc config SCardSvr depend= EventLog
@@ -292,6 +317,7 @@ sudo pcscd -f -d  # Run in foreground with debug
 ```
 
 ### Common Diagnostics
+
 ```typescript
 // Check PC/SC service status
 try {

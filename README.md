@@ -17,20 +17,30 @@ import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 const platform = PcscPlatformManager.getInstance().getPlatform();
 await platform.init();
 
-const device = await platform.acquireDevice((await platform.getDeviceInfo())[0].id);
+const device = await platform.acquireDevice(
+  (await platform.getDeviceInfo())[0].id,
+);
 const card = await device.startSession();
 
 // Send APDU commands with full type safety
-const response = await card.transmit(new CommandApdu(0x00, 0xa4, 0x04, 0x00, aid));
+const response = await card.transmit(
+  new CommandApdu(0x00, 0xa4, 0x04, 0x00, aid),
+);
 console.log(`Success: ${response.sw === 0x9000}`);
 ```
 
 ### 🎯 **Zero Configuration** • Works out of the box with PC/SC, NFC, and more
+
 ### 🔒 **Type Safe** • Full TypeScript support with intelligent autocomplete
+
 ### 🌐 **Cross Platform** • Windows, macOS, Linux, and mobile support
+
 ### 📱 **Modern APIs** • async/await, Symbol.asyncDispose, and clean abstractions
+
 ### ⚡ **Advanced TLV Parser** • Industry-leading schema-driven parsing with full type inference
+
 ### 🃏 **SmartCard Ready** • Built-in support for Japanese MynaCard and extensible for any card type
+
 ### 🧪 **PC/SC FFI Included** • Direct access to PC/SC functions via Foreign Function Interface (FFI)
 
 ## 🚀 Quick Start
@@ -62,10 +72,15 @@ async function connectToCard() {
   console.log("Card ATR:", Buffer.from(atr).toString("hex"));
 
   // Send commands
-  const selectCommand = new CommandApdu(0x00, 0xa4, 0x04, 0x00, 
-    Buffer.from("A0000000041010", "hex"));
+  const selectCommand = new CommandApdu(
+    0x00,
+    0xa4,
+    0x04,
+    0x00,
+    Buffer.from("A0000000041010", "hex"),
+  );
   const response = await card.transmit(selectCommand);
-  
+
   if (response.sw === 0x9000) {
     console.log("Application selected successfully!");
   }
@@ -92,33 +107,35 @@ const info = parser.parse(data.arrayBuffer());
 console.log("Name:", info.name, "Address:", info.address);
 ```
 
-
 ## 📦 Packages
 
-| Package | Description | Use Case |
-|---------|-------------|----------|
-| [`@aokiapp/jsapdu-interface`](./packages/interface) | Core abstractions and types | Platform-agnostic development |
-| [`@aokiapp/jsapdu-pcsc`](./packages/pcsc) | PC/SC platform implementation | Desktop SmartCard readers |  
-| [`@aokiapp/apdu-utils`](./packages/apdu-utils) | APDU command builders | Common SmartCard operations |
-| [`@aokiapp/mynacard`](./packages/mynacard) | Japanese MynaCard support | Government ID integration |
-| [`@aokiapp/tlv-parser`](./packages/tlv-parser) | TLV data parsing | Structured data extraction |
-| [`@aokiapp/pcsc-ffi-node`](./packages/pcsc-ffi-node) | PC/SC Foreign Function Interface | Low-level PC/SC access |
+| Package                                              | Description                      | Use Case                      |
+| ---------------------------------------------------- | -------------------------------- | ----------------------------- |
+| [`@aokiapp/jsapdu-interface`](./packages/interface)  | Core abstractions and types      | Platform-agnostic development |
+| [`@aokiapp/jsapdu-pcsc`](./packages/pcsc)            | PC/SC platform implementation    | Desktop SmartCard readers     |
+| [`@aokiapp/apdu-utils`](./packages/apdu-utils)       | APDU command builders            | Common SmartCard operations   |
+| [`@aokiapp/mynacard`](./packages/mynacard)           | Japanese MynaCard support        | Government ID integration     |
+| [`@aokiapp/tlv-parser`](./packages/tlv-parser)       | TLV data parsing                 | Structured data extraction    |
+| [`@aokiapp/pcsc-ffi-node`](./packages/pcsc-ffi-node) | PC/SC Foreign Function Interface | Low-level PC/SC access        |
 
 ## 🌟 Features
 
 ### Platform Support
+
 - **PC/SC** - Windows, macOS, Linux desktop readers
-- **NFC** - Contactless card communication  
+- **NFC** - Contactless card communication
 - **Bluetooth LE** - Wireless SmartCard readers
-- **WebUSB** - Browser-based card access *(coming soon)*
+- **WebUSB** - Browser-based card access _(coming soon)_
 
 ### SmartCard Protocols
+
 - **ISO 7816** - Contact card communication
 - **NFC/ISO 14443** - Contactless communication
 - **APDU** - Application Protocol Data Units
 - **TLV** - Tag-Length-Value data parsing
 
 ### Developer Experience
+
 - **Full TypeScript support** with intelligent autocomplete
 - **Modern async/await APIs** with automatic resource cleanup
 - **Comprehensive error handling** with structured error codes
@@ -150,7 +167,7 @@ const parsed = parser.parse(basicInfo.arrayBuffer());
 ## 📚 Documentation
 
 - [**Getting Started Guide**](./docs/getting-started.md) - Complete setup and first steps
-- [**API Reference**](./docs/api/README.md) - Detailed API documentation  
+- [**API Reference**](./docs/api/README.md) - Detailed API documentation
 - [**Architecture Guide**](./docs/architecture/README.md) - System design and patterns
 - [**MynaCard Guide**](./docs/guides/mynacard.md) - Japanese government card integration
 - [**Examples**](./examples) - Real-world usage examples

@@ -15,7 +15,7 @@ Testing SmartCard applications presents unique challenges due to hardware depend
     │   E2E Tests     │  ← Real hardware, full scenarios
     │   (Few tests)   │
     ├─────────────────┤
-    │ Integration     │  ← Mock hardware, API testing  
+    │ Integration     │  ← Mock hardware, API testing
     │ Tests           │
     │ (Some tests)    │
     ├─────────────────┤
@@ -51,22 +51,22 @@ mkdir tests/e2e
 Create `vitest.config.ts`:
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
-    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    environment: "node",
+    include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    exclude: ["**/node_modules/**", "**/dist/**"],
     testTimeout: 30000, // SmartCard operations can be slow
     hookTimeout: 10000,
   },
   resolve: {
     alias: {
-      '@': './src'
-    }
-  }
+      "@": "./src",
+    },
+  },
 });
 ```
 
@@ -78,40 +78,42 @@ Test functions that don't require hardware:
 
 ```typescript
 // tests/unit/apdu-utils.test.ts
-import { describe, it, expect } from 'vitest';
-import { selectDf, selectEf, readBinary } from '@aokiapp/apdu-utils';
+import { describe, it, expect } from "vitest";
+import { selectDf, selectEf, readBinary } from "@aokiapp/apdu-utils";
 
-describe('APDU Utilities', () => {
-  describe('selectDf', () => {
-    it('should create correct SELECT DF command', () => {
+describe("APDU Utilities", () => {
+  describe("selectDf", () => {
+    it("should create correct SELECT DF command", () => {
       const aid = "A0000000041010";
       const command = selectDf(aid);
-      
+
       expect(command.cla).toBe(0x00);
       expect(command.ins).toBe(0xa4);
       expect(command.p1).toBe(0x04);
       expect(command.p2).toBe(0x0c);
-      
-      const expectedData = new Uint8Array([0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10]);
+
+      const expectedData = new Uint8Array([
+        0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10,
+      ]);
       expect(command.data).toEqual(expectedData);
     });
 
-    it('should handle FCI request', () => {
+    it("should handle FCI request", () => {
       const command = selectDf("A0000000041010", true);
       expect(command.p2).toBe(0x00);
       expect(command.le).toBe(0x00);
     });
 
-    it('should validate AID length', () => {
+    it("should validate AID length", () => {
       expect(() => selectDf("")).toThrow("Invalid DF identifier");
       expect(() => selectDf("A".repeat(34))).toThrow("Invalid DF identifier");
     });
   });
 
-  describe('readBinary', () => {
-    it('should create standard READ BINARY command', () => {
+  describe("readBinary", () => {
+    it("should create standard READ BINARY command", () => {
       const command = readBinary(0x0000, 256);
-      
+
       expect(command.cla).toBe(0x00);
       expect(command.ins).toBe(0xb0);
       expect(command.p1).toBe(0x00);
@@ -119,10 +121,10 @@ describe('APDU Utilities', () => {
       expect(command.le).toBe(256);
     });
 
-    it('should handle extended APDU', () => {
+    it("should handle extended APDU", () => {
       const command = readBinary(0x0000, 65536, true);
       const bytes = command.toUint8Array();
-      
+
       // Extended APDU has different structure
       expect(bytes.length).toBeGreaterThan(7);
     });
@@ -134,56 +136,64 @@ describe('APDU Utilities', () => {
 
 ```typescript
 // tests/unit/tlv-parser.test.ts
-import { describe, it, expect } from 'vitest';
-import { BasicTLVParser, SchemaParser, Schema } from '@aokiapp/tlv-parser';
+import { describe, it, expect } from "vitest";
+import { BasicTLVParser, SchemaParser, Schema } from "@aokiapp/tlv-parser";
 
-describe('TLV Parser', () => {
-  describe('BasicTLVParser', () => {
-    it('should parse simple TLV', () => {
+describe("TLV Parser", () => {
+  describe("BasicTLVParser", () => {
+    it("should parse simple TLV", () => {
       // Tag: 0x01 (Universal, Primitive, 1)
       // Length: 0x04
       // Value: [0x01, 0x02, 0x03, 0x04]
-      const buffer = new Uint8Array([0x01, 0x04, 0x01, 0x02, 0x03, 0x04]).buffer;
-      
+      const buffer = new Uint8Array([0x01, 0x04, 0x01, 0x02, 0x03, 0x04])
+        .buffer;
+
       const result = BasicTLVParser.parse(buffer);
-      
+
       expect(result.tag.tagNumber).toBe(1);
       expect(result.tag.constructed).toBe(false);
       expect(result.length).toBe(4);
-      expect(new Uint8Array(result.value)).toEqual(new Uint8Array([0x01, 0x02, 0x03, 0x04]));
+      expect(new Uint8Array(result.value)).toEqual(
+        new Uint8Array([0x01, 0x02, 0x03, 0x04]),
+      );
     });
 
-    it('should parse constructed TLV', () => {
+    it("should parse constructed TLV", () => {
       // Constructed tag with nested TLVs
       const buffer = new Uint8Array([
-        0x30, 0x06, // SEQUENCE, length 6
-        0x01, 0x01, 0xFF, // BOOLEAN true
-        0x02, 0x01, 0x42  // INTEGER 66
+        0x30,
+        0x06, // SEQUENCE, length 6
+        0x01,
+        0x01,
+        0xff, // BOOLEAN true
+        0x02,
+        0x01,
+        0x42, // INTEGER 66
       ]).buffer;
-      
+
       const result = BasicTLVParser.parse(buffer);
-      
+
       expect(result.tag.constructed).toBe(true);
       expect(result.length).toBe(6);
     });
   });
 
-  describe('SchemaParser', () => {
-    it('should parse with simple schema', () => {
+  describe("SchemaParser", () => {
+    it("should parse with simple schema", () => {
       const schema = Schema.constructed("test", [
         Schema.primitive("name", (buf) => new TextDecoder().decode(buf)),
-        Schema.primitive("age", (buf) => new DataView(buf).getUint8(0))
+        Schema.primitive("age", (buf) => new DataView(buf).getUint8(0)),
       ]);
-      
+
       // Mock TLV data representing: name="John", age=25
       const buffer = createMockTLVBuffer([
         { tag: 0x81, value: new TextEncoder().encode("John") },
-        { tag: 0x82, value: new Uint8Array([25]) }
+        { tag: 0x82, value: new Uint8Array([25]) },
       ]);
-      
+
       const parser = new SchemaParser(schema);
       const result = parser.parse(buffer);
-      
+
       expect(result.name).toBe("John");
       expect(result.age).toBe(25);
     });
@@ -191,24 +201,26 @@ describe('TLV Parser', () => {
 });
 
 // Helper function to create mock TLV data
-function createMockTLVBuffer(entries: Array<{tag: number, value: Uint8Array}>): ArrayBuffer {
+function createMockTLVBuffer(
+  entries: Array<{ tag: number; value: Uint8Array }>,
+): ArrayBuffer {
   let totalLength = 0;
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     totalLength += 2 + entry.value.length; // tag + length + value
   });
-  
+
   const buffer = new Uint8Array(totalLength + 2); // +2 for outer tag/length
   buffer[0] = 0x30; // SEQUENCE
   buffer[1] = totalLength;
-  
+
   let offset = 2;
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     buffer[offset++] = entry.tag;
     buffer[offset++] = entry.value.length;
     buffer.set(entry.value, offset);
     offset += entry.value.length;
   });
-  
+
   return buffer.buffer;
 }
 ```
@@ -217,38 +229,51 @@ function createMockTLVBuffer(entries: Array<{tag: number, value: Uint8Array}>): 
 
 ```typescript
 // tests/unit/error-handling.test.ts
-import { describe, it, expect } from 'vitest';
-import { SmartCardError, ResourceError, TimeoutError, ValidationError } from '@aokiapp/jsapdu-interface';
+import { describe, it, expect } from "vitest";
+import {
+  SmartCardError,
+  ResourceError,
+  TimeoutError,
+  ValidationError,
+} from "@aokiapp/jsapdu-interface";
 
-describe('Error Handling', () => {
-  it('should create SmartCardError with correct properties', () => {
+describe("Error Handling", () => {
+  it("should create SmartCardError with correct properties", () => {
     const error = new SmartCardError("CARD_NOT_PRESENT", "No card found");
-    
+
     expect(error.code).toBe("CARD_NOT_PRESENT");
     expect(error.message).toBe("No card found");
     expect(error.name).toBe("SmartCardError");
   });
 
-  it('should provide safe error messages', () => {
-    const error = new SmartCardError("PLATFORM_ERROR", "Internal error details", new Error("Sensitive info"));
-    
+  it("should provide safe error messages", () => {
+    const error = new SmartCardError(
+      "PLATFORM_ERROR",
+      "Internal error details",
+      new Error("Sensitive info"),
+    );
+
     const safeMessage = error.getSafeMessage();
     expect(safeMessage).toBe("Internal error details");
     expect(safeMessage).not.toContain("Sensitive info");
   });
 
-  it('should provide debug information', () => {
+  it("should provide debug information", () => {
     const cause = new Error("Original error");
     const error = new SmartCardError("TIMEOUT", "Operation timed out", cause);
-    
+
     const debugInfo = error.getDebugInfo();
     expect(debugInfo.code).toBe("TIMEOUT");
     expect(debugInfo.message).toBe("Operation timed out");
     expect(debugInfo.cause?.message).toBe("Original error");
   });
 
-  it('should create specialized error types', () => {
-    const resourceError = new ResourceError("Too many connections", "connections", 5);
+  it("should create specialized error types", () => {
+    const resourceError = new ResourceError(
+      "Too many connections",
+      "connections",
+      5,
+    );
     expect(resourceError.code).toBe("RESOURCE_LIMIT");
     expect(resourceError.resourceType).toBe("connections");
     expect(resourceError.limit).toBe(5);
@@ -274,11 +299,16 @@ Create mock implementations for testing:
 
 ```typescript
 // tests/mocks/mock-platform.ts
-import { SmartCardPlatform, SmartCardDevice, SmartCardDeviceInfo, SmartCard } from '@aokiapp/jsapdu-interface';
+import {
+  SmartCardPlatform,
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  SmartCard,
+} from "@aokiapp/jsapdu-interface";
 
 export class MockPlatform extends SmartCardPlatform {
   private devices: MockDeviceInfo[] = [];
-  
+
   constructor(deviceCount = 1) {
     super();
     for (let i = 0; i < deviceCount; i++) {
@@ -301,7 +331,7 @@ export class MockPlatform extends SmartCardPlatform {
 
   async acquireDevice(id: string): Promise<SmartCardDevice> {
     this.assertInitialized();
-    const device = this.devices.find(d => d.id === id);
+    const device = this.devices.find((d) => d.id === id);
     if (!device) {
       throw new SmartCardError("READER_ERROR", "Device not found");
     }
@@ -313,7 +343,10 @@ export class MockDevice extends SmartCardDevice {
   private sessionActive = false;
   private cardPresent = true;
 
-  constructor(platform: SmartCardPlatform, private deviceId: string) {
+  constructor(
+    platform: SmartCardPlatform,
+    private deviceId: string,
+  ) {
     super(platform);
   }
 
@@ -348,7 +381,10 @@ export class MockDevice extends SmartCardDevice {
   }
 
   async startHceSession(): Promise<EmulatedCard> {
-    throw new SmartCardError("UNSUPPORTED_OPERATION", "HCE not supported in mock");
+    throw new SmartCardError(
+      "UNSUPPORTED_OPERATION",
+      "HCE not supported in mock",
+    );
   }
 
   async release(): Promise<void> {
@@ -374,7 +410,7 @@ export class MockCard extends SmartCard {
       throw new SmartCardError("NOT_CONNECTED", "Card not active");
     }
     // Return mock ATR
-    return new Uint8Array([0x3B, 0x00]);
+    return new Uint8Array([0x3b, 0x00]);
   }
 
   async transmit(apdu: CommandApdu): Promise<ResponseApdu> {
@@ -384,7 +420,7 @@ export class MockCard extends SmartCard {
 
     const key = apdu.toHexString();
     const mockResponse = this.responses.get(key);
-    
+
     if (mockResponse) {
       return mockResponse;
     }
@@ -405,7 +441,7 @@ export class MockCard extends SmartCard {
 
   // Test helpers
   setResponse(command: CommandApdu | string, response: ResponseApdu) {
-    const key = typeof command === 'string' ? command : command.toHexString();
+    const key = typeof command === "string" ? command : command.toHexString();
     this.responses.set(key, response);
   }
 
@@ -436,27 +472,29 @@ class MockDeviceInfo extends SmartCardDeviceInfo {
 
 ```typescript
 // tests/integration/card-operations.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MockPlatform, MockCard } from '../mocks/mock-platform.js';
-import { selectDf, readEfBinaryFull } from '@aokiapp/apdu-utils';
-import { ResponseApdu } from '@aokiapp/jsapdu-interface';
+import { describe, it, expect, beforeEach } from "vitest";
+import { MockPlatform, MockCard } from "../mocks/mock-platform.js";
+import { selectDf, readEfBinaryFull } from "@aokiapp/apdu-utils";
+import { ResponseApdu } from "@aokiapp/jsapdu-interface";
 
-describe('Card Operations Integration', () => {
+describe("Card Operations Integration", () => {
   let platform: MockPlatform;
   let card: MockCard;
 
   beforeEach(async () => {
     platform = new MockPlatform();
     await platform.init();
-    
+
     const devices = await platform.getDeviceInfo();
     const device = await platform.acquireDevice(devices[0].id);
-    card = await device.startSession() as MockCard;
+    card = (await device.startSession()) as MockCard;
   });
 
-  it('should select application and read file', async () => {
+  it("should select application and read file", async () => {
     // Setup mock responses
-    const selectResponse = ResponseApdu.fromUint8Array(new Uint8Array([0x90, 0x00]));
+    const selectResponse = ResponseApdu.fromUint8Array(
+      new Uint8Array([0x90, 0x00]),
+    );
     card.setResponse(selectDf("A0000000041010"), selectResponse);
 
     const fileData = new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x90, 0x00]);
@@ -472,13 +510,15 @@ describe('Card Operations Integration', () => {
     expect(readResult.data).toEqual(new Uint8Array([0x01, 0x02, 0x03, 0x04]));
   });
 
-  it('should handle card communication errors', async () => {
+  it("should handle card communication errors", async () => {
     // Setup error response
-    const errorResponse = ResponseApdu.fromUint8Array(new Uint8Array([0x6A, 0x82]));
+    const errorResponse = ResponseApdu.fromUint8Array(
+      new Uint8Array([0x6a, 0x82]),
+    );
     card.setResponse("00A4040007A0000000041010", errorResponse);
 
     const result = await card.transmit(selectDf("A0000000041010"));
-    expect(result.sw).toBe(0x6A82); // File not found
+    expect(result.sw).toBe(0x6a82); // File not found
   });
 });
 ```
@@ -491,11 +531,15 @@ These tests require actual SmartCard hardware:
 
 ```typescript
 // tests/e2e/hardware.test.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
-import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+import {
+  SmartCardPlatform,
+  SmartCardDevice,
+  SmartCard,
+} from "@aokiapp/jsapdu-interface";
 
-describe('Hardware End-to-End Tests', () => {
+describe("Hardware End-to-End Tests", () => {
   let platform: SmartCardPlatform;
   let device: SmartCardDevice;
   let card: SmartCard;
@@ -512,13 +556,15 @@ describe('Hardware End-to-End Tests', () => {
 
     const devices = await platform.getDeviceInfo();
     if (devices.length === 0) {
-      throw new Error('No card readers found. Set SKIP_HARDWARE_TESTS=1 to skip.');
+      throw new Error(
+        "No card readers found. Set SKIP_HARDWARE_TESTS=1 to skip.",
+      );
     }
 
     device = await platform.acquireDevice(devices[0].id);
-    
+
     if (!(await device.isCardPresent())) {
-      throw new Error('No card present. Insert a test card.');
+      throw new Error("No card present. Insert a test card.");
     }
 
     card = await device.startSession();
@@ -534,7 +580,7 @@ describe('Hardware End-to-End Tests', () => {
     await platform?.release();
   });
 
-  it('should read card ATR', async () => {
+  it("should read card ATR", async () => {
     if (process.env.SKIP_HARDWARE_TESTS) {
       return;
     }
@@ -542,18 +588,23 @@ describe('Hardware End-to-End Tests', () => {
     const atr = await card.getAtr();
     expect(atr).toBeInstanceOf(Uint8Array);
     expect(atr.length).toBeGreaterThan(0);
-    console.log('ATR:', Array.from(atr).map(b => b.toString(16).padStart(2, '0')).join(' '));
+    console.log(
+      "ATR:",
+      Array.from(atr)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" "),
+    );
   });
 
-  it('should handle invalid commands gracefully', async () => {
+  it("should handle invalid commands gracefully", async () => {
     if (process.env.SKIP_HARDWARE_TESTS) {
       return;
     }
 
     // Send invalid command
-    const invalidCommand = new CommandApdu(0xFF, 0xFF, 0xFF, 0xFF);
+    const invalidCommand = new CommandApdu(0xff, 0xff, 0xff, 0xff);
     const response = await card.transmit(invalidCommand);
-    
+
     // Should get error response, not throw exception
     expect(response.sw).not.toBe(0x9000);
     expect(response.sw1).toBeGreaterThan(0);
@@ -566,12 +617,12 @@ describe('Hardware End-to-End Tests', () => {
 
 ```typescript
 // tests/e2e/mynacard.test.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
-import { selectDf } from '@aokiapp/apdu-utils';
-import { JPKI_AP, KENHOJO_AP, KENKAKU_AP } from '@aokiapp/mynacard';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+import { selectDf } from "@aokiapp/apdu-utils";
+import { JPKI_AP, KENHOJO_AP, KENKAKU_AP } from "@aokiapp/mynacard";
 
-describe('MynaCard End-to-End Tests', () => {
+describe("MynaCard End-to-End Tests", () => {
   let platform, device, card;
 
   beforeAll(async () => {
@@ -598,41 +649,41 @@ describe('MynaCard End-to-End Tests', () => {
     await platform?.release();
   });
 
-  it('should select JPKI application', async () => {
+  it("should select JPKI application", async () => {
     if (process.env.SKIP_MYNACARD_TESTS) {
       return;
     }
 
     const response = await card.transmit(selectDf(JPKI_AP));
-    
+
     // Should succeed or fail with specific error
     if (response.sw === 0x9000) {
-      console.log('JPKI application selected successfully');
-    } else if (response.sw === 0x6A82) {
-      console.log('JPKI application not found (expected for non-MynaCard)');
+      console.log("JPKI application selected successfully");
+    } else if (response.sw === 0x6a82) {
+      console.log("JPKI application not found (expected for non-MynaCard)");
     } else {
       console.log(`Unexpected response: ${response.sw.toString(16)}`);
     }
-    
-    expect([0x9000, 0x6A82]).toContain(response.sw);
+
+    expect([0x9000, 0x6a82]).toContain(response.sw);
   });
 
-  it('should select Kenhojo application', async () => {
+  it("should select Kenhojo application", async () => {
     if (process.env.SKIP_MYNACARD_TESTS) {
       return;
     }
 
     const response = await card.transmit(selectDf(KENHOJO_AP));
-    expect([0x9000, 0x6A82]).toContain(response.sw);
+    expect([0x9000, 0x6a82]).toContain(response.sw);
   });
 
-  it('should select Kenkaku application', async () => {
+  it("should select Kenkaku application", async () => {
     if (process.env.SKIP_MYNACARD_TESTS) {
       return;
     }
 
     const response = await card.transmit(selectDf(KENKAKU_AP));
-    expect([0x9000, 0x6A82]).toContain(response.sw);
+    expect([0x9000, 0x6a82]).toContain(response.sw);
   });
 });
 ```
@@ -662,13 +713,13 @@ export TEST_TIMEOUT=30000
 ```typescript
 // tests/test-config.ts
 export const testConfig = {
-  skipHardwareTests: process.env.SKIP_HARDWARE_TESTS === '1',
-  skipMynaCardTests: process.env.SKIP_MYNACARD_TESTS === '1',
+  skipHardwareTests: process.env.SKIP_HARDWARE_TESTS === "1",
+  skipMynaCardTests: process.env.SKIP_MYNACARD_TESTS === "1",
   testReaderName: process.env.TEST_READER_NAME,
-  testTimeout: parseInt(process.env.TEST_TIMEOUT || '30000', 10),
-  
+  testTimeout: parseInt(process.env.TEST_TIMEOUT || "30000", 10),
+
   // Test data
-  testAid: process.env.TEST_AID || 'A0000000041010',
+  testAid: process.env.TEST_AID || "A0000000041010",
   testPin: process.env.TEST_PIN, // Don't set default for security
 };
 ```
@@ -679,17 +730,17 @@ export const testConfig = {
 // Never hardcode sensitive data
 const testPin = process.env.TEST_PIN;
 if (!testPin && !testConfig.skipHardwareTests) {
-  throw new Error('TEST_PIN environment variable required for hardware tests');
+  throw new Error("TEST_PIN environment variable required for hardware tests");
 }
 
 // Clear sensitive data after use
 function clearTestData(data: string) {
   // In real implementations, use secure memory clearing
-  data = '';
+  data = "";
 }
 
 // Use mock data for unit tests
-const mockPin = '1234'; // Safe for unit tests
+const mockPin = "1234"; // Safe for unit tests
 const realPin = testPin; // From environment for E2E tests
 ```
 
@@ -708,7 +759,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test:unit
 
@@ -718,7 +769,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test:integration
 
@@ -730,7 +781,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test:e2e
         env:
@@ -747,7 +798,7 @@ Add to `package.json`:
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration", 
+    "test:integration": "vitest run tests/integration",
     "test:e2e": "vitest run tests/e2e",
     "test:coverage": "vitest run --coverage",
     "test:hardware": "SKIP_HARDWARE_TESTS=0 vitest run tests/e2e"
@@ -760,17 +811,22 @@ Add to `package.json`:
 ### Logging
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('Debug Tests', () => {
-  it('should log APDU communication', async () => {
+describe("Debug Tests", () => {
+  it("should log APDU communication", async () => {
     const command = selectDf("A0000000041010");
-    console.log('Sending:', command.toHexString());
-    
+    console.log("Sending:", command.toHexString());
+
     const response = await card.transmit(command);
-    console.log('Received:', response.sw.toString(16));
-    console.log('Data:', Array.from(response.data).map(b => b.toString(16)).join(' '));
-    
+    console.log("Received:", response.sw.toString(16));
+    console.log(
+      "Data:",
+      Array.from(response.data)
+        .map((b) => b.toString(16))
+        .join(" "),
+    );
+
     expect(response.sw).toBe(0x9000);
   });
 });
@@ -781,29 +837,36 @@ describe('Debug Tests', () => {
 ```typescript
 // tests/helpers/test-utils.ts
 export function hexToUint8Array(hex: string): Uint8Array {
-  const bytes = hex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || [];
+  const bytes = hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || [];
   return new Uint8Array(bytes);
 }
 
 export function uint8ArrayToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-export async function expectResponseSW(response: ResponseApdu, expectedSW: number) {
+export async function expectResponseSW(
+  response: ResponseApdu,
+  expectedSW: number,
+) {
   expect(response.sw).toBe(expectedSW);
   if (response.sw !== expectedSW) {
-    console.error(`Expected SW: ${expectedSW.toString(16)}, Got: ${response.sw.toString(16)}`);
+    console.error(
+      `Expected SW: ${expectedSW.toString(16)}, Got: ${response.sw.toString(16)}`,
+    );
   }
 }
 
 export function createMockCard(responses: Record<string, string>): MockCard {
   const card = new MockCard(null as any);
-  
+
   Object.entries(responses).forEach(([command, response]) => {
     const responseBytes = hexToUint8Array(response);
     card.setResponse(command, ResponseApdu.fromUint8Array(responseBytes));
   });
-  
+
   return card;
 }
 ```
@@ -814,38 +877,38 @@ export function createMockCard(responses: Record<string, string>): MockCard {
 
 ```typescript
 // tests/performance/benchmarks.test.ts
-import { describe, it } from 'vitest';
-import { performance } from 'perf_hooks';
+import { describe, it } from "vitest";
+import { performance } from "perf_hooks";
 
-describe('Performance Benchmarks', () => {
-  it('should benchmark APDU construction', () => {
+describe("Performance Benchmarks", () => {
+  it("should benchmark APDU construction", () => {
     const iterations = 10000;
     const start = performance.now();
-    
+
     for (let i = 0; i < iterations; i++) {
       const command = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 0x00);
       command.toUint8Array();
     }
-    
+
     const end = performance.now();
     const avgTime = (end - start) / iterations;
-    
+
     console.log(`Average APDU construction time: ${avgTime.toFixed(3)}ms`);
     expect(avgTime).toBeLessThan(1); // Should be sub-millisecond
   });
 
-  it('should benchmark TLV parsing', () => {
-    const tlvData = new Uint8Array([0x30, 0x04, 0x01, 0x01, 0xFF, 0x02]).buffer;
+  it("should benchmark TLV parsing", () => {
+    const tlvData = new Uint8Array([0x30, 0x04, 0x01, 0x01, 0xff, 0x02]).buffer;
     const iterations = 1000;
     const start = performance.now();
-    
+
     for (let i = 0; i < iterations; i++) {
       BasicTLVParser.parse(tlvData);
     }
-    
+
     const end = performance.now();
     const avgTime = (end - start) / iterations;
-    
+
     console.log(`Average TLV parsing time: ${avgTime.toFixed(3)}ms`);
     expect(avgTime).toBeLessThan(5);
   });
@@ -861,31 +924,61 @@ describe('Performance Benchmarks', () => {
 export const testData = {
   // Mock ATRs for different card types
   atrs: {
-    mynacard: new Uint8Array([0x3B, 0xFC, 0x13, 0x00, 0x00, 0x81, 0x31, 0xFE, 0x15, 0x59, 0x75, 0x62, 0x69, 0x6B, 0x65, 0x79, 0x40]),
-    generic: new Uint8Array([0x3B, 0x00])
+    mynacard: new Uint8Array([
+      0x3b, 0xfc, 0x13, 0x00, 0x00, 0x81, 0x31, 0xfe, 0x15, 0x59, 0x75, 0x62,
+      0x69, 0x6b, 0x65, 0x79, 0x40,
+    ]),
+    generic: new Uint8Array([0x3b, 0x00]),
   },
 
-  // Mock APDU responses  
+  // Mock APDU responses
   responses: {
-    success: '9000',
-    fileNotFound: '6A82',
-    wrongPin: '6300',
-    pinBlocked: '63C0'
+    success: "9000",
+    fileNotFound: "6A82",
+    wrongPin: "6300",
+    pinBlocked: "63C0",
   },
 
   // Test certificates (mock data)
   certificates: {
-    rsa2048: '308201...', // Mock certificate data
+    rsa2048: "308201...", // Mock certificate data
   },
 
   // Mock TLV structures
   tlvStructures: {
     basicInfo: new Uint8Array([
-      0x30, 0x20, // SEQUENCE, length 32
-      0x81, 0x08, 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x00, 0x00, // Name: "Hello"
-      0x82, 0x10, 0x54, 0x6F, 0x6B, 0x79, 0x6F, 0x2C, 0x20, 0x4A, 0x61, 0x70, 0x61, 0x6E, 0x00, 0x00, 0x00, 0x00 // Address: "Tokyo, Japan"
-    ])
-  }
+      0x30,
+      0x20, // SEQUENCE, length 32
+      0x81,
+      0x08,
+      0x48,
+      0x65,
+      0x6c,
+      0x6c,
+      0x6f,
+      0x20,
+      0x00,
+      0x00, // Name: "Hello"
+      0x82,
+      0x10,
+      0x54,
+      0x6f,
+      0x6b,
+      0x79,
+      0x6f,
+      0x2c,
+      0x20,
+      0x4a,
+      0x61,
+      0x70,
+      0x61,
+      0x6e,
+      0x00,
+      0x00,
+      0x00,
+      0x00, // Address: "Tokyo, Japan"
+    ]),
+  },
 };
 ```
 
