@@ -12,7 +12,7 @@ jsapdu bridges the gap between your applications and SmartCard hardware, providi
 
 ```typescript
 // Connect to any SmartCard with just a few lines
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const platform = PcscPlatformManager.getInstance().getPlatform();
 await platform.init();
@@ -31,20 +31,21 @@ console.log(`Success: ${response.sw === 0x9000}`);
 ### 📱 **Modern APIs** • async/await, Symbol.asyncDispose, and clean abstractions
 ### ⚡ **Advanced TLV Parser** • Industry-leading schema-driven parsing with full type inference
 ### 🃏 **SmartCard Ready** • Built-in support for Japanese MynaCard and extensible for any card type
+### 🧪 **PC/SC FFI Included** • Direct access to PC/SC functions via Foreign Function Interface (FFI)
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-npm install @aokiapp/jsapdu @aokiapp/pcsc
+npm install @aokiapp/jsapdu @aokiapp/jsapdu-pcsc
 ```
 
 ### Your First SmartCard Connection
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { CommandApdu } from "@aokiapp/interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 async function connectToCard() {
   // Initialize platform
@@ -91,35 +92,17 @@ const info = parser.parse(data.arrayBuffer());
 console.log("Name:", info.name, "Address:", info.address);
 ```
 
-## 🏗️ Architecture
-
-jsapdu uses a layered architecture that abstracts SmartCard complexity:
-
-```
-┌─────────────────────────────────────┐
-│  Your Application                   │
-├─────────────────────────────────────┤
-│  High-level APIs (@aokiapp/mynacard)│
-├─────────────────────────────────────┤
-│  APDU Utils (@aokiapp/apdu-utils)   │
-├─────────────────────────────────────┤
-│  Core Abstractions (@aokiapp/interface) │
-├─────────────────────────────────────┤
-│  Platform Implementation (@aokiapp/pcsc) │
-├─────────────────────────────────────┤
-│  Hardware Layer (PC/SC, NFC, etc.) │
-└─────────────────────────────────────┘
-```
 
 ## 📦 Packages
 
 | Package | Description | Use Case |
 |---------|-------------|----------|
-| [`@aokiapp/interface`](./packages/interface) | Core abstractions and types | Platform-agnostic development |
-| [`@aokiapp/pcsc`](./packages/pcsc) | PC/SC platform implementation | Desktop SmartCard readers |  
+| [`@aokiapp/jsapdu-interface`](./packages/interface) | Core abstractions and types | Platform-agnostic development |
+| [`@aokiapp/jsapdu-pcsc`](./packages/pcsc) | PC/SC platform implementation | Desktop SmartCard readers |  
 | [`@aokiapp/apdu-utils`](./packages/apdu-utils) | APDU command builders | Common SmartCard operations |
 | [`@aokiapp/mynacard`](./packages/mynacard) | Japanese MynaCard support | Government ID integration |
 | [`@aokiapp/tlv-parser`](./packages/tlv-parser) | TLV data parsing | Structured data extraction |
+| [`@aokiapp/pcsc-ffi-node`](./packages/pcsc-ffi-node) | PC/SC Foreign Function Interface | Low-level PC/SC access |
 
 ## 🌟 Features
 

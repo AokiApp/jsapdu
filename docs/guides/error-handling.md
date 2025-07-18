@@ -17,7 +17,7 @@ jsapdu provides a comprehensive error handling system designed to:
 Base error class for all jsapdu errors:
 
 ```typescript
-import { SmartCardError } from "@aokiapp/interface";
+import { SmartCardError } from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);

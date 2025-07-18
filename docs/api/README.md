@@ -4,7 +4,7 @@ Complete API documentation for all jsapdu packages.
 
 ## Core Packages
 
-### [@aokiapp/interface](./interface.md)
+### [@aokiapp/jsapdu-interface](./interface.md)
 Core abstractions and interfaces for platform-agnostic SmartCard communication.
 
 **Key Classes:**
@@ -16,7 +16,7 @@ Core abstractions and interfaces for platform-agnostic SmartCard communication.
 - [`ResponseApdu`](./interface.md#responseapdu) - APDU response parsing
 - [`SmartCardError`](./interface.md#smartcarderror) - Error handling system
 
-### [@aokiapp/pcsc](./pcsc.md)
+### [@aokiapp/jsapdu-pcsc](./pcsc.md)
 PC/SC platform implementation for desktop environments.
 
 **Key Classes:**
@@ -73,7 +73,7 @@ Native PC/SC bindings through Foreign Function Interface.
 
 #### Basic Card Connection
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const manager = PcscPlatformManager.getInstance();
 await using platform = manager.getPlatform();
@@ -86,7 +86,7 @@ await using card = await device.startSession();
 
 #### APDU Command Construction
 ```typescript
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import { selectDf, readEfBinaryFull } from "@aokiapp/apdu-utils";
 
 // Manual construction
@@ -125,7 +125,7 @@ const info = parser.parse(data.arrayBuffer());
 
 ### Error Handling
 ```typescript
-import { SmartCardError, ResourceError, TimeoutError } from "@aokiapp/interface";
+import { SmartCardError, ResourceError, TimeoutError } from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);

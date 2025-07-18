@@ -1,4 +1,4 @@
-# @aokiapp/pcsc
+# @aokiapp/jsapdu-pcsc
 
 PC/SC Smart Card Platform Implementation for Windows, macOS, and Linux desktop environments.
 
@@ -9,14 +9,14 @@ This package provides a complete PC/SC implementation of the jsapdu SmartCard ab
 ## Installation
 
 ```bash
-npm install @aokiapp/pcsc @aokiapp/interface
+npm install @aokiapp/jsapdu-pcsc @aokiapp/jsapdu-interface
 ```
 
 ## Quick Start
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { CommandApdu } from "@aokiapp/interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 async function example() {
   // Get platform instance (singleton)
@@ -64,7 +64,7 @@ async function example() {
 
 ### PcscPlatformManager
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 // Singleton pattern - always get the same instance
 const manager = PcscPlatformManager.getInstance();
@@ -183,7 +183,7 @@ async function withManualCleanup() {
 
 ### PC/SC Specific Errors
 ```typescript
-import { SmartCardError } from "@aokiapp/interface";
+import { SmartCardError } from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);
@@ -309,7 +309,7 @@ try {
 
 ## Dependencies
 
-- [`@aokiapp/interface`](../interface) - Core abstractions
+- [`@aokiapp/jsapdu-interface`](../interface) - Core abstractions
 - [`@aokiapp/pcsc-ffi-node`](../pcsc-ffi-node) - Native PC/SC bindings
 
 ## Related Packages

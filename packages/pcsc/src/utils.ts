@@ -1,4 +1,4 @@
-import { SmartCardError, SmartCardErrorCode } from "@aokiapp/interface";
+import { SmartCardError, SmartCardErrorCode } from "@aokiapp/jsapdu-interface";
 import {
   MAX_ATR_SIZE,
   PcscErrorCode,

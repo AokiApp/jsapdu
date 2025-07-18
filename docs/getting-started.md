@@ -11,8 +11,8 @@ npm install @aokiapp/jsapdu
 Here's a simple example of using jsapdu to communicate with a smart card:
 
 ```typescript
-import { CommandApdu } from "@aokiapp/interface";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 async function main() {
   // Initialize the platform
@@ -69,7 +69,7 @@ main();
 The platform manager is responsible for creating platform instances. Each supported platform (PC/SC, NFC, etc.) has its own manager:
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const manager = new PcscPlatformManager();
 ```
@@ -105,7 +105,7 @@ const card = await device.startSession();
 APDU (Application Protocol Data Unit) commands are used to communicate with the card:
 
 ```typescript
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 const command = new CommandApdu({
   cla: 0x00, // Class byte

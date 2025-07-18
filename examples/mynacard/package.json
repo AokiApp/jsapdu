@@ -18,8 +18,8 @@
   "dependencies": {
     "@aokiapp/tlv-parser": "^0.0.1",
     "@aokiapp/mynacard": "*",
-    "@aokiapp/interface": "*",
-    "@aokiapp/pcsc": "*",
+    "@aokiapp/jsapdu-interface": "*",
+    "@aokiapp/jsapdu-pcsc": "*",
     "@aokiapp/apdu-utils": "*"
   }
 }

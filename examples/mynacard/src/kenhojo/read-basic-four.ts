@@ -1,5 +1,5 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
-import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/interface";
+import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/jsapdu-interface";
 import {
   KENHOJO_AP,
   KENHOJO_AP_EF,

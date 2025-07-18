@@ -9,14 +9,14 @@ This package provides high-level utility functions that simplify the creation of
 ## Installation
 
 ```bash
-npm install @aokiapp/apdu-utils @aokiapp/interface
+npm install @aokiapp/apdu-utils @aokiapp/jsapdu-interface
 ```
 
 ## Quick Start
 
 ```typescript
 import { selectDf, selectEf, readEfBinaryFull, verify } from "@aokiapp/apdu-utils";
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 // Select application by AID
 const selectCmd = selectDf("A0000000041010", true); // Request FCI
@@ -294,9 +294,9 @@ The utilities perform strict parameter validation:
 
 ## Dependencies
 
-- [`@aokiapp/interface`](../interface) - CommandApdu class and constants
+- [`@aokiapp/jsapdu-interface`](../interface) - CommandApdu class and constants
 
 ## Related Packages
 
 - [`@aokiapp/mynacard`](../mynacard) - MynaCard-specific constants and schemas
-- [`@aokiapp/pcsc`](../pcsc) - PC/SC platform for command transmission
+- [`@aokiapp/jsapdu-pcsc`](../pcsc) - PC/SC platform for command transmission

@@ -6,7 +6,7 @@ PC/SC Foreign Function Interface (FFI) library for Node.js using Koffi.
 
 This package provides low-level PC/SC bindings for Node.js through Foreign Function Interface (FFI) using the Koffi library. It directly interfaces with native PC/SC libraries (WinSCard.dll on Windows, PC/SC framework on macOS/Linux) to enable SmartCard communication at the system level.
 
-**Note**: This is a low-level package primarily used internally by [`@aokiapp/pcsc`](../pcsc). Most developers should use the higher-level abstractions instead.
+**Note**: This is a low-level package primarily used internally by [`@aokiapp/jsapdu-pcsc`](../pcsc). Most developers should use the higher-level abstractions instead.
 
 ## Installation
 
@@ -387,11 +387,11 @@ if (ret === 0) {
 
 ## Integration with Higher-Level Packages
 
-This package is designed to be used by [`@aokiapp/pcsc`](../pcsc):
+This package is designed to be used by [`@aokiapp/jsapdu-pcsc`](../pcsc):
 
 ```typescript
-// Don't use directly - use @aokiapp/pcsc instead
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+// Don't use directly - use @aokiapp/jsapdu-pcsc instead
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const manager = PcscPlatformManager.getInstance();
 const platform = manager.getPlatform();
@@ -428,8 +428,8 @@ ps aux | grep pcscd
 
 ## Related Packages
 
-- [`@aokiapp/pcsc`](../pcsc) - High-level PC/SC platform implementation
-- [`@aokiapp/interface`](../interface) - Core SmartCard abstractions
+- [`@aokiapp/jsapdu-pcsc`](../pcsc) - High-level PC/SC platform implementation
+- [`@aokiapp/jsapdu-interface`](../interface) - Core SmartCard abstractions
 
 ## References
 

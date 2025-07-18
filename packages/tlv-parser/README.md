@@ -530,4 +530,4 @@ This package has no external dependencies and works in both Node.js and browser 
 ## Related Packages
 
 - [`@aokiapp/mynacard`](../mynacard) - Pre-defined schemas for Japanese MynaCard
-- [`@aokiapp/interface`](../interface) - Core SmartCard abstractions
+- [`@aokiapp/jsapdu-interface`](../interface) - Core SmartCard abstractions

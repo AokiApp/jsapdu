@@ -3,7 +3,7 @@ import {
   SmartCard,
   SmartCardDevice,
   SmartCardPlatform,
-} from "@aokiapp/interface";
+} from "@aokiapp/jsapdu-interface";
 import {
   KENHOJO_AP,
   KENHOJO_AP_EF,

@@ -41,6 +41,6 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "dependencies": {
-    "@aokiapp/interface": "^0.0.1"
+    "@aokiapp/jsapdu-interface": "^0.0.1"
   }
 }

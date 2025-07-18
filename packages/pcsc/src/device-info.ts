@@ -1,4 +1,4 @@
-import { SmartCardDeviceInfo } from "@aokiapp/interface";
+import { SmartCardDeviceInfo } from "@aokiapp/jsapdu-interface";
 
 /**
  * Implementation of SmartCardDeviceInfo for PC/SC

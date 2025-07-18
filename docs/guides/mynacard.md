@@ -16,7 +16,7 @@ MynaCard (マイナンバーカード) is the Japanese government's official ide
 
 ### Required Packages
 ```bash
-npm install @aokiapp/pcsc @aokiapp/mynacard @aokiapp/apdu-utils @aokiapp/tlv-parser
+npm install @aokiapp/jsapdu-pcsc @aokiapp/mynacard @aokiapp/apdu-utils @aokiapp/tlv-parser
 ```
 
 ### Hardware Requirements
@@ -30,7 +30,7 @@ npm install @aokiapp/pcsc @aokiapp/mynacard @aokiapp/apdu-utils @aokiapp/tlv-par
 ## Basic Setup (基本セットアップ)
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 import { 
   JPKI_AP, JPKI_AP_EF,

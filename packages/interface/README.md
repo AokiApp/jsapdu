@@ -1,4 +1,4 @@
-# @aokiapp/interface
+# @aokiapp/jsapdu-interface
 
 Core abstractions and interfaces for SmartCard communication in the jsapdu ecosystem.
 
@@ -9,7 +9,7 @@ This package provides the foundational abstractions that enable platform-agnosti
 ## Installation
 
 ```bash
-npm install @aokiapp/interface
+npm install @aokiapp/jsapdu-interface
 ```
 
 ## Core Components
@@ -18,7 +18,7 @@ npm install @aokiapp/interface
 
 #### SmartCardPlatformManager
 ```typescript
-import { SmartCardPlatformManager } from "@aokiapp/interface";
+import { SmartCardPlatformManager } from "@aokiapp/jsapdu-interface";
 
 // Abstract base class for platform managers
 abstract class SmartCardPlatformManager {
@@ -65,7 +65,7 @@ abstract class SmartCard {
 
 #### CommandApdu
 ```typescript
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 // Create APDU commands
 const selectCommand = new CommandApdu(
@@ -87,7 +87,7 @@ const parsed = CommandApdu.fromUint8Array(bytes);
 
 #### ResponseApdu
 ```typescript
-import { ResponseApdu } from "@aokiapp/interface";
+import { ResponseApdu } from "@aokiapp/jsapdu-interface";
 
 // Parse response from card
 const response = ResponseApdu.fromUint8Array(responseBytes);
@@ -101,7 +101,7 @@ console.log("Data:", response.data);
 
 #### Structured Error System
 ```typescript
-import { SmartCardError, ResourceError, TimeoutError, ValidationError } from "@aokiapp/interface";
+import { SmartCardError, ResourceError, TimeoutError, ValidationError } from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);
@@ -161,7 +161,7 @@ try {
 ## Constants
 
 ```typescript
-import { INS } from "@aokiapp/interface";
+import { INS } from "@aokiapp/jsapdu-interface";
 
 // Common instruction bytes
 const selectCommand = new CommandApdu(0x00, INS.SELECT, 0x04, 0x00, aid);
@@ -172,7 +172,7 @@ const verifyCommand = new CommandApdu(0x00, INS.VERIFY, 0x00, 0x80, pinData);
 ## Utilities
 
 ```typescript
-import { toUint8Array } from "@aokiapp/interface";
+import { toUint8Array } from "@aokiapp/jsapdu-interface";
 
 // Convert various data types to Uint8Array
 const bytes1 = toUint8Array("01020304"); // From hex string
@@ -204,6 +204,6 @@ When implementing a new platform:
 
 ## Related Packages
 
-- [`@aokiapp/pcsc`](../pcsc) - PC/SC platform implementation
+- [`@aokiapp/jsapdu-pcsc`](../pcsc) - PC/SC platform implementation
 - [`@aokiapp/apdu-utils`](../apdu-utils) - APDU command utilities
 - [`@aokiapp/mynacard`](../mynacard) - Japanese MynaCard support

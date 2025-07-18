@@ -1,5 +1,5 @@
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
 
 /**

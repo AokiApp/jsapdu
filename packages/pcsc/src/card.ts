@@ -3,7 +3,7 @@ import {
   ResponseApdu,
   SmartCard,
   SmartCardError,
-} from "@aokiapp/interface";
+} from "@aokiapp/jsapdu-interface";
 import {
   SCARD_PCI_T0,
   SCARD_PCI_T1,

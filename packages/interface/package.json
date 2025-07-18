@@ -1,5 +1,5 @@
 {
-  "name": "@aokiapp/interface",
+  "name": "@aokiapp/jsapdu-interface",
   "version": "0.0.1",
   "description": "Core abstractions and interfaces for SmartCard communication",
   "type": "module",

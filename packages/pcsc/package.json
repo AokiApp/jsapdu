@@ -1,5 +1,5 @@
 {
-  "name": "@aokiapp/pcsc",
+  "name": "@aokiapp/jsapdu-pcsc",
   "version": "0.0.1",
   "description": "PC/SC Smart Card Platform Implementation for Windows, macOS, and Linux",
   "type": "module",
@@ -43,7 +43,7 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "dependencies": {
-    "@aokiapp/interface": "*",
+    "@aokiapp/jsapdu-interface": "*",
     "@aokiapp/pcsc-ffi-node": "*"
   }
 }

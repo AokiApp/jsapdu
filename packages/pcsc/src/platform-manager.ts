@@ -1,7 +1,7 @@
 import {
   SmartCardPlatform,
   SmartCardPlatformManager,
-} from "@aokiapp/interface";
+} from "@aokiapp/jsapdu-interface";
 
 import { PcscPlatform } from "./platform.js";
 

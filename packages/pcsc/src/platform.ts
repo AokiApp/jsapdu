@@ -3,7 +3,7 @@ import {
   SmartCardDeviceInfo,
   SmartCardError,
   SmartCardPlatform,
-} from "@aokiapp/interface";
+} from "@aokiapp/jsapdu-interface";
 import {
   PcscErrorCode,
   SCARD_LEAVE_CARD,

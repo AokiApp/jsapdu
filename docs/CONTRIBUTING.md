@@ -164,7 +164,7 @@ git commit -m "docs(mynacard): add PIN management examples"
 npm test
 
 # Run tests for specific package
-npm run test --workspace=@aokiapp/interface
+npm run test --workspace=@aokiapp/jsapdu-interface
 
 # Run tests in watch mode
 npm run test:watch
@@ -216,7 +216,7 @@ For tests requiring SmartCard hardware:
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/pcsc';
+import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 
 describe('Hardware Tests', () => {
   let platform;
@@ -418,7 +418,7 @@ To add support for a new SmartCard platform:
 
 2. **Implement abstractions**:
    ```typescript
-   import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/interface';
+   import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
    
    export class YourPlatform extends SmartCardPlatform {
      async init(): Promise<void> {
@@ -553,7 +553,7 @@ Provide complete, runnable examples:
 
 ```typescript
 // ✅ Good - complete example
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 import { selectDf } from "@aokiapp/apdu-utils";
 
 async function example() {

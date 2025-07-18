@@ -6,8 +6,8 @@ import {
   SmartCardDevice,
   SmartCardDeviceInfo,
   SmartCardPlatform,
-} from "@aokiapp/interface";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+} from "@aokiapp/jsapdu-interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 let platform: SmartCardPlatform;
 let device: SmartCardDevice | null;

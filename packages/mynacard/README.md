@@ -320,7 +320,7 @@ switch (response.sw) {
 ## Related Packages
 
 - [`@aokiapp/apdu-utils`](../apdu-utils) - APDU command utilities for card communication
-- [`@aokiapp/pcsc`](../pcsc) - PC/SC platform for desktop SmartCard readers
+- [`@aokiapp/jsapdu-pcsc`](../pcsc) - PC/SC platform for desktop SmartCard readers
 
 ## References (参考資料)
 

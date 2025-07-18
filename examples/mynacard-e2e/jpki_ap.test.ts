@@ -6,8 +6,8 @@ import {
   SmartCardDevice,
   SmartCardDeviceInfo,
   SmartCardPlatform,
-} from "@aokiapp/interface";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+} from "@aokiapp/jsapdu-interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const JPKI_AP_AID = [0xa0, 0x00, 0x00, 0x02, 0x77, 0x01, 0x01, 0x01];
 const PUBLIC_CERT_FILES = [

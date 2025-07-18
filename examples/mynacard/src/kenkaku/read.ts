@@ -3,7 +3,7 @@ import {
   SmartCard,
   SmartCardDevice,
   SmartCardPlatform,
-} from "@aokiapp/interface";
+} from "@aokiapp/jsapdu-interface";
 import {
   KENKAKU_AP,
   KENKAKU_AP_EF,

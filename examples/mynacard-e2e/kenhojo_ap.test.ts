@@ -6,8 +6,8 @@ import {
   SmartCardDevice,
   SmartCardDeviceInfo,
   SmartCardPlatform,
-} from "@aokiapp/interface";
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+} from "@aokiapp/jsapdu-interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const KENHOJO_AP_AID = [
   0xa0, 0x00, 0x00, 0x00, 0x59, 0x01, 0x02, 0x01, 0x00, 0x02,

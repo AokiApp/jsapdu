@@ -38,8 +38,8 @@ New to jsapdu? Start here:
 Each package has detailed README documentation:
 
 ### Core Packages
-- **[@aokiapp/interface](../packages/interface/README.md)** - Core abstractions and types
-- **[@aokiapp/pcsc](../packages/pcsc/README.md)** - PC/SC platform implementation
+- **[@aokiapp/jsapdu-interface](../packages/interface/README.md)** - Core abstractions and types
+- **[@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)** - PC/SC platform implementation
 - **[@aokiapp/apdu-utils](../packages/apdu-utils/README.md)** - APDU command utilities
 
 ### Specialized Packages
@@ -51,7 +51,7 @@ Each package has detailed README documentation:
 
 ### Basic Card Connection
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 const manager = PcscPlatformManager.getInstance();
 await using platform = manager.getPlatform();
@@ -79,7 +79,7 @@ console.log("Name:", info.name, "Address:", info.address);
 
 ### Error Handling
 ```typescript
-import { SmartCardError } from "@aokiapp/interface";
+import { SmartCardError } from "@aokiapp/jsapdu-interface";
 
 try {
   await card.transmit(command);

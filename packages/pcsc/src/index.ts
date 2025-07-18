@@ -1,15 +1,15 @@
 /**
- * @module @aokiapp/pcsc
+ * @module @aokiapp/jsapdu-pcsc
  * @description PC/SC Smart Card Platform Implementation
  *
- * This module provides a PC/SC implementation of the SmartCard interfaces defined in @aokiapp/interface.
+ * This module provides a PC/SC implementation of the SmartCard interfaces defined in @aokiapp/jsapdu-interface.
  * It uses the PC/SC FFI bindings from @aokiapp/pcsc-ffi-node to interact with the native PC/SC library.
  *
  * The main entry point is the PcscPlatformManager, which provides access to the PC/SC platform.
  *
  * @example
  * ```typescript
- * import { PcscPlatformManager } from '@aokiapp/pcsc';
+ * import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
  *
  * async function main() {
  *   // Get the PC/SC platform manager

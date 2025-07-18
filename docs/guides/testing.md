@@ -218,7 +218,7 @@ function createMockTLVBuffer(entries: Array<{tag: number, value: Uint8Array}>): 
 ```typescript
 // tests/unit/error-handling.test.ts
 import { describe, it, expect } from 'vitest';
-import { SmartCardError, ResourceError, TimeoutError, ValidationError } from '@aokiapp/interface';
+import { SmartCardError, ResourceError, TimeoutError, ValidationError } from '@aokiapp/jsapdu-interface';
 
 describe('Error Handling', () => {
   it('should create SmartCardError with correct properties', () => {
@@ -274,7 +274,7 @@ Create mock implementations for testing:
 
 ```typescript
 // tests/mocks/mock-platform.ts
-import { SmartCardPlatform, SmartCardDevice, SmartCardDeviceInfo, SmartCard } from '@aokiapp/interface';
+import { SmartCardPlatform, SmartCardDevice, SmartCardDeviceInfo, SmartCard } from '@aokiapp/jsapdu-interface';
 
 export class MockPlatform extends SmartCardPlatform {
   private devices: MockDeviceInfo[] = [];
@@ -439,7 +439,7 @@ class MockDeviceInfo extends SmartCardDeviceInfo {
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockPlatform, MockCard } from '../mocks/mock-platform.js';
 import { selectDf, readEfBinaryFull } from '@aokiapp/apdu-utils';
-import { ResponseApdu } from '@aokiapp/interface';
+import { ResponseApdu } from '@aokiapp/jsapdu-interface';
 
 describe('Card Operations Integration', () => {
   let platform: MockPlatform;
@@ -492,8 +492,8 @@ These tests require actual SmartCard hardware:
 ```typescript
 // tests/e2e/hardware.test.ts
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/pcsc';
-import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/interface';
+import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
+import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
 
 describe('Hardware End-to-End Tests', () => {
   let platform: SmartCardPlatform;
@@ -567,7 +567,7 @@ describe('Hardware End-to-End Tests', () => {
 ```typescript
 // tests/e2e/mynacard.test.ts
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PcscPlatformManager } from '@aokiapp/pcsc';
+import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 import { selectDf } from '@aokiapp/apdu-utils';
 import { JPKI_AP, KENHOJO_AP, KENKAKU_AP } from '@aokiapp/mynacard';
 
