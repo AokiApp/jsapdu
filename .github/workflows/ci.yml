@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format -- --check
+
+      - name: Pack all packages
+        run: |
+          mkdir -p artifacts
+          for dir in packages/*; do
+            if [ -f "$dir/package.json" ]; then
+              cd "$dir"
+              npm pack
+              mv *.tgz ../../artifacts/
+              cd -
+            fi
+          done
+
+      - name: Upload npm pack artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages
+          path: artifacts/
+          if-no-files-found: error

@@ -3,6 +3,7 @@
 ## Overview
 
 jsapdu is designed with a layered architecture that provides:
+
 - Platform independence through abstraction
 - Extensibility for different card communication protocols
 - Type safety and modern resource management
@@ -21,6 +22,7 @@ export abstract class SmartCardPlatform {
 ```
 
 The platform layer provides:
+
 - Platform initialization and cleanup
 - Device enumeration and management
 - Resource lifecycle management
@@ -38,6 +40,7 @@ export abstract class SmartCardDevice {
 ```
 
 The device layer handles:
+
 - Card reader state management
 - Card presence detection
 - Session establishment
@@ -55,6 +58,7 @@ export abstract class SmartCard {
 ```
 
 The card layer provides:
+
 - APDU command transmission
 - Card reset functionality
 - ATR/ATS handling
@@ -74,18 +78,21 @@ jsapdu/
 ```
 
 ### Interface Package
+
 - Defines core abstractions
 - Provides APDU handling
 - Implements error system
 - Contains common utilities
 
 ### PCSC Package
+
 - Implements PC/SC platform
 - Handles USB card readers
 - Manages reader lifecycle
 - Provides APDU transmission
 
 ### TLV Parser Package
+
 - Parses ASN.1 TLV structures
 - Supports sync/async parsing
 - Provides schema validation
@@ -94,6 +101,7 @@ jsapdu/
 ## Error Handling
 
 The error system is designed to:
+
 - Provide structured error information
 - Enable proper error recovery
 - Protect sensitive information
@@ -105,7 +113,7 @@ export class SmartCardError extends Error {
   constructor(
     public readonly code: SmartCardErrorCode,
     message: string,
-    public readonly cause?: Error
+    public readonly cause?: Error,
   ) {
     super(message);
   }
@@ -115,18 +123,20 @@ export class SmartCardError extends Error {
 ## Resource Management
 
 Resources are managed using:
+
 - Symbol.asyncDispose for automatic cleanup
 - Explicit state tracking
 - Error-safe release patterns
 - Timeout handling
 
 Example:
+
 ```typescript
 async function example() {
   await using platform = manager.getPlatform();
   await using device = (await platform.getDevices())[0].acquireDevice();
   await using card = await device.startSession();
-  
+
   // Resources automatically cleaned up
 }
 ```
@@ -134,21 +144,27 @@ async function example() {
 ## Extension Points
 
 ### 1. New Platforms
+
 To add a new platform:
+
 1. Implement SmartCardPlatformManager
 2. Implement SmartCardPlatform
 3. Implement device and card classes
 4. Handle platform-specific errors
 
 ### 2. New Card Types
+
 To add support for new cards:
+
 1. Create card-specific APDU commands
 2. Implement high-level operations
 3. Add TLV parsing schemas if needed
 4. Create utility functions
 
 ### 3. New Protocols
+
 To add new communication protocols:
+
 1. Extend platform abstractions if needed
 2. Implement protocol-specific device handling
 3. Add protocol configuration options
@@ -157,16 +173,19 @@ To add new communication protocols:
 ## Security Considerations
 
 1. Resource Cleanup
+
 - All resources must be properly released
 - Sensitive data should be cleared
 - Connections must be closed properly
 
 2. Error Handling
+
 - Sensitive information must be protected
 - Error messages should be sanitized
 - Stack traces should be hidden in production
 
 3. Input Validation
+
 - APDU commands must be validated
 - Buffer sizes must be checked
 - Resource limits must be enforced
@@ -174,16 +193,19 @@ To add new communication protocols:
 ## Performance Considerations
 
 1. Memory Management
+
 - Buffer pooling for frequent operations
 - Proper cleanup of large buffers
 - Minimal copying of data
 
 2. Connection Handling
+
 - Connection pooling where appropriate
 - Proper timeout handling
 - Resource limit enforcement
 
 3. Async Operations
+
 - Proper async/await usage
 - Cancellation support
 - Timeout handling
@@ -191,16 +213,19 @@ To add new communication protocols:
 ## Testing Strategy
 
 1. Unit Tests
+
 - Core functionality testing
 - Error handling verification
 - Resource management testing
 
 2. Integration Tests
+
 - Platform implementation testing
 - End-to-end scenarios
 - Error recovery testing
 
 3. Performance Tests
+
 - Resource usage monitoring
 - Operation timing
 - Stress testing
@@ -208,16 +233,19 @@ To add new communication protocols:
 ## Future Considerations
 
 1. Platform Support
+
 - Web platform support (WebUSB, WebNFC)
 - Mobile platform support
 - Cloud HSM integration
 
 2. Feature Extensions
+
 - Secure channel support
 - Additional card protocols
 - Enhanced debugging tools
 
 3. Performance Improvements
+
 - Connection pooling
 - Buffer optimization
 - Caching strategies

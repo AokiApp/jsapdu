@@ -1,5 +1,4 @@
 // @ts-check
-
 import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import tseslint from "typescript-eslint";
@@ -17,10 +16,17 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["**/dist/**"],
+    ignores: [
+      "**/dist/**",
+      "eslint.config.mjs",
+      "vitest.config.js",
+      "packages/pcsc/tests/*.js",
+      "examples/mynacard-e2e/debug-pcsc.cjs",
+    ],
   },
   {
     rules: {
-    }
-  }
+      "@typescript-eslint/no-unsafe-enum-comparison": "off",
+    },
+  },
 );

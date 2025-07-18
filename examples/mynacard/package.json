@@ -1,0 +1,25 @@
+{
+  "name": "mynacard",
+  "private": true,
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules"
+  },
+  "dependencies": {
+    "@aokiapp/tlv-parser": "^0.0.1",
+    "@aokiapp/mynacard": "*",
+    "@aokiapp/jsapdu-interface": "*",
+    "@aokiapp/jsapdu-pcsc": "*",
+    "@aokiapp/apdu-utils": "*"
+  }
+}

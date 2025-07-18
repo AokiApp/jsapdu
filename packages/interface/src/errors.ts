@@ -30,7 +30,7 @@ export class SmartCardError extends Error {
   constructor(
     public readonly code: SmartCardErrorCode,
     message: string,
-    public readonly cause?: Error
+    public readonly cause?: Error,
   ) {
     super(message);
     this.name = "SmartCardError";
@@ -52,11 +52,13 @@ export class SmartCardError extends Error {
     return {
       code: this.code,
       message: this.message,
-      cause: this.cause ? {
-        name: this.cause.name,
-        message: this.cause.message,
-        stack: this.cause.stack
-      } : undefined
+      cause: this.cause
+        ? {
+            name: this.cause.name,
+            message: this.cause.message,
+            stack: this.cause.stack,
+          }
+        : undefined,
     };
   }
 }
@@ -69,7 +71,7 @@ export class ResourceError extends SmartCardError {
     message: string,
     public readonly resourceType: string,
     public readonly limit?: number,
-    cause?: Error
+    cause?: Error,
   ) {
     super("RESOURCE_LIMIT", message, cause);
     this.name = "ResourceError";
@@ -84,7 +86,7 @@ export class TimeoutError extends SmartCardError {
     message: string,
     public readonly operationType: string,
     public readonly timeoutMs: number,
-    cause?: Error
+    cause?: Error,
   ) {
     super("TIMEOUT", message, cause);
     this.name = "TimeoutError";
@@ -99,7 +101,7 @@ export class ValidationError extends SmartCardError {
     message: string,
     public readonly parameter: string,
     public readonly value: unknown,
-    cause?: Error
+    cause?: Error,
   ) {
     super("INVALID_PARAMETER", message, cause);
     this.name = "ValidationError";
@@ -110,7 +112,10 @@ export class ValidationError extends SmartCardError {
  * Creates a SmartCardError from an unknown error
  * Useful for wrapping native errors or errors from external libraries
  */
-export function fromUnknownError(error: unknown, code: SmartCardErrorCode = "PLATFORM_ERROR"): SmartCardError {
+export function fromUnknownError(
+  error: unknown,
+  code: SmartCardErrorCode = "PLATFORM_ERROR",
+): SmartCardError {
   if (error instanceof SmartCardError) {
     return error;
   }
@@ -119,6 +124,6 @@ export function fromUnknownError(error: unknown, code: SmartCardErrorCode = "PLA
   return new SmartCardError(
     code,
     message,
-    error instanceof Error ? error : undefined
+    error instanceof Error ? error : undefined,
   );
 }

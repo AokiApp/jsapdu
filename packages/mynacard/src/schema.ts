@@ -1,19 +1,5 @@
 import { Schema, TagClass } from "@aokiapp/tlv-parser";
-
-import { decodePublicKey } from "./utils.js";
-
-function decodeText(buffer: ArrayBuffer): string {
-  return new TextDecoder("utf-8").decode(buffer);
-}
-
-function decodeOffsets(buffer: ArrayBuffer): number[] {
-  const uint8 = new Uint8Array(buffer);
-  const offsets = [];
-  for (let i = 0; i < uint8.length; i += 2) {
-    offsets.push((uint8[i] << 8) | uint8[i + 1]);
-  }
-  return offsets;
-}
+import { decodeOffsets, decodePublicKey, decodeText } from "./utils.js";
 
 export const schemaCertificate = Schema.constructed(
   "certificate",

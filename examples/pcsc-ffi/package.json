@@ -1,0 +1,30 @@
+{
+  "name": "pcsc-ffi",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Demo scripts for pcsc-ffi package.",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "pcsc",
+    "ffi",
+    "demo",
+    "smartcard"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aokiapp/pcsc-ffi-node": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

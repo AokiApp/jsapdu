@@ -11,8 +11,8 @@ npm install @aokiapp/jsapdu
 Here's a simple example of using jsapdu to communicate with a smart card:
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
 async function main() {
   // Initialize the platform
@@ -30,10 +30,10 @@ async function main() {
 
     // Connect to the first device
     const device = await devices[0].acquireDevice();
-    
+
     // Start a session with the card
     const card = await device.startSession();
-    
+
     // Get card ATR
     const atr = await card.getAtr();
     console.log("Card ATR:", Buffer.from(atr).toString("hex"));
@@ -44,12 +44,11 @@ async function main() {
       ins: 0xa4,
       p1: 0x04,
       p2: 0x00,
-      data: Buffer.from("A0000000041010", "hex")
+      data: Buffer.from("A0000000041010", "hex"),
     });
 
     const response = await card.transmit(selectCommand);
     console.log("Response:", response.toString());
-
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error:", error.message);
@@ -70,7 +69,8 @@ main();
 The platform manager is responsible for creating platform instances. Each supported platform (PC/SC, NFC, etc.) has its own manager:
 
 ```typescript
-import { PcscPlatformManager } from "@aokiapp/pcsc";
+import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+
 const manager = new PcscPlatformManager();
 ```
 
@@ -105,14 +105,14 @@ const card = await device.startSession();
 APDU (Application Protocol Data Unit) commands are used to communicate with the card:
 
 ```typescript
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 const command = new CommandApdu({
-  cla: 0x00,  // Class byte
-  ins: 0xa4,  // Instruction byte
-  p1: 0x04,   // Parameter 1
-  p2: 0x00,   // Parameter 2
-  data: Buffer.from("A0000000041010", "hex")  // Command data
+  cla: 0x00, // Class byte
+  ins: 0xa4, // Instruction byte
+  p1: 0x04, // Parameter 1
+  p2: 0x00, // Parameter 2
+  data: Buffer.from("A0000000041010", "hex"), // Command data
 });
 ```
 
@@ -123,13 +123,13 @@ jsapdu supports modern resource management using `Symbol.asyncDispose`:
 ```typescript
 async function example() {
   const manager = new PcscPlatformManager();
-  
+
   await using platform = manager.getPlatform();
   await platform.init();
-  
+
   await using device = (await platform.getDevices())[0].acquireDevice();
   await using card = await device.startSession();
-  
+
   // Resources will be automatically released
 }
 ```

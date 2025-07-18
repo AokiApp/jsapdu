@@ -1,9 +1,14 @@
 {
-  "name": "@aokiapp/interface",
-  "version": "1.0.0",
+  "name": "@aokiapp/jsapdu-interface",
+  "version": "0.0.1",
+  "description": "Core abstractions and interfaces for SmartCard communication",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
       "import": "./dist/src/index.js",
@@ -13,7 +18,26 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "tsc --build --clean"
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules"
+  },
+  "keywords": [
+    "smartcard",
+    "interface",
+    "apdu",
+    "abstractions",
+    "typescript"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/interface"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "devDependencies": {}
 }

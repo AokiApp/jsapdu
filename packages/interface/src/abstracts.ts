@@ -33,7 +33,7 @@ export abstract class SmartCardPlatform {
   public abstract init(): Promise<void>;
 
   /**
-   * Release the platform
+   * Release the platform and all acquired devices
    * @throws {SmartCardError} If release fails or platform is not initialized
    */
   public abstract release(): Promise<void>;
@@ -48,9 +48,8 @@ export abstract class SmartCardPlatform {
   /**
    * Asserts if the platform is initialized
    * @throws {SmartCardError} If the platform is not initialized
-   * @protected
    */
-  protected assertInitialized() {
+  public assertInitialized() {
     if (!this.initialized) {
       throw new SmartCardError("NOT_INITIALIZED", "Platform not initialized");
     }
@@ -59,9 +58,8 @@ export abstract class SmartCardPlatform {
   /**
    * Asserts if the platform is not initialized
    * @throws {SmartCardError} If the platform is initialized
-   * @protected
    */
-  protected assertNotInitialized() {
+  public assertNotInitialized() {
     if (this.initialized) {
       throw new SmartCardError(
         "ALREADY_INITIALIZED",
@@ -86,9 +84,30 @@ export abstract class SmartCardPlatform {
    * Get devices
    * @throws {SmartCardError} If platform is not initialized or operation fails
    */
-  public abstract getDevices(): Promise<SmartCardDeviceInfo[]>;
+  public abstract getDeviceInfo(): Promise<SmartCardDeviceInfo[]>;
+
+  /**
+   * Acquire a device by its ID
+   * Even if the device has not inserted the card, it is considered acquirable
+   * Note: Don't forget to add the device to the platform's devices list after acquiring it
+   * @returns {Promise<SmartCardDevice>} Acquired device instance
+   * @param id - Device ID to acquire
+   * @throws {SmartCardError} If the following:
+   * - Platform is not initialized
+   * - Device with the given ID does not exist
+   * - Device is already acquired
+   * - Device is not available
+   * - Device is not supported by the platform
+   * - Any other error occurs during acquisition
+   */
+  public abstract acquireDevice(id: string): Promise<SmartCardDevice>;
 }
 
+/**
+ * A data class representing SmartCard device information
+ * The information is informational only and does not provide any methods
+ * It is used to display device information in the UI or for identification purposes
+ */
 export abstract class SmartCardDeviceInfo {
   protected constructor() {}
 
@@ -162,12 +181,6 @@ export abstract class SmartCardDeviceInfo {
    * Supports nested protocol (e.g. BLE over WebUSB)
    */
   public abstract readonly apduApi: ApduApi[];
-
-  /**
-   * Acquire the device
-   * @throws {SmartCardError} If device acquisition fails
-   */
-  public abstract acquireDevice(): Promise<SmartCardDevice>;
 }
 
 /**
@@ -190,10 +203,14 @@ export abstract class SmartCardDevice {
   /**
    * @constructor
    */
-  protected constructor(
-    protected parentPlatform: SmartCardPlatform,
-    protected deviceInfo: SmartCardDeviceInfo,
-  ) {}
+  protected constructor(protected parentPlatform: SmartCardPlatform) {
+    this.parentPlatform.assertInitialized();
+  }
+
+  /**
+   * Card acquired by the device
+   */
+  protected card: SmartCard | EmulatedCard | null = null;
 
   /**
    * Get the device information of itself
@@ -201,27 +218,52 @@ export abstract class SmartCardDevice {
   public abstract getDeviceInfo(): SmartCardDeviceInfo;
 
   /**
-   * Whether acquired device session is active or not
+   * Whether acquired device has already started a session or not
    */
-  public abstract isActive(): boolean;
+  public abstract isSessionActive(): boolean;
+
+  /**
+   * Whether acquired device is available or not
+   * It must be callable regardless of any of: card presense, existing card session, any other prerequisites
+   * It returns true if the device is available, false otherwise
+   * It also returns true if the device is already in a session, since it is available
+   */
+  public abstract isDeviceAvailable(): Promise<boolean>;
 
   /**
    * Check if the card is present
+   * It must be callable regardless of any of: card presense, existing card session, any other prerequisites
+   * Do check card presense without locking any resources
+   * It doesn't need to be TOCTTOU-resistant
    * @throws {SmartCardError} If check fails
    */
   public abstract isCardPresent(): Promise<boolean>;
 
   /**
    * Start communication session with the card
+   * This method works in non-blocking manner
+   * If the card is not present, it will throw an error immediately
+   * Don't be blocking -- wait while the card is present, since this function is non-blocking
    * @throws {SmartCardError} If session start fails
    */
   public abstract startSession(): Promise<SmartCard>;
+
+  /**
+   * Wait for the card to be present
+   * This method is blocking and will wait until the card is present.
+   * After the card is present, it will return immediately. You are expected to call `startSession` after this method.
+   * If platform supports card presence detection except for polling, it should be implemented in this method.
+   * @param timeout - Timeout in milliseconds. It is required to prevent infinite waiting
+   * @throws {SmartCardError} If timeout is reached or card is not present
+   */
+  public abstract waitForCardPresence(timeout: number): Promise<void>;
+
   /**
    * Start HCE session
    */
   public abstract startHceSession(): Promise<EmulatedCard>;
   /**
-   * Release the device
+   * Release the device and its card session
    * @throws {SmartCardError} If release fails
    */
   public abstract release(): Promise<void>;
@@ -287,7 +329,7 @@ export abstract class EmulatedCard {
   /**
    * @constructor
    */
-  protected constructor(private parentDevice: SmartCardDevice) {}
+  protected constructor(protected parentDevice: SmartCardDevice) {}
 
   /**
    * Whether acquired device session is active or not
