@@ -8,7 +8,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -21,7 +22,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@aokiapp/pcsc-ffi-node": "file:../../packages/pcsc-ffi-node"
+    "@aokiapp/pcsc-ffi-node": "*"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

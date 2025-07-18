@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "tsc --build --clean",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
     "test": "node --test"
   },
   "keywords": [
@@ -38,7 +39,7 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "dependencies": {
-    "@aokiapp/interface": "^0.0.1",
-    "@aokiapp/pcsc-ffi-node": "^0.0.0"
+    "@aokiapp/interface": "*",
+    "@aokiapp/pcsc-ffi-node": "*"
   }
 }

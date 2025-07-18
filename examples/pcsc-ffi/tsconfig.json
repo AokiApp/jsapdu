@@ -1,13 +1,14 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "../../",
+    "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "paths": {
-      "@aokiapp/pcsc-ffi-node": ["../../packages/pcsc-ffi-node/src/index"]
-    }
+    "rootDir": ".",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*.ts", "../../packages/pcsc-ffi-node/src"]
+  "include": ["src"]
 }

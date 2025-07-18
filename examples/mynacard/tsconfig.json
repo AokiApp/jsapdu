@@ -3,32 +3,11 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "rootDir": "../../",
+    "rootDir": ".",
     "outDir": "dist",
     "composite": true,
     "declaration": true,
-    "declarationMap": true,
-    "paths": {
-      "@aokiapp/apdu-utils": ["../../packages/apdu-utils/src/index"],
-      "@aokiapp/interface": ["../../packages/interface/src/index"],
-      "@aokiapp/tlv-parser": ["../../packages/tlv-parser/src/index"],
-      "@aokiapp/mynacard": ["../../packages/mynacard/src/index"],
-      "@aokiapp/pcsc": ["../../packages/pcsc/src/index"]
-    }
+    "declarationMap": true
   },
-  "include": [
-    "src",
-    "../../packages/pcsc/src",
-    "../../packages/pcsc-ffi-node/src",
-    "../../packages/interface/src",
-    "../../packages/apdu-utils/src",
-    "../../packages/tlv-parser/src",
-    "../../packages/mynacard/src"
-  ],
-  "references": [
-    { "path": "../../packages/apdu-utils" },
-    { "path": "../../packages/interface" },
-    { "path": "../../packages/tlv-parser" },
-    { "path": "../../packages/mynacard" }
-  ]
+  "include": ["src"]
 }

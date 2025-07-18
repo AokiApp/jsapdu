@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "clean": "tsc --build --clean"
   },
   "keywords": [

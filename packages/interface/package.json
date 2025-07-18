@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "tsc --build --clean"
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules"
   },
   "keywords": [
     "smartcard",

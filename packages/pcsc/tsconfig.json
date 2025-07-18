@@ -9,6 +9,5 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src"],
-  "references": [{ "path": "../interface" }]
+  "include": ["src"]
 }

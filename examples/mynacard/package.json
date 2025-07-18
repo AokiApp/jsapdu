@@ -12,7 +12,14 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "tsc --build --clean"
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@aokiapp/tlv-parser": "^0.0.1",
+    "@aokiapp/mynacard": "*",
+    "@aokiapp/interface": "*",
+    "@aokiapp/pcsc": "*",
+    "@aokiapp/apdu-utils": "*"
+  }
 }

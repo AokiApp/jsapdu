@@ -1,21 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
-  "files": [],
-  "references": [
-    { "path": "./packages/apdu-utils" },
-    { "path": "./packages/interface" },
-    { "path": "./packages/pcsc" },
-    { "path": "./packages/tlv-parser" },
-    { "path": "./packages/mynacard" }
-  ],
-  "include": [
-    "vitest.config.ts",
-    "examples/mynacard-e2e/*.ts",
-    "examples/mynacard-e2e/*.js",
-    "packages/pcsc/tests/*.ts",
-    "packages/pcsc/tests/*.js",
-    "vitest.config.js"
-  ],
   "compilerOptions": {
     "allowJs": true
   }
