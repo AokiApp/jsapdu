@@ -28,7 +28,7 @@
     "desktop"
   ],
   "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
-  "license": "ANAL",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
   "homepage": "https://github.com/AokiApp/jsapdu#readme",
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
-# AokiApp Normative Application License
+# AokiApp Normative Application License - Tight
 
-**Version 1.0, Apr 1, 2025**
+**Version 1.0.1, Jul 18, 2025**
 
 ## TERMS AND CONDITIONS
 
@@ -90,3 +90,8 @@ This license automatically terminates if you fail to comply with any of its term
 ### 14. Miscellaneous
 
 To request a commercial license for this software or to inquire about other licensing options, please contact AokiApp Inc. at hello+github@aoki.app.
+
+### Revision
+
+- Version 1.0.0 — Initial release: Apr 1, 2025
+- Version 1.0.1 — Rename to ANAL-Tight: Jul 18, 2025
