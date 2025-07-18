@@ -5,10 +5,9 @@
     "module": "ESNext",
     "rootDir": ".",
     "outDir": "dist",
-    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "moduleResolution": "Bundler"
   },
-  "include": ["src"]
+  "include": ["src/**/*.ts"]
 }
