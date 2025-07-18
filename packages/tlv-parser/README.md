@@ -78,7 +78,7 @@ const schema = Schema.primitive("field", decoder, {
 
 ## Overview
 
-This package provides **the most comprehensive TLV parsing solution** for SmartCard and ASN.1 data structures. Unlike basic parsers that just extract bytes, @aokiapp/tlv-parser delivers **structured, type-safe data extraction** with **enterprise-grade features**.
+This package provides a **feature-rich TLV parsing solution** for SmartCard and ASN.1 data structures. Unlike basic parsers that just extract bytes, @aokiapp/tlv-parser delivers **structured, type-safe data extraction** with **advanced capabilities** tailored for complex use cases.
 
 ## Installation
 
