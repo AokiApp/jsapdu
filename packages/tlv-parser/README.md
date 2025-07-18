@@ -1,6 +1,6 @@
 # @aokiapp/tlv-parser
 
-**The most advanced TLV parser for TypeScript with schema-driven type safety**
+**A TLV parser for TypeScript offering schema-driven type safety, full TypeScript type inference, and flexible sync/async modes**
 
 ## What Makes This Special? ✨
 
