@@ -171,51 +171,6 @@ import { schemaKenkakuEntries } from "@aokiapp/mynacard";
 import { schemaKenkakuMyNumber } from "@aokiapp/mynacard";
 ```
 
-## Utility Functions
-
-### hexStringToUint8Array()
-```typescript
-import { hexStringToUint8Array } from "@aokiapp/mynacard";
-
-// Convert hex string to byte array
-const bytes = hexStringToUint8Array("01020304");
-console.log(bytes); // Uint8Array([1, 2, 3, 4])
-
-// With spaces (automatically removed)
-const bytes2 = hexStringToUint8Array("01 02 03 04");
-
-// Validation
-hexStringToUint8Array("0102030G"); // ❌ Error: Invalid hexadecimal string
-hexStringToUint8Array("01020304Z"); // ❌ Error: Length must be even
-```
-
-### arrayBufferToBase64url()
-```typescript
-import { arrayBufferToBase64url } from "@aokiapp/mynacard";
-
-// Convert ArrayBuffer to Base64URL encoding
-const buffer = new ArrayBuffer(4);
-const base64url = arrayBufferToBase64url(buffer);
-console.log(base64url); // Base64URL string (no padding)
-```
-
-### decodePublicKey()
-```typescript
-import { decodePublicKey } from "@aokiapp/mynacard";
-
-// Decode RSA public key from TLV structure
-const publicKey = await decodePublicKey(tlvBuffer);
-console.log(publicKey); // CryptoKey object ready for verification
-
-// The key can be used for signature verification
-const isValid = await crypto.subtle.verify(
-  "RSASSA-PKCS1-v1_5",
-  publicKey,
-  signature,
-  data
-);
-```
-
 ## Common Usage Patterns
 
 ### Reading Personal Information (個人情報の読み取り)
