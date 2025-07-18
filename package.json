@@ -1,7 +1,29 @@
 {
   "name": "jsapdu",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "description": "Modern TypeScript library for SmartCard communication across multiple platforms and protocols",
+  "keywords": [
+    "smartcard",
+    "apdu",
+    "pcsc",
+    "nfc",
+    "mynacard",
+    "japan",
+    "iso7816",
+    "tlv",
+    "typescript"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
   "scripts": {
     "build": "turbo run build",
     "clean": "turbo run clean && turbo clean",
@@ -9,10 +31,6 @@
     "lint": "eslint .",
     "format": "prettier --write ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@eslint/js": "^9.24.0",
     "eslint": "^9.31.0",

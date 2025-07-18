@@ -1,8 +1,10 @@
 {
   "name": "@aokiapp/tlv-parser",
+  "version": "0.0.1",
+  "description": "Tag-Length-Value (TLV) data parser with schema support for structured data extraction",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -12,5 +14,25 @@
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
+  },
+  "keywords": [
+    "tlv",
+    "parser",
+    "tag-length-value",
+    "asn1",
+    "schema",
+    "data-extraction",
+    "smartcard"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/tlv-parser"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@aokiapp/pcsc",
-  "version": "1.0.0",
-  "description": "PC/SC Smart Card Platform Implementation",
+  "version": "0.0.1",
+  "description": "PC/SC Smart Card Platform Implementation for Windows, macOS, and Linux",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -20,12 +20,25 @@
   "keywords": [
     "pcsc",
     "smartcard",
-    "platform"
+    "platform",
+    "windows",
+    "macos",
+    "linux",
+    "desktop"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/pcsc"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
   "dependencies": {
-    "@aokiapp/interface": "^1.0.0",
+    "@aokiapp/interface": "^0.0.1",
     "@aokiapp/pcsc-ffi-node": "^0.0.0"
   }
 }

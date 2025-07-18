@@ -1,6 +1,7 @@
 {
   "name": "@aokiapp/interface",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "description": "Core abstractions and interfaces for SmartCard communication",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -14,6 +15,24 @@
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
+  },
+  "keywords": [
+    "smartcard",
+    "interface",
+    "apdu",
+    "abstractions",
+    "typescript"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/interface"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "devDependencies": {}
 }

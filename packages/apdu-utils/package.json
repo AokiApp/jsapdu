@@ -1,5 +1,7 @@
 {
   "name": "@aokiapp/apdu-utils",
+  "version": "0.0.1",
+  "description": "Utility functions for building common APDU commands (SELECT, READ BINARY, VERIFY)",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -12,5 +14,28 @@
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
+  },
+  "keywords": [
+    "apdu",
+    "smartcard",
+    "select",
+    "read-binary",
+    "verify",
+    "iso7816",
+    "utilities"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/apdu-utils"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "dependencies": {
+    "@aokiapp/interface": "^0.0.1"
   }
 }

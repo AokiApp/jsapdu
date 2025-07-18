@@ -1,5 +1,7 @@
 {
   "name": "@aokiapp/mynacard",
+  "version": "0.0.1",
+  "description": "Japanese MynaCard (マイナンバーカード) support with JPKI, Kenhojo, and Kenkaku applications",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,5 +14,29 @@
   "scripts": {
     "build": "tsc",
     "clean": "tsc --build --clean"
+  },
+  "keywords": [
+    "mynacard",
+    "マイナンバーカード",
+    "japan",
+    "jpki",
+    "kenhojo",
+    "kenkaku",
+    "government-id",
+    "smartcard"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "ANAL",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/mynacard"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "dependencies": {
+    "@aokiapp/tlv-parser": "^0.0.1"
   }
 }
