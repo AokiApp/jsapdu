@@ -2,6 +2,7 @@ export const INS = {
   SELECT: 0xa4,
   VERIFY: 0x20,
   GET_CHALLENGE: 0x84,
+  GET_DATA: 0xca,
   EXTERNAL_AUTHENTICATE: 0x82,
   INTERNAL_AUTHENTICATE: 0x88,
   READ_BINARY: 0xb0,
@@ -11,4 +12,5 @@ export const INS = {
   WRITE_RECORD: 0xd2,
   APPEND_RECORD: 0xe2,
   UPDATE_RECORD: 0xdc,
+  MANAGE_CHANNEL: 0x70,
 } as const;

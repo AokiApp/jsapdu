@@ -47,10 +47,10 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "dependencies": {
+    "@aokiapp/apdu-utils": "*",
     "@aokiapp/jsapdu-interface": "*",
     "@aokiapp/jsapdu-pcsc": "*",
-    "@aokiapp/apdu-utils": "*",
-    "commander": "^12.0.0"
+    "commander": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0"

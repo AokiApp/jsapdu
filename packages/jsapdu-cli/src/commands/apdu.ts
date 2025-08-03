@@ -4,39 +4,104 @@
 
 import { Command } from 'commander';
 import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
-import { CommandApdu } from '@aokiapp/jsapdu-interface';
-import { formatApduResponse } from '../utils/formatters.js';
+import { CommandApdu, ResponseApdu } from '@aokiapp/jsapdu-interface';
+import { formatApduResponse, parseHex } from '../utils/formatters.js';
+import { readFileSync } from 'fs';
+
+interface ApduCommandOptions {
+  file?: string;
+  reader?: string;
+  json?: boolean;
+  wait?: string;
+  verbose?: boolean;
+  continueOnError?: boolean;
+  delay?: string;
+}
+
+interface ApduResult {
+  command: string;
+  commandBytes: number[];
+  response: string;
+  responseBytes: number[];
+  sw1: number;
+  sw2: number;
+  sw: number;
+  data: string | null;
+  dataBytes: number[];
+  success: boolean;
+  error?: string;
+}
 
 export const apduCommand = new Command('apdu')
-  .description('Send APDU command to smart card')
-  .argument('<command>', 'APDU command as hex string (e.g., "00A4040000")')
+  .description('Send APDU command(s) to smart card')
+  .arguments('[commands...]')
+  .option('-f, --file <path>', 'Read APDU commands from file (one command per line)')
   .option('-r, --reader <id>', 'Reader ID (if not specified, uses first available reader)')
   .option('-j, --json', 'Output as JSON')
   .option('-w, --wait <timeout>', 'Wait for card presence (timeout in seconds)', '30')
   .option('-v, --verbose', 'Show detailed information')
-  .action(async (commandHex: string, options) => {
+  .option('--continue-on-error', 'Continue execution even if an APDU command fails')
+  .option('--delay <ms>', 'Delay between APDU commands in milliseconds', '0')
+  .action(async (commands: string[], options: ApduCommandOptions) => {
     try {
-      // Parse APDU command
-      const cleanHex = commandHex.replace(/\s+/g, '').replace(/:/g, '');
-      if (!/^[0-9A-Fa-f]+$/.test(cleanHex)) {
-        console.error('Invalid hex string. Use format: 00A4040000');
+      // Collect APDU commands from arguments or file
+      let apduCommands: string[] = [];
+
+      if (options.file) {
+        try {
+          const fileContent = readFileSync(options.file, 'utf-8');
+          const fileCommands = fileContent
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0 && !line.startsWith('#'));
+          apduCommands.push(...fileCommands);
+        } catch (error) {
+          console.error(`Error reading file: ${error instanceof Error ? error.message : error}`);
+          process.exit(1);
+        }
+      }
+
+      if (commands && commands.length > 0) {
+        apduCommands.push(...commands);
+      }
+
+      if (apduCommands.length === 0) {
+        console.error('No APDU commands provided. Use arguments or --file option.');
         process.exit(1);
       }
-      
-      if (cleanHex.length % 2 !== 0) {
-        console.error('Hex string must have even length.');
-        process.exit(1);
+
+      // Validate and parse APDU commands
+      const parsedCommands: CommandApdu[] = [];
+      for (let i = 0; i < apduCommands.length; i++) {
+        const commandHex = apduCommands[i];
+        try {
+          const cleanHex = commandHex.replace(/\s+/g, '').replace(/:/g, '');
+          if (!/^[0-9A-Fa-f]+$/.test(cleanHex)) {
+            throw new Error('Invalid hex string. Use format: 00A4040000');
+          }
+          
+          if (cleanHex.length % 2 !== 0) {
+            throw new Error('Hex string must have even length');
+          }
+          
+          if (cleanHex.length < 8) {
+            throw new Error('APDU command must be at least 4 bytes (CLA INS P1 P2)');
+          }
+          
+          const commandBytes = parseHex(cleanHex);
+          const commandApdu = CommandApdu.fromUint8Array(new Uint8Array(commandBytes));
+          parsedCommands.push(commandApdu);
+        } catch (error) {
+          console.error(`Error parsing command ${i + 1} "${commandHex}": ${error instanceof Error ? error.message : error}`);
+          process.exit(1);
+        }
       }
-      
-      if (cleanHex.length < 8) {
-        console.error('APDU command must be at least 4 bytes (CLA INS P1 P2).');
-        process.exit(1);
+
+      if (options.verbose) {
+        console.log(`Parsed ${parsedCommands.length} APDU command(s)`);
       }
-      
-      const commandBytes = new Uint8Array(cleanHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
-      // Parse command bytes
-      const commandApdu = CommandApdu.fromUint8Array(commandBytes);
-      
+
+      // Initialize platform
       const platformManager = PcscPlatformManager.getInstance();
       const platform = platformManager.getPlatform();
       
@@ -75,7 +140,7 @@ export const apduCommand = new Command('apdu')
             if (options.verbose) {
               console.log('No card present. Waiting for card...');
             }
-            const timeout = parseInt(options.wait) * 1000;
+            const timeout = parseInt(options.wait || '30') * 1000;
             await device.waitForCardPresence(timeout);
             isCardPresent = await device.isCardPresent();
           }
@@ -89,24 +154,104 @@ export const apduCommand = new Command('apdu')
           const card = await device.startSession();
           
           try {
-            if (options.verbose) {
-              console.log(`Sending APDU: ${commandHex.toUpperCase()}`);
+            const results: ApduResult[] = [];
+            const delay = parseInt(options.delay || '0');
+            
+            // Execute APDU commands sequentially
+            for (let i = 0; i < parsedCommands.length; i++) {
+              const commandApdu = parsedCommands[i];
+              const commandHex = apduCommands[i];
+              
+              try {
+                if (options.verbose) {
+                  console.log(`\nSending APDU ${i + 1}/${parsedCommands.length}: ${commandHex.toUpperCase()}`);
+                }
+                
+                const response = await card.transmit(commandApdu);
+                
+                const result: ApduResult = {
+                  command: commandHex.toUpperCase(),
+                  commandBytes: Array.from(commandApdu.toUint8Array()),
+                  response: Array.from(response.toUint8Array()).map((b: number) => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
+                  responseBytes: Array.from(response.toUint8Array()),
+                  sw1: response.sw1,
+                  sw2: response.sw2,
+                  sw: response.sw,
+                  data: response.data.length > 0 ? Array.from(response.data).map((b: number) => b.toString(16).padStart(2, '0')).join('').toUpperCase() : null,
+                  dataBytes: Array.from(response.data),
+                  success: response.sw === 0x9000
+                };
+                
+                results.push(result);
+                
+                if (!options.json) {
+                  if (parsedCommands.length > 1) {
+                    console.log(`\n--- Command ${i + 1}/${parsedCommands.length} ---`);
+                  }
+                  console.log(formatApduResponse(commandApdu, response, options.verbose));
+                }
+                
+                // Check if command failed and should stop
+                if (!result.success && !options.continueOnError) {
+                  if (options.verbose) {
+                    console.log(`Command ${i + 1} failed. Stopping execution.`);
+                  }
+                  break;
+                }
+                
+                // Add delay between commands
+                if (delay > 0 && i < parsedCommands.length - 1) {
+                  if (options.verbose) {
+                    console.log(`Waiting ${delay}ms before next command...`);
+                  }
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+                
+              } catch (error) {
+                const errorResult: ApduResult = {
+                  command: commandHex.toUpperCase(),
+                  commandBytes: Array.from(commandApdu.toUint8Array()),
+                  response: '',
+                  responseBytes: [],
+                  sw1: 0,
+                  sw2: 0,
+                  sw: 0,
+                  data: null,
+                  dataBytes: [],
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error)
+                };
+                
+                results.push(errorResult);
+                
+                if (!options.json) {
+                  console.error(`Error in command ${i + 1}: ${errorResult.error}`);
+                }
+                
+                if (!options.continueOnError) {
+                  break;
+                }
+              }
             }
             
-            const response = await card.transmit(commandApdu);
-            
+            // Output JSON results if requested
             if (options.json) {
-              console.log(JSON.stringify({
-                command: Array.from(commandApdu.toUint8Array()).map((b: any) => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
-                response: Array.from(response.toUint8Array()).map((b: any) => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
-                sw1: response.sw1,
-                sw2: response.sw2,
-                data: response.data.length > 0 ? Array.from(response.data).map((b: any) => b.toString(16).padStart(2, '0')).join('').toUpperCase() : null,
-                success: response.sw === 0x9000
-              }, null, 2));
-            } else {
-              console.log(formatApduResponse(commandApdu, response, options.verbose));
+              if (results.length === 1) {
+                console.log(JSON.stringify(results[0], null, 2));
+              } else {
+                console.log(JSON.stringify({
+                  commands: results.length,
+                  results: results
+                }, null, 2));
+              }
+            } else if (results.length > 1) {
+              const successCount = results.filter(r => r.success).length;
+              console.log(`\n=== Summary ===`);
+              console.log(`Total commands: ${results.length}`);
+              console.log(`Successful: ${successCount}`);
+              console.log(`Failed: ${results.length - successCount}`);
             }
+            
           } finally {
             await card.release();
           }
