@@ -1,0 +1,62 @@
+{
+  "name": "@aokiapp/jsapdu-cli",
+  "version": "0.0.1",
+  "description": "Command line tool for smart card communication using jsapdu",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "bin": {
+    "jsapdu": "dist/src/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "smartcard",
+    "cli",
+    "pcsc",
+    "apdu",
+    "mynacard",
+    "command-line",
+    "tool",
+    "japan",
+    "jpki"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/jsapdu-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "dependencies": {
+    "@aokiapp/jsapdu-interface": "*",
+    "@aokiapp/jsapdu-pcsc": "*",
+    "@aokiapp/apdu-utils": "*",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true
+}
