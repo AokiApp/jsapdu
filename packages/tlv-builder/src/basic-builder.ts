@@ -1,4 +1,4 @@
-import type { TLVResult, TagInfo } from "./types.js";
+import type { TLVResult } from "./types.js";
 
 /**
  * TLV構造体（Tag/Length/Value）を受け取り、DERエンコードされたArrayBufferを返す
@@ -15,19 +15,4 @@ export class BasicTLVBuilder {
     throw new Error("Not implemented");
   }
 
-  /**
-   * Tag部をDERエンコード
-   */
-  protected static encodeTag(_tag: TagInfo): ArrayBuffer {
-    void _tag;
-    throw new Error("Not implemented");
-  }
-
-  /**
-   * Length部をDERエンコード
-   */
-  protected static encodeLength(_length: number): ArrayBuffer {
-    void _length;
-    throw new Error("Not implemented");
-  }
 }

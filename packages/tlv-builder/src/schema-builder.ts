@@ -1,4 +1,4 @@
-import { TagClass, TagInfo } from "./types.js";
+import { TagClass } from "./types.js";
 
 type DefaultEncodeType = ArrayBuffer;
 
@@ -52,11 +52,6 @@ export type BuildData<S extends TLVSchema> =
  * @param schema - A TLV schema object.
  * @returns True if the schema has fields; false otherwise.
  */
-function isConstructedSchema(
-  schema: TLVSchema,
-): schema is ConstructedTLVSchema<readonly TLVSchema[]> {
-  return "fields" in schema;
-}
 
 /**
  * A builder that builds TLV data based on a given schema (synchronous or asynchronous).
@@ -158,18 +153,6 @@ export class SchemaBuilder<S extends TLVSchema> {
     return Promise.reject(new Error("Not implemented"));
   }
 
-  /**
-   * Creates tag information from schema.
-   * @param schema - The schema to create tag info from.
-   * @returns Tag information.
-   */
-  private createTagInfo(schema: TLVSchema): TagInfo {
-    return {
-      tagClass: schema.tagClass ?? TagClass.Universal,
-      constructed: isConstructedSchema(schema),
-      tagNumber: schema.tagNumber ?? 0,
-    };
-  }
 }
 
 /**
