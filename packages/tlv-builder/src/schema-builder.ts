@@ -1,4 +1,4 @@
-import { TagClass, TagInfo, DEREncodingOptions } from "./types.js";
+import { TagClass, TagInfo } from "./types.js";
 
 type DefaultEncodeType = ArrayBuffer;
 
@@ -32,11 +32,13 @@ export interface ConstructedTLVSchema<F extends readonly TLVSchema[]>
   readonly fields: F;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type TLVSchema =
   | PrimitiveTLVSchema<any>
   | ConstructedTLVSchema<readonly TLVSchema[]>;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
-type BuildData<S extends TLVSchema> =
+export type BuildData<S extends TLVSchema> =
   S extends ConstructedTLVSchema<infer F>
     ? {
         [Field in F[number] as Field["name"]]: BuildData<Field>;
@@ -131,9 +133,11 @@ export class SchemaBuilder<S extends TLVSchema> {
    * @returns Built result.
    */
   private buildWithSchemaSync<T extends TLVSchema>(
-    schema: T,
-    data: BuildData<T>,
+    _schema: T,
+    _data: BuildData<T>,
   ): ArrayBuffer {
+    void _schema;
+    void _data;
     // Stub implementation - will be implemented later
     throw new Error("Not implemented");
   }
@@ -144,12 +148,14 @@ export class SchemaBuilder<S extends TLVSchema> {
    * @param data - The data to build.
    * @returns A Promise of the built result.
    */
-  private async buildWithSchemaAsync<T extends TLVSchema>(
-    schema: T,
-    data: BuildData<T>,
+  private buildWithSchemaAsync<T extends TLVSchema>(
+    _schema: T,
+    _data: BuildData<T>,
   ): Promise<ArrayBuffer> {
+    void _schema;
+    void _data;
     // Stub implementation - will be implemented later
-    throw new Error("Not implemented");
+    return Promise.reject(new Error("Not implemented"));
   }
 
   /**
@@ -177,7 +183,28 @@ export class Schema {
    * @param options - Optional tag class and tag number.
    * @returns A primitive TLV schema object.
    */
-  public static primitive<N extends string, E = ArrayBuffer>(
+  // オーバーロード: encode あり（Eを推論）
+  public static primitive<N extends string, E>(
+    name: N,
+    encode: (data: E) => ArrayBuffer | Promise<ArrayBuffer>,
+    options?: {
+      tagClass?: TagClass;
+      tagNumber?: number;
+    },
+  ): PrimitiveTLVSchema<E> & { name: N };
+
+  // オーバーロード: encode なし（E=ArrayBuffer）
+  public static primitive<N extends string>(
+    name: N,
+    encode?: (data: ArrayBuffer) => ArrayBuffer | Promise<ArrayBuffer>,
+    options?: {
+      tagClass?: TagClass;
+      tagNumber?: number;
+    },
+  ): PrimitiveTLVSchema<ArrayBuffer> & { name: N };
+
+  // 実装
+  public static primitive<N extends string, E>(
     name: N,
     encode?: (data: E) => ArrayBuffer | Promise<ArrayBuffer>,
     options?: {

@@ -1,31 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
+// テストの異常系検証・柔軟性のためany型やunsafeアクセスを許容
 import { describe, expect, test } from "vitest";
 
 import { SchemaBuilder, Schema } from "../src";
 import { TestData, CommonTags } from "./test-helpers";
+import type { TagClass } from "../src/types";
 
-function expectNotImplementedOnly(fn: () => any) {
-  try {
-    fn();
-    throw new Error("Expected error, but none was thrown");
-  } catch (e: any) {
-    if (e?.message === "Not implemented") {
-      throw new Error("Stub implementation threw Not implemented, which should always fail in BDD phase");
-    }
-    // else: pass (error is not "Not implemented")
-  }
-}
-
-async function expectNotImplementedOnlyAsync(fn: () => Promise<any>) {
-  try {
-    await fn();
-    throw new Error("Expected error, but none was thrown");
-  } catch (e: any) {
-    if (e?.message === "Not implemented") {
-      throw new Error("Stub implementation threw Not implemented, which should always fail in BDD phase");
-    }
-    // else: pass (error is not "Not implemented")
-  }
-}
 
 describe("SchemaBuilder - Error handling behavior", () => {
   test("should validate schema consistency for invalid tag numbers", () => {
@@ -59,7 +39,7 @@ describe("SchemaBuilder - Error handling behavior", () => {
 
   test("should handle encoding function errors gracefully", () => {
     // Given: Schema with encoder that always throws
-    const errorSchema = Schema.primitive<string, string>("error", (data: string) => {
+    const errorSchema = Schema.primitive<string, string>("error", () => {
       throw new Error("Encoding failed");
     }, CommonTags.UTF8_STRING);
 
@@ -69,16 +49,17 @@ describe("SchemaBuilder - Error handling behavior", () => {
     expect(() => builder.build("test")).toThrow("Encoding failed");
   });
 
-  test("should handle async encoding function errors gracefully", async () => {
+  test("should handle async encoding function errors gracefully", () => {
     // Given: Schema with async encoder that always throws
-    const asyncErrorSchema = Schema.primitive<string, string>("asyncError", async (data: string) => {
+    const asyncErrorSchema = Schema.primitive<string, string>("asyncError", () => {
       throw new Error("Async encoding failed");
     }, CommonTags.UTF8_STRING);
 
     const builder = new SchemaBuilder(asyncErrorSchema);
 
     // When/Then: Should properly reject Promise for async encoding errors
-    await expect(builder.build("test", { async: true })).rejects.toThrow("Async encoding failed");
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    expect(builder.build("test", { async: true })).rejects.toThrow("Async encoding failed");
   });
 
   test("should handle very large data values efficiently", () => {
@@ -103,7 +84,7 @@ describe("SchemaBuilder - Error handling behavior", () => {
   test("should validate tag class values", () => {
     // Given: Invalid tag class (outside 0-3 range)
     const invalidTagClassSchema = Schema.primitive("invalid", undefined, {
-      tagClass: 999 as any, // Invalid tag class
+      tagClass: 999 as TagClass, // Invalid tag class
       tagNumber: 1,
     });
 

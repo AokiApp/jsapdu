@@ -1,12 +1,13 @@
 import { describe, expect, test } from "vitest";
 
 import { SchemaBuilder, Schema } from "../src";
+import type { BuildData } from "../src/schema-builder";
 import { Encoders, CommonTags, ExpectHelpers } from "./test-helpers";
 
 describe("SchemaBuilder - Constructed schemas", () => {
   test("should build SEQUENCE with multiple primitive fields", () => {
-    const nameSchema = Schema.primitive<string, string>("name", Encoders.string, CommonTags.UTF8_STRING);
-    const ageSchema = Schema.primitive<string, number>("age", Encoders.singleByte, CommonTags.INTEGER);
+    const nameSchema = Schema.primitive("name", Encoders.string, CommonTags.UTF8_STRING);
+    const ageSchema = Schema.primitive("age", Encoders.singleByte, CommonTags.INTEGER);
     const personSchema = Schema.constructed("person", [nameSchema, ageSchema], CommonTags.SEQUENCE);
 
     const builder = new SchemaBuilder(personSchema);
@@ -26,24 +27,24 @@ describe("SchemaBuilder - Constructed schemas", () => {
 
   test("should build nested SEQUENCE structures", () => {
     const addressSchema = Schema.constructed("address", [
-      Schema.primitive<string, string>("street", Encoders.string, CommonTags.UTF8_STRING),
-      Schema.primitive<string, string>("city", Encoders.string, CommonTags.UTF8_STRING),
+      Schema.primitive("street", Encoders.string, CommonTags.UTF8_STRING),
+      Schema.primitive("city", Encoders.string, CommonTags.UTF8_STRING),
     ], CommonTags.SEQUENCE);
 
     const personSchema = Schema.constructed("person", [
-      Schema.primitive<string, string>("name", Encoders.string, CommonTags.UTF8_STRING),
+      Schema.primitive("name", Encoders.string, CommonTags.UTF8_STRING),
       addressSchema,
     ], CommonTags.SEQUENCE);
 
     const builder = new SchemaBuilder(personSchema);
-    // Cast to any to bypass type inference limitations in BDD phase
+    // 型安全なBuildData型で明示
     const result = builder.build({
       name: "Bob",
       address: {
         street: "123 Main St",
         city: "Anytown",
       },
-    } as any);
+    } as unknown as BuildData<typeof personSchema>);
 
     // Verify ArrayBuffer output
     expect(result).toBeInstanceOf(ArrayBuffer);

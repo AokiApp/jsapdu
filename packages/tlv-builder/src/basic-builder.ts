@@ -9,7 +9,8 @@ export class BasicTLVBuilder {
    * @param tlv - TLV構造体（tag, length, value）
    * @returns DERエンコード済みArrayBuffer
    */
-  public static build(tlv: TLVResult): ArrayBuffer {
+  public static build(_tlv: TLVResult): ArrayBuffer {
+    void _tlv;
     // Stub: 実装は後で
     throw new Error("Not implemented");
   }
@@ -17,14 +18,16 @@ export class BasicTLVBuilder {
   /**
    * Tag部をDERエンコード
    */
-  protected static encodeTag(tag: TagInfo): ArrayBuffer {
+  protected static encodeTag(_tag: TagInfo): ArrayBuffer {
+    void _tag;
     throw new Error("Not implemented");
   }
 
   /**
    * Length部をDERエンコード
    */
-  protected static encodeLength(length: number): ArrayBuffer {
+  protected static encodeLength(_length: number): ArrayBuffer {
+    void _length;
     throw new Error("Not implemented");
   }
 }
