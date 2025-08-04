@@ -1,3 +1,4 @@
+import { BasicTLVBuilder } from "./basic-builder.js";
 import { TagClass } from "./types.js";
 
 type DefaultEncodeType = ArrayBuffer;
@@ -52,6 +53,12 @@ export type BuildData<S extends TLVSchema> =
  * @param schema - A TLV schema object.
  * @returns True if the schema has fields; false otherwise.
  */
+function isConstructedSchema<F extends readonly TLVSchema[]>(
+  schema: TLVSchema,
+): schema is ConstructedTLVSchema<F> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+  return "fields" in schema && Array.isArray((schema as any).fields);
+}
 
 /**
  * A builder that builds TLV data based on a given schema (synchronous or asynchronous).
@@ -128,13 +135,88 @@ export class SchemaBuilder<S extends TLVSchema> {
    * @returns Built result.
    */
   private buildWithSchemaSync<T extends TLVSchema>(
-    _schema: T,
-    _data: BuildData<T>,
+    schema: T,
+    data: BuildData<T>,
   ): ArrayBuffer {
-    void _schema;
-    void _data;
-    // Stub implementation - will be implemented later
-    throw new Error("Not implemented");
+    if (isConstructedSchema(schema)) {
+      const fieldsToProcess = [...schema.fields];
+
+      // For SET, sort fields by tag as required by DER
+      if (
+        (schema.tagNumber === 17 && schema.tagClass === TagClass.Universal) ||
+        (schema.tagNumber === 17 && schema.tagClass === undefined)
+      ) {
+        fieldsToProcess.sort((a, b) => {
+          const tagA = a.tagNumber ?? 0;
+          const tagB = b.tagNumber ?? 0;
+          return tagA - tagB;
+        });
+      }
+
+      const childrenBuffers = fieldsToProcess.map((fieldSchema) => {
+        const fieldName = fieldSchema.name;
+        const fieldData = (data as Record<string, unknown>)[fieldName];
+
+        if (fieldData === undefined) {
+          throw new Error(`Missing required field: ${fieldName}`);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return this.buildWithSchemaSync(fieldSchema, fieldData as any);
+      });
+
+      const totalLength = childrenBuffers.reduce(
+        (sum, buf) => sum + buf.byteLength,
+        0,
+      );
+      const childrenData = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const buffer of childrenBuffers) {
+        childrenData.set(new Uint8Array(buffer), offset);
+        offset += buffer.byteLength;
+      }
+
+      return BasicTLVBuilder.build({
+        tag: {
+          tagClass: schema.tagClass ?? TagClass.Universal,
+          tagNumber: schema.tagNumber ?? 16, // Default to SEQUENCE for constructed
+          constructed: true,
+        },
+        length: childrenData.byteLength,
+        value: childrenData.buffer,
+        endOffset: 0,
+      });
+    } else {
+      // PrimitiveTLVSchema
+      let value: ArrayBuffer;
+      if (schema.encode) {
+        const encoded = schema.encode(data);
+        if (encoded instanceof Promise) {
+          throw new Error(
+            `Asynchronous encoder used in synchronous build for field: ${schema.name}`,
+          );
+        }
+        value = encoded;
+      } else {
+        if (!((data as unknown) instanceof ArrayBuffer)) {
+          throw new Error(
+            `Field '${schema.name}' requires an ArrayBuffer, but received other type.`,
+          );
+        }
+        value = data;
+      }
+
+      return BasicTLVBuilder.build({
+        tag: {
+          tagClass: schema.tagClass ?? TagClass.Universal,
+          tagNumber: schema.tagNumber ?? 0,
+          constructed: false,
+        },
+        length: value.byteLength,
+        value: value,
+        endOffset: 0,
+      });
+    }
   }
 
   /**
@@ -143,16 +225,85 @@ export class SchemaBuilder<S extends TLVSchema> {
    * @param data - The data to build.
    * @returns A Promise of the built result.
    */
-  private buildWithSchemaAsync<T extends TLVSchema>(
-    _schema: T,
-    _data: BuildData<T>,
+  private async buildWithSchemaAsync<T extends TLVSchema>(
+    schema: T,
+    data: BuildData<T>,
   ): Promise<ArrayBuffer> {
-    void _schema;
-    void _data;
-    // Stub implementation - will be implemented later
-    return Promise.reject(new Error("Not implemented"));
-  }
+    if (isConstructedSchema(schema)) {
+      const fieldsToProcess = [...schema.fields];
 
+      // For SET, sort fields by tag as required by DER
+      if (
+        (schema.tagNumber === 17 && schema.tagClass === TagClass.Universal) ||
+        (schema.tagNumber === 17 && schema.tagClass === undefined)
+      ) {
+        fieldsToProcess.sort((a, b) => {
+          const tagA = a.tagNumber ?? 0;
+          const tagB = b.tagNumber ?? 0;
+          return tagA - tagB;
+        });
+      }
+
+      const childBuffers = await Promise.all(
+        fieldsToProcess.map((fieldSchema) => {
+          const fieldName = fieldSchema.name;
+          const fieldData = (data as Record<string, unknown>)[fieldName];
+
+          if (fieldData === undefined) {
+            throw new Error(`Missing required field: ${fieldName}`);
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return this.buildWithSchemaAsync(fieldSchema, fieldData as any);
+        }),
+      );
+
+      const totalLength = childBuffers.reduce(
+        (sum, buf) => sum + buf.byteLength,
+        0,
+      );
+      const childrenData = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const buffer of childBuffers) {
+        childrenData.set(new Uint8Array(buffer), offset);
+        offset += buffer.byteLength;
+      }
+
+      return BasicTLVBuilder.build({
+        tag: {
+          tagClass: schema.tagClass ?? TagClass.Universal,
+          tagNumber: schema.tagNumber ?? 16, // Default to SEQUENCE for constructed
+          constructed: true,
+        },
+        length: childrenData.byteLength,
+        value: childrenData.buffer,
+        endOffset: 0,
+      });
+    } else {
+      // PrimitiveTLVSchema
+      let value: ArrayBuffer;
+      if (schema.encode) {
+        value = await Promise.resolve(schema.encode(data));
+      } else {
+        if (!((data as unknown) instanceof ArrayBuffer)) {
+          throw new Error(
+            `Field '${schema.name}' requires an ArrayBuffer, but received other type.`,
+          );
+        }
+        value = data;
+      }
+
+      return BasicTLVBuilder.build({
+        tag: {
+          tagClass: schema.tagClass ?? TagClass.Universal,
+          tagNumber: schema.tagNumber ?? 0,
+          constructed: false,
+        },
+        length: value.byteLength,
+        value: value,
+        endOffset: 0,
+      });
+    }
+  }
 }
 
 /**
