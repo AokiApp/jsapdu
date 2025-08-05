@@ -33,11 +33,9 @@ export interface ConstructedTLVSchema<F extends readonly TLVSchema[]>
   readonly fields: F;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type TLVSchema =
-  | PrimitiveTLVSchema<any>
+  | PrimitiveTLVSchema<unknown>
   | ConstructedTLVSchema<readonly TLVSchema[]>;
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export type BuildData<S extends TLVSchema> =
   S extends ConstructedTLVSchema<infer F>
@@ -56,8 +54,7 @@ export type BuildData<S extends TLVSchema> =
 function isConstructedSchema<F extends readonly TLVSchema[]>(
   schema: TLVSchema,
 ): schema is ConstructedTLVSchema<F> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  return "fields" in schema && Array.isArray((schema as any).fields);
+  return "fields" in schema && Array.isArray((schema as ConstructedTLVSchema<F>).fields);
 }
 
 /**
@@ -161,8 +158,7 @@ export class SchemaBuilder<S extends TLVSchema> {
           throw new Error(`Missing required field: ${fieldName}`);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return this.buildWithSchemaSync(fieldSchema, fieldData as any);
+        return this.buildWithSchemaSync(fieldSchema, fieldData as BuildData<typeof fieldSchema>);
       });
 
       const totalLength = childrenBuffers.reduce(
@@ -203,7 +199,7 @@ export class SchemaBuilder<S extends TLVSchema> {
             `Field '${schema.name}' requires an ArrayBuffer, but received other type.`,
           );
         }
-        value = data;
+        value = data as ArrayBuffer;
       }
 
       return BasicTLVBuilder.build({
@@ -252,8 +248,7 @@ export class SchemaBuilder<S extends TLVSchema> {
           if (fieldData === undefined) {
             throw new Error(`Missing required field: ${fieldName}`);
           }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return this.buildWithSchemaAsync(fieldSchema, fieldData as any);
+          return this.buildWithSchemaAsync(fieldSchema, fieldData as BuildData<typeof fieldSchema>);
         }),
       );
 
@@ -289,7 +284,7 @@ export class SchemaBuilder<S extends TLVSchema> {
             `Field '${schema.name}' requires an ArrayBuffer, but received other type.`,
           );
         }
-        value = data;
+        value = data as ArrayBuffer;
       }
 
       return BasicTLVBuilder.build({

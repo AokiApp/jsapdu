@@ -11,6 +11,11 @@
       "types": "./dist/src/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "LICENSE.md",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
