@@ -28,6 +28,51 @@ export const TestData = {
     new Uint8Array(buffer).fill(0xAA);
     return buffer;
   },
+
+  // Create TLV encoded buffers for testing parsing
+  createTlvBuffer: (tag: number, value: ArrayBuffer): ArrayBuffer => {
+    const valueLength = value.byteLength;
+    let result: Uint8Array;
+
+    if (valueLength < 128) {
+      // Short form length
+      result = new Uint8Array(2 + valueLength);
+      result[0] = tag;
+      result[1] = valueLength;
+      result.set(new Uint8Array(value), 2);
+    } else {
+      // Long form length
+      const lengthBytes: number[] = [];
+      let tempLen = valueLength;
+      do {
+        lengthBytes.unshift(tempLen & 0xff);
+        tempLen = Math.floor(tempLen / 256);
+      } while (tempLen > 0);
+
+      result = new Uint8Array(2 + lengthBytes.length + valueLength);
+      result[0] = tag;
+      result[1] = 0x80 | lengthBytes.length;
+      result.set(lengthBytes, 2);
+      result.set(new Uint8Array(value), 2 + lengthBytes.length);
+    }
+
+    return result.buffer as ArrayBuffer;
+  },
+
+  // Create constructed TLV buffer
+  createConstructedTlvBuffer: (tag: number, children: ArrayBuffer[]): ArrayBuffer => {
+    const totalChildLength = children.reduce((sum, child) => sum + child.byteLength, 0);
+    const constructedTag = tag | 0x20; // Set constructed bit
+    
+    const childrenData = new Uint8Array(totalChildLength);
+    let offset = 0;
+    for (const child of children) {
+      childrenData.set(new Uint8Array(child), offset);
+      offset += child.byteLength;
+    }
+
+    return TestData.createTlvBuffer(constructedTag, childrenData.buffer);
+  },
 };
 
 /**
@@ -128,6 +173,7 @@ export const CommonTags = {
 
   // Private tags
   PRIVATE_0: { tagClass: TagClass.Private, tagNumber: 0 },
+  PRIVATE_1: { tagClass: TagClass.Private, tagNumber: 1 },
 };
 
 /**

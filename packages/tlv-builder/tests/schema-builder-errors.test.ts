@@ -49,7 +49,7 @@ describe("SchemaBuilder - Error handling behavior", () => {
     expect(() => builder.build("test")).toThrow("Encoding failed");
   });
 
-  test("should handle async encoding function errors gracefully", () => {
+  test("should handle async encoding function errors gracefully", async () => {
     // Given: Schema with async encoder that always throws
     const asyncErrorSchema = Schema.primitive<string, string>("asyncError", () => {
       throw new Error("Async encoding failed");
@@ -58,8 +58,7 @@ describe("SchemaBuilder - Error handling behavior", () => {
     const builder = new SchemaBuilder(asyncErrorSchema);
 
     // When/Then: Should properly reject Promise for async encoding errors
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    expect(builder.build("test", { async: true })).rejects.toThrow("Async encoding failed");
+    await expect(builder.build("test", { async: true })).rejects.toThrow("Async encoding failed");
   });
 
   test("should handle very large data values efficiently", () => {

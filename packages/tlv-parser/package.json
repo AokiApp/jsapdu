@@ -14,7 +14,9 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "clean": "tsc --build --clean"
+    "clean": "tsc --build --clean",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "keywords": [
     "tlv",
@@ -35,5 +37,8 @@
   },
   "bugs": {
     "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
   }
 }
