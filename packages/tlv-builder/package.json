@@ -40,8 +40,6 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "devDependencies": {
-    "vitest": "^2.0.0",
-    "@aokiapp/tlv-parser": "*",
-    "@aokiapp/mynacard": "*"
+    "vitest": "^2.0.0"
   }
 }
