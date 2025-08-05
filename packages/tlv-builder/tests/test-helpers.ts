@@ -25,7 +25,7 @@ export const TestData = {
 
   createLargeBuffer: (size: number = 1000): ArrayBuffer => {
     const buffer = new ArrayBuffer(size);
-    new Uint8Array(buffer).fill(0xAA);
+    new Uint8Array(buffer).fill(0xaa);
     return buffer;
   },
 
@@ -60,10 +60,16 @@ export const TestData = {
   },
 
   // Create constructed TLV buffer
-  createConstructedTlvBuffer: (tag: number, children: ArrayBuffer[]): ArrayBuffer => {
-    const totalChildLength = children.reduce((sum, child) => sum + child.byteLength, 0);
+  createConstructedTlvBuffer: (
+    tag: number,
+    children: ArrayBuffer[],
+  ): ArrayBuffer => {
+    const totalChildLength = children.reduce(
+      (sum, child) => sum + child.byteLength,
+      0,
+    );
     const constructedTag = tag | 0x20; // Set constructed bit
-    
+
     const childrenData = new Uint8Array(totalChildLength);
     let offset = 0;
     for (const child of children) {
@@ -93,7 +99,7 @@ export const Encoders = {
     if (num === 0) {
       return new ArrayBuffer(1); // INTEGER 0 is encoded as single 0x00 byte
     }
-    
+
     // Calculate minimum bytes needed
     let tempNum = Math.abs(num);
     let byteCount = 0;
@@ -101,16 +107,16 @@ export const Encoders = {
       tempNum >>= 8;
       byteCount++;
     }
-    
+
     const buffer = new ArrayBuffer(byteCount);
     const view = new DataView(buffer);
-    
+
     // Store in big-endian format
     for (let i = byteCount - 1; i >= 0; i--) {
-      view.setUint8(i, num & 0xFF);
+      view.setUint8(i, num & 0xff);
       num >>= 8;
     }
-    
+
     return buffer;
   },
   /**
@@ -128,13 +134,13 @@ export const Encoders = {
 
   boolean: (value: boolean): ArrayBuffer => {
     const buffer = new ArrayBuffer(1);
-    new Uint8Array(buffer)[0] = value ? 0xFF : 0x00;
+    new Uint8Array(buffer)[0] = value ? 0xff : 0x00;
     return buffer;
   },
 
   asyncString: async (str: string): Promise<ArrayBuffer> => {
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 1));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     return Encoders.utf8String(str);
   },
 
@@ -183,16 +189,23 @@ export const ExpectHelpers = {
   /**
    * Assert that DER-encoded buffer has the expected tag information
    */
-  expectTagMatches: (buffer: ArrayBuffer, expectedTag: { tagClass: TagClass; tagNumber: number; constructed?: boolean }) => {
+  expectTagMatches: (
+    buffer: ArrayBuffer,
+    expectedTag: {
+      tagClass: TagClass;
+      tagNumber: number;
+      constructed?: boolean;
+    },
+  ) => {
     const bytes = new Uint8Array(buffer);
     expect(bytes.length).toBeGreaterThan(0);
-    
+
     // Extract tag information from first byte(s)
     const firstByte = bytes[0];
     const actualTagClass = (firstByte & 0xc0) >> 6;
     const actualConstructed = !!(firstByte & 0x20);
     let actualTagNumber = firstByte & 0x1f;
-    
+
     // Handle high tag numbers (multi-byte)
     if (actualTagNumber === 0x1f && bytes.length > 1) {
       actualTagNumber = 0;
@@ -203,7 +216,7 @@ export const ExpectHelpers = {
         actualTagNumber = (actualTagNumber << 7) | (b & 0x7f);
       } while (b & 0x80);
     }
-    
+
     expect(actualTagClass).toBe(expectedTag.tagClass);
     expect(actualTagNumber).toBe(expectedTag.tagNumber);
     expect(actualConstructed).toBe(expectedTag.constructed ?? false);
@@ -212,7 +225,14 @@ export const ExpectHelpers = {
   /**
    * Assert that DER-encoded buffer has the expected tag information (alias for compatibility)
    */
-  expectTagInfo: (buffer: ArrayBuffer, expectedTag: { tagClass: TagClass; tagNumber: number; constructed?: boolean }) => {
+  expectTagInfo: (
+    buffer: ArrayBuffer,
+    expectedTag: {
+      tagClass: TagClass;
+      tagNumber: number;
+      constructed?: boolean;
+    },
+  ) => {
     ExpectHelpers.expectTagMatches(buffer, expectedTag);
   },
 
@@ -223,11 +243,17 @@ export const ExpectHelpers = {
     const bytes = new Uint8Array(buffer);
     // Skip T and L to get to V (simplified - assumes single byte length)
     const valueStart = bytes[1] < 0x80 ? 2 : 2 + (bytes[1] & 0x7f);
-    const valueLength = bytes[1] < 0x80 ? bytes[1] :
-      bytes.slice(2, 2 + (bytes[1] & 0x7f)).reduce((acc, b) => (acc << 8) | b, 0);
-    
+    const valueLength =
+      bytes[1] < 0x80
+        ? bytes[1]
+        : bytes
+            .slice(2, 2 + (bytes[1] & 0x7f))
+            .reduce((acc, b) => (acc << 8) | b, 0);
+
     const decoder = new TextDecoder();
-    const actualString = decoder.decode(buffer.slice(valueStart, valueStart + valueLength));
+    const actualString = decoder.decode(
+      buffer.slice(valueStart, valueStart + valueLength),
+    );
     expect(actualString).toBe(expectedString);
   },
 
@@ -244,11 +270,11 @@ export const ExpectHelpers = {
   expectValidDerEncoding: (buffer: ArrayBuffer) => {
     expect(buffer).toBeInstanceOf(ArrayBuffer);
     expect(buffer.byteLength).toBeGreaterThan(0);
-    
+
     const bytes = new Uint8Array(buffer);
     // Basic validation: should have at least T and L
     expect(bytes.length).toBeGreaterThanOrEqual(2);
-    
+
     // Length should be definite (DER requirement)
     const lengthByte = bytes[1];
     if (lengthByte & 0x80) {
@@ -272,9 +298,13 @@ export const ExpectHelpers = {
     const bytes = new Uint8Array(buffer);
     // Skip T and L to get to V (simplified)
     const valueStart = bytes[1] < 0x80 ? 2 : 2 + (bytes[1] & 0x7f);
-    const valueLength = bytes[1] < 0x80 ? bytes[1] :
-      bytes.slice(2, 2 + (bytes[1] & 0x7f)).reduce((acc, b) => (acc << 8) | b, 0);
-    
+    const valueLength =
+      bytes[1] < 0x80
+        ? bytes[1]
+        : bytes
+            .slice(2, 2 + (bytes[1] & 0x7f))
+            .reduce((acc, b) => (acc << 8) | b, 0);
+
     let actual = 0;
     for (let i = valueStart; i < valueStart + valueLength; i++) {
       actual = (actual << 8) | bytes[i];
@@ -292,7 +322,6 @@ export const ExpectHelpers = {
   },
 };
 
-
 /**
  * Alias for behavior assertions (for backward compatibility)
  */
@@ -306,7 +335,7 @@ export const SampleData = {
   numbers: [42, 0, 255, 65535],
   booleans: [true, false],
   emptyBuffer: new ArrayBuffer(0),
-  
+
   // Nested structure example data
   certificate: {
     version: 3,

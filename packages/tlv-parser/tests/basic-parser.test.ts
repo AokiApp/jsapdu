@@ -16,7 +16,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       expect(result.tag.tagNumber).toBe(4);
       expect(result.tag.constructed).toBe(false);
       expect(result.length).toBe(4); // "test".length
-      
+
       // Verify content
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("test");
@@ -33,7 +33,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       expect(result.tag.tagClass).toBe(TagClass.Application);
       expect(result.tag.tagNumber).toBe(1);
       expect(result.tag.constructed).toBe(false);
-      
+
       // Verify content
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("application");
@@ -50,7 +50,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       expect(result.tag.tagClass).toBe(TagClass.ContextSpecific);
       expect(result.tag.tagNumber).toBe(0);
       expect(result.tag.constructed).toBe(false);
-      
+
       // Verify content
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("context");
@@ -67,7 +67,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       expect(result.tag.tagClass).toBe(TagClass.Private);
       expect(result.tag.tagNumber).toBe(0);
       expect(result.tag.constructed).toBe(false);
-      
+
       // Verify content
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("private");
@@ -77,9 +77,18 @@ describe("BasicTLVParser - Core parsing functionality", () => {
   describe("Constructed flag parsing", () => {
     test("should parse constructed SEQUENCE correctly", () => {
       // Given: Constructed SEQUENCE containing two OCTET STRINGs
-      const child1 = TestData.createTlvBuffer(0x04, TestData.createStringBuffer("first"));
-      const child2 = TestData.createTlvBuffer(0x04, TestData.createStringBuffer("second"));
-      const sequence = TestData.createConstructedTlvBuffer(0x30, [child1, child2]);
+      const child1 = TestData.createTlvBuffer(
+        0x04,
+        TestData.createStringBuffer("first"),
+      );
+      const child2 = TestData.createTlvBuffer(
+        0x04,
+        TestData.createStringBuffer("second"),
+      );
+      const sequence = TestData.createConstructedTlvBuffer(0x30, [
+        child1,
+        child2,
+      ]);
 
       // When: Parsing the constructed TLV
       const result = BasicTLVParser.parse(sequence);
@@ -115,7 +124,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Then: Should parse length correctly
       expect(result.length).toBe(5); // "short".length
       expect(result.value.byteLength).toBe(5);
-      
+
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("short");
     });
@@ -131,11 +140,11 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Then: Should parse long form length correctly
       expect(result.length).toBe(200);
       expect(result.value.byteLength).toBe(200);
-      
+
       // Verify content (all bytes should be 0xAA as per createLargeBuffer)
       const bytes = new Uint8Array(result.value);
-      expect(bytes[0]).toBe(0xAA);
-      expect(bytes[199]).toBe(0xAA);
+      expect(bytes[0]).toBe(0xaa);
+      expect(bytes[199]).toBe(0xaa);
     });
 
     test("should handle empty values correctly", () => {
@@ -157,9 +166,14 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Given: TLV with high tag number (using multi-byte encoding)
       // Tag 100 in Context-Specific class: 0x9F 0x64
       const highTagBuffer = TestData.createBuffer([
-        0x9F, 0x64, // Context-specific tag 100 (multi-byte)
-        0x05,       // Length: 5
-        0x68, 0x65, 0x6C, 0x6C, 0x6F // "hello"
+        0x9f,
+        0x64, // Context-specific tag 100 (multi-byte)
+        0x05, // Length: 5
+        0x68,
+        0x65,
+        0x6c,
+        0x6c,
+        0x6f, // "hello"
       ]);
 
       // When: Parsing the high tag number TLV
@@ -170,7 +184,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       expect(result.tag.tagNumber).toBe(100);
       expect(result.tag.constructed).toBe(false);
       expect(result.length).toBe(5);
-      
+
       const decoder = new TextDecoder();
       expect(decoder.decode(result.value)).toBe("hello");
     });
@@ -193,7 +207,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Given: Buffer containing two consecutive TLVs
       const tlv1 = SampleTlvData.octetString;
       const tlv2 = SampleTlvData.utf8String;
-      
+
       const combined = new Uint8Array(tlv1.byteLength + tlv2.byteLength);
       combined.set(new Uint8Array(tlv1), 0);
       combined.set(new Uint8Array(tlv2), tlv1.byteLength);
@@ -203,7 +217,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
 
       // Then: End offset should allow parsing of second TLV
       expect(result1.endOffset).toBe(tlv1.byteLength);
-      
+
       // When: Parsing second TLV from the offset
       const remainingBuffer = combined.buffer.slice(result1.endOffset);
       const result2 = BasicTLVParser.parse(remainingBuffer);
@@ -211,7 +225,7 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Then: Second TLV should be parsed correctly
       expect(result2.tag.tagClass).toBe(TagClass.Universal);
       expect(result2.tag.tagNumber).toBe(12); // UTF8_STRING
-      
+
       const decoder = new TextDecoder();
       expect(decoder.decode(result2.value)).toBe("Hello TLV");
     });
@@ -230,8 +244,8 @@ describe("BasicTLVParser - Core parsing functionality", () => {
       // Then: Should parse BOOLEAN tags and values correctly
       expect(resultTrue.tag.tagNumber).toBe(1); // BOOLEAN
       expect(resultFalse.tag.tagNumber).toBe(1); // BOOLEAN
-      
-      expect(new Uint8Array(resultTrue.value)[0]).toBe(0xFF);
+
+      expect(new Uint8Array(resultTrue.value)[0]).toBe(0xff);
       expect(new Uint8Array(resultFalse.value)[0]).toBe(0x00);
     });
 

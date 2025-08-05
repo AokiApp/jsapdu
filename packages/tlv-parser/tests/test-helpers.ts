@@ -25,7 +25,7 @@ export const TestData = {
 
   createLargeBuffer: (size: number = 1000): ArrayBuffer => {
     const buffer = new ArrayBuffer(size);
-    new Uint8Array(buffer).fill(0xAA);
+    new Uint8Array(buffer).fill(0xaa);
     return buffer;
   },
 
@@ -60,10 +60,16 @@ export const TestData = {
   },
 
   // Create constructed TLV buffer
-  createConstructedTlvBuffer: (tag: number, children: ArrayBuffer[]): ArrayBuffer => {
-    const totalChildLength = children.reduce((sum, child) => sum + child.byteLength, 0);
+  createConstructedTlvBuffer: (
+    tag: number,
+    children: ArrayBuffer[],
+  ): ArrayBuffer => {
+    const totalChildLength = children.reduce(
+      (sum, child) => sum + child.byteLength,
+      0,
+    );
     const constructedTag = tag | 0x20; // Set constructed bit
-    
+
     const childrenData = new Uint8Array(totalChildLength);
     let offset = 0;
     for (const child of children) {
@@ -89,7 +95,7 @@ export const Decoders = {
 
   integer: (buffer: ArrayBuffer): number => {
     if (buffer.byteLength === 0) return 0;
-    
+
     const view = new DataView(buffer);
     let result = 0;
     for (let i = 0; i < buffer.byteLength; i++) {
@@ -108,13 +114,14 @@ export const Decoders = {
   },
 
   boolean: (buffer: ArrayBuffer): boolean => {
-    if (buffer.byteLength !== 1) throw new Error("Expected single byte for boolean");
+    if (buffer.byteLength !== 1)
+      throw new Error("Expected single byte for boolean");
     return new Uint8Array(buffer)[0] !== 0x00;
   },
 
   asyncString: async (buffer: ArrayBuffer): Promise<string> => {
     // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 1));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     return Decoders.utf8String(buffer);
   },
 
@@ -226,7 +233,7 @@ export const SampleData = {
   numbers: [42, 0, 255, 65535],
   booleans: [true, false],
   emptyBuffer: new ArrayBuffer(0),
-  
+
   // Nested structure example data
   certificate: {
     version: 3,
@@ -244,26 +251,41 @@ export const SampleData = {
  */
 export const SampleTlvData = {
   // Simple OCTET STRING
-  octetString: TestData.createTlvBuffer(0x04, TestData.createStringBuffer("test")),
-  
+  octetString: TestData.createTlvBuffer(
+    0x04,
+    TestData.createStringBuffer("test"),
+  ),
+
   // UTF8 String
-  utf8String: TestData.createTlvBuffer(0x0C, TestData.createStringBuffer("Hello TLV")),
-  
+  utf8String: TestData.createTlvBuffer(
+    0x0c,
+    TestData.createStringBuffer("Hello TLV"),
+  ),
+
   // INTEGER
   integer: TestData.createTlvBuffer(0x02, TestData.createBuffer([0x01, 0x23])),
-  
+
   // BOOLEAN true
-  booleanTrue: TestData.createTlvBuffer(0x01, TestData.createBuffer([0xFF])),
-  
+  booleanTrue: TestData.createTlvBuffer(0x01, TestData.createBuffer([0xff])),
+
   // BOOLEAN false
   booleanFalse: TestData.createTlvBuffer(0x01, TestData.createBuffer([0x00])),
-  
+
   // Context-specific [0]
-  contextSpecific0: TestData.createTlvBuffer(0x80, TestData.createStringBuffer("context")),
-  
+  contextSpecific0: TestData.createTlvBuffer(
+    0x80,
+    TestData.createStringBuffer("context"),
+  ),
+
   // Application [1]
-  application1: TestData.createTlvBuffer(0x41, TestData.createStringBuffer("application")),
-  
-  // Private [0]  
-  private0: TestData.createTlvBuffer(0xC0, TestData.createStringBuffer("private")),
+  application1: TestData.createTlvBuffer(
+    0x41,
+    TestData.createStringBuffer("application"),
+  ),
+
+  // Private [0]
+  private0: TestData.createTlvBuffer(
+    0xc0,
+    TestData.createStringBuffer("private"),
+  ),
 };

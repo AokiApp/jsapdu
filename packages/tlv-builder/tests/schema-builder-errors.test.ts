@@ -6,7 +6,6 @@ import { SchemaBuilder, Schema } from "../src";
 import { TestData, CommonTags } from "./test-helpers";
 import type { TagClass } from "../src/types";
 
-
 describe("SchemaBuilder - Error handling behavior", () => {
   test("should validate schema consistency for invalid tag numbers", () => {
     // Given: Schema with invalid negative tag number
@@ -18,30 +17,42 @@ describe("SchemaBuilder - Error handling behavior", () => {
     const testData = TestData.createBuffer([0x01]);
 
     // When/Then: Should reject invalid schema during build
-    expect(() => builder.build(testData)).toThrow(/tag number|invalid|negative/i);
+    expect(() => builder.build(testData)).toThrow(
+      /tag number|invalid|negative/i,
+    );
   });
 
   test("should handle missing required fields in constructed types", () => {
     // Given: SEQUENCE schema with two required fields
-    const requiredFieldsSchema = Schema.constructed("required", [
-      Schema.primitive("field1", undefined, { tagNumber: 1 }),
-      Schema.primitive("field2", undefined, { tagNumber: 2 }),
-    ], CommonTags.SEQUENCE);
+    const requiredFieldsSchema = Schema.constructed(
+      "required",
+      [
+        Schema.primitive("field1", undefined, { tagNumber: 1 }),
+        Schema.primitive("field2", undefined, { tagNumber: 2 }),
+      ],
+      CommonTags.SEQUENCE,
+    );
 
     const builder = new SchemaBuilder(requiredFieldsSchema);
 
     // When/Then: Should throw error for missing required field
-    expect(() => builder.build({
-      field1: TestData.createBuffer([0x01]),
-      // field2 is missing - this should cause an error
-    } as any)).toThrow(/missing|required|field2/i);
+    expect(() =>
+      builder.build({
+        field1: TestData.createBuffer([0x01]),
+        // field2 is missing - this should cause an error
+      } as any),
+    ).toThrow(/missing|required|field2/i);
   });
 
   test("should handle encoding function errors gracefully", () => {
     // Given: Schema with encoder that always throws
-    const errorSchema = Schema.primitive<string, string>("error", () => {
-      throw new Error("Encoding failed");
-    }, CommonTags.UTF8_STRING);
+    const errorSchema = Schema.primitive<string, string>(
+      "error",
+      () => {
+        throw new Error("Encoding failed");
+      },
+      CommonTags.UTF8_STRING,
+    );
 
     const builder = new SchemaBuilder(errorSchema);
 
@@ -51,19 +62,29 @@ describe("SchemaBuilder - Error handling behavior", () => {
 
   test("should handle async encoding function errors gracefully", async () => {
     // Given: Schema with async encoder that always throws
-    const asyncErrorSchema = Schema.primitive<string, string>("asyncError", () => {
-      throw new Error("Async encoding failed");
-    }, CommonTags.UTF8_STRING);
+    const asyncErrorSchema = Schema.primitive<string, string>(
+      "asyncError",
+      () => {
+        throw new Error("Async encoding failed");
+      },
+      CommonTags.UTF8_STRING,
+    );
 
     const builder = new SchemaBuilder(asyncErrorSchema);
 
     // When/Then: Should properly reject Promise for async encoding errors
-    await expect(builder.build("test", { async: true })).rejects.toThrow("Async encoding failed");
+    await expect(builder.build("test", { async: true })).rejects.toThrow(
+      "Async encoding failed",
+    );
   });
 
   test("should handle very large data values efficiently", () => {
     // Given: Schema for large OCTET_STRING data
-    const largeDataSchema = Schema.primitive("large", undefined, CommonTags.OCTET_STRING);
+    const largeDataSchema = Schema.primitive(
+      "large",
+      undefined,
+      CommonTags.OCTET_STRING,
+    );
     const builder = new SchemaBuilder(largeDataSchema);
     const largeData = TestData.createLargeBuffer(10000); // 10KB
 
@@ -73,7 +94,7 @@ describe("SchemaBuilder - Error handling behavior", () => {
     // Then: Should handle large data without errors and produce valid DER
     expect(result).toBeInstanceOf(ArrayBuffer);
     expect(result.byteLength).toBeGreaterThan(10000); // Should include T and L overhead
-    
+
     // Verify it's valid DER with long-form length encoding
     const bytes = new Uint8Array(result);
     expect(bytes[0]).toBe(0x04); // OCTET_STRING tag

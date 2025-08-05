@@ -228,7 +228,10 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
 
       const encodeText = (text: string): ArrayBuffer => {
         const encoded = new TextEncoder().encode(text);
-        return encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength) as ArrayBuffer;
+        return encoded.buffer.slice(
+          encoded.byteOffset,
+          encoded.byteOffset + encoded.byteLength,
+        ) as ArrayBuffer;
       };
 
       const builder = new SchemaBuilder(schemaKenhojoBasicFour);
@@ -321,7 +324,10 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
 
       const encodeText = (text: string): ArrayBuffer => {
         const encoded = new TextEncoder().encode(text);
-        const buffer = encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength);
+        const buffer = encoded.buffer.slice(
+          encoded.byteOffset,
+          encoded.byteOffset + encoded.byteLength,
+        );
         return buffer as ArrayBuffer;
       };
 

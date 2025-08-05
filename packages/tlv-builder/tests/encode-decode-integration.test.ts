@@ -1,6 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { BasicTLVBuilder, SchemaBuilder, Schema as BuilderSchema, TagClass } from "../src";
-import { BasicTLVParser, SchemaParser, Schema as ParserSchema } from "@aokiapp/tlv-parser";
+import {
+  BasicTLVBuilder,
+  SchemaBuilder,
+  Schema as BuilderSchema,
+  TagClass,
+} from "../src";
+import {
+  BasicTLVParser,
+  SchemaParser,
+  Schema as ParserSchema,
+} from "@aokiapp/tlv-parser";
 import { TestData, Encoders, CommonTags } from "./test-helpers";
 
 describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
@@ -12,7 +21,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
         tag: { tagClass: TagClass.Universal, tagNumber: 4, constructed: false },
         length: originalValue.byteLength,
         value: originalValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding with BasicTLVBuilder
@@ -33,10 +42,14 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       // Given: TLV structure for Context-Specific [1]
       const originalValue = TestData.createBuffer([0x01, 0x02, 0x03]);
       const tlvStructure = {
-        tag: { tagClass: TagClass.ContextSpecific, tagNumber: 1, constructed: false },
+        tag: {
+          tagClass: TagClass.ContextSpecific,
+          tagNumber: 1,
+          constructed: false,
+        },
         length: originalValue.byteLength,
         value: originalValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding and decoding
@@ -47,17 +60,23 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       expect(decoded.tag.tagClass).toBe(TagClass.ContextSpecific);
       expect(decoded.tag.tagNumber).toBe(1);
       expect(decoded.tag.constructed).toBe(false);
-      expect(Array.from(new Uint8Array(decoded.value))).toEqual([0x01, 0x02, 0x03]);
+      expect(Array.from(new Uint8Array(decoded.value))).toEqual([
+        0x01, 0x02, 0x03,
+      ]);
     });
 
     test("should encode and decode Application tags", () => {
       // Given: TLV structure for Application [5]
       const originalValue = TestData.createStringBuffer("application data");
       const tlvStructure = {
-        tag: { tagClass: TagClass.Application, tagNumber: 5, constructed: false },
+        tag: {
+          tagClass: TagClass.Application,
+          tagNumber: 5,
+          constructed: false,
+        },
         length: originalValue.byteLength,
         value: originalValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding and decoding
@@ -72,12 +91,12 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should encode and decode Private tags", () => {
       // Given: TLV structure for Private [10]
-      const originalValue = TestData.createBuffer([0xFF, 0xEE, 0xDD, 0xCC]);
+      const originalValue = TestData.createBuffer([0xff, 0xee, 0xdd, 0xcc]);
       const tlvStructure = {
         tag: { tagClass: TagClass.Private, tagNumber: 10, constructed: false },
         length: originalValue.byteLength,
         value: originalValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding and decoding
@@ -87,7 +106,9 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       // Then: Should preserve Private tag
       expect(decoded.tag.tagClass).toBe(TagClass.Private);
       expect(decoded.tag.tagNumber).toBe(10);
-      expect(Array.from(new Uint8Array(decoded.value))).toEqual([0xFF, 0xEE, 0xDD, 0xCC]);
+      expect(Array.from(new Uint8Array(decoded.value))).toEqual([
+        0xff, 0xee, 0xdd, 0xcc,
+      ]);
     });
 
     test("should handle large data with long-form length encoding", () => {
@@ -97,7 +118,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
         tag: { tagClass: TagClass.Universal, tagNumber: 4, constructed: false },
         length: largeValue.byteLength,
         value: largeValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding and decoding
@@ -108,17 +129,21 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       expect(decoded.tag.tagNumber).toBe(4);
       expect(decoded.length).toBe(500);
       expect(decoded.value.byteLength).toBe(500);
-      expect(new Uint8Array(decoded.value)[0]).toBe(0xAA); // createLargeBuffer fills with 0xAA
+      expect(new Uint8Array(decoded.value)[0]).toBe(0xaa); // createLargeBuffer fills with 0xAA
     });
 
     test("should encode and decode high tag numbers (>30)", () => {
       // Given: TLV structure with high tag number
       const originalValue = TestData.createStringBuffer("high tag");
       const tlvStructure = {
-        tag: { tagClass: TagClass.ContextSpecific, tagNumber: 100, constructed: false },
+        tag: {
+          tagClass: TagClass.ContextSpecific,
+          tagNumber: 100,
+          constructed: false,
+        },
         length: originalValue.byteLength,
         value: originalValue,
-        endOffset: 0
+        endOffset: 0,
       };
 
       // When: Encoding and decoding
@@ -136,14 +161,14 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
     test("should encode and decode simple primitive with string encoding/decoding", () => {
       // Given: Primitive schema for both encoding and decoding
       const encodingSchema = BuilderSchema.primitive<string, string>(
-        "message", 
-        Encoders.string, 
-        CommonTags.UTF8_STRING
+        "message",
+        Encoders.string,
+        CommonTags.UTF8_STRING,
       );
       const decodingSchema = ParserSchema.primitive(
         "message",
         (buffer) => new TextDecoder().decode(buffer),
-        CommonTags.UTF8_STRING
+        CommonTags.UTF8_STRING,
       );
 
       const builder = new SchemaBuilder(encodingSchema);
@@ -164,7 +189,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.primitive<string, number>(
         "value",
         Encoders.integer,
-        CommonTags.INTEGER
+        CommonTags.INTEGER,
       );
       const decodingSchema = ParserSchema.primitive(
         "value",
@@ -177,7 +202,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
           }
           return result;
         },
-        CommonTags.INTEGER
+        CommonTags.INTEGER,
       );
 
       const builder = new SchemaBuilder(encodingSchema);
@@ -195,17 +220,49 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should encode and decode constructed SEQUENCE", () => {
       // Given: SEQUENCE schema with multiple fields
-      const encodingSchema = BuilderSchema.constructed("person", [
-        BuilderSchema.primitive<string, string>("name", Encoders.string, CommonTags.UTF8_STRING),
-        BuilderSchema.primitive<string, number>("age", Encoders.singleByte, CommonTags.INTEGER),
-        BuilderSchema.primitive<string, boolean>("active", Encoders.boolean, CommonTags.BOOLEAN)
-      ], CommonTags.SEQUENCE);
+      const encodingSchema = BuilderSchema.constructed(
+        "person",
+        [
+          BuilderSchema.primitive<string, string>(
+            "name",
+            Encoders.string,
+            CommonTags.UTF8_STRING,
+          ),
+          BuilderSchema.primitive<string, number>(
+            "age",
+            Encoders.singleByte,
+            CommonTags.INTEGER,
+          ),
+          BuilderSchema.primitive<string, boolean>(
+            "active",
+            Encoders.boolean,
+            CommonTags.BOOLEAN,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
-      const decodingSchema = ParserSchema.constructed("person", [
-        ParserSchema.primitive("name", (buffer) => new TextDecoder().decode(buffer), CommonTags.UTF8_STRING),
-        ParserSchema.primitive("age", (buffer) => new Uint8Array(buffer)[0], CommonTags.INTEGER),
-        ParserSchema.primitive("active", (buffer) => new Uint8Array(buffer)[0] !== 0x00, CommonTags.BOOLEAN)
-      ], CommonTags.SEQUENCE);
+      const decodingSchema = ParserSchema.constructed(
+        "person",
+        [
+          ParserSchema.primitive(
+            "name",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.UTF8_STRING,
+          ),
+          ParserSchema.primitive(
+            "age",
+            (buffer) => new Uint8Array(buffer)[0],
+            CommonTags.INTEGER,
+          ),
+          ParserSchema.primitive(
+            "active",
+            (buffer) => new Uint8Array(buffer)[0] !== 0x00,
+            CommonTags.BOOLEAN,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(decodingSchema);
@@ -213,7 +270,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const originalData = {
         name: "Alice",
         age: 30,
-        active: true
+        active: true,
       };
 
       // When: Encoding then decoding
@@ -228,25 +285,65 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should encode and decode nested SEQUENCE structures", () => {
       // Given: Nested SEQUENCE schema
-      const addressEncodingSchema = BuilderSchema.constructed("address", [
-        BuilderSchema.primitive<string, string>("street", Encoders.string, CommonTags.UTF8_STRING),
-        BuilderSchema.primitive<string, string>("city", Encoders.string, CommonTags.UTF8_STRING)
-      ], CommonTags.SEQUENCE);
+      const addressEncodingSchema = BuilderSchema.constructed(
+        "address",
+        [
+          BuilderSchema.primitive<string, string>(
+            "street",
+            Encoders.string,
+            CommonTags.UTF8_STRING,
+          ),
+          BuilderSchema.primitive<string, string>(
+            "city",
+            Encoders.string,
+            CommonTags.UTF8_STRING,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
-      const personEncodingSchema = BuilderSchema.constructed("person", [
-        BuilderSchema.primitive<string, string>("name", Encoders.string, CommonTags.UTF8_STRING),
-        addressEncodingSchema
-      ], CommonTags.SEQUENCE);
+      const personEncodingSchema = BuilderSchema.constructed(
+        "person",
+        [
+          BuilderSchema.primitive<string, string>(
+            "name",
+            Encoders.string,
+            CommonTags.UTF8_STRING,
+          ),
+          addressEncodingSchema,
+        ],
+        CommonTags.SEQUENCE,
+      );
 
-      const addressDecodingSchema = ParserSchema.constructed("address", [
-        ParserSchema.primitive("street", (buffer) => new TextDecoder().decode(buffer), CommonTags.UTF8_STRING),
-        ParserSchema.primitive("city", (buffer) => new TextDecoder().decode(buffer), CommonTags.UTF8_STRING)
-      ], CommonTags.SEQUENCE);
+      const addressDecodingSchema = ParserSchema.constructed(
+        "address",
+        [
+          ParserSchema.primitive(
+            "street",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.UTF8_STRING,
+          ),
+          ParserSchema.primitive(
+            "city",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.UTF8_STRING,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
-      const personDecodingSchema = ParserSchema.constructed("person", [
-        ParserSchema.primitive("name", (buffer) => new TextDecoder().decode(buffer), CommonTags.UTF8_STRING),
-        addressDecodingSchema
-      ], CommonTags.SEQUENCE);
+      const personDecodingSchema = ParserSchema.constructed(
+        "person",
+        [
+          ParserSchema.primitive(
+            "name",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.UTF8_STRING,
+          ),
+          addressDecodingSchema,
+        ],
+        CommonTags.SEQUENCE,
+      );
 
       const builder = new SchemaBuilder(personEncodingSchema);
       const parser = new SchemaParser(personDecodingSchema);
@@ -255,8 +352,8 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
         name: "Bob",
         address: {
           street: "123 Main St",
-          city: "Anytown"
-        }
+          city: "Anytown",
+        },
       } as any;
 
       // When: Encoding then decoding
@@ -271,22 +368,46 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should handle Context-Specific tags in schema roundtrip", () => {
       // Given: Schema with Context-Specific tags
-      const encodingSchema = BuilderSchema.constructed("tagged", [
-        BuilderSchema.primitive<string, string>("field1", Encoders.string, CommonTags.CONTEXT_SPECIFIC_0),
-        BuilderSchema.primitive<string, string>("field2", Encoders.string, CommonTags.CONTEXT_SPECIFIC_1)
-      ], CommonTags.SEQUENCE);
+      const encodingSchema = BuilderSchema.constructed(
+        "tagged",
+        [
+          BuilderSchema.primitive<string, string>(
+            "field1",
+            Encoders.string,
+            CommonTags.CONTEXT_SPECIFIC_0,
+          ),
+          BuilderSchema.primitive<string, string>(
+            "field2",
+            Encoders.string,
+            CommonTags.CONTEXT_SPECIFIC_1,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
-      const decodingSchema = ParserSchema.constructed("tagged", [
-        ParserSchema.primitive("field1", (buffer) => new TextDecoder().decode(buffer), CommonTags.CONTEXT_SPECIFIC_0),
-        ParserSchema.primitive("field2", (buffer) => new TextDecoder().decode(buffer), CommonTags.CONTEXT_SPECIFIC_1)
-      ], CommonTags.SEQUENCE);
+      const decodingSchema = ParserSchema.constructed(
+        "tagged",
+        [
+          ParserSchema.primitive(
+            "field1",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.CONTEXT_SPECIFIC_0,
+          ),
+          ParserSchema.primitive(
+            "field2",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.CONTEXT_SPECIFIC_1,
+          ),
+        ],
+        CommonTags.SEQUENCE,
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(decodingSchema);
 
       const originalData = {
         field1: "context zero",
-        field2: "context one"
+        field2: "context one",
       };
 
       // When: Encoding then decoding
@@ -300,22 +421,46 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should handle Application tags in schema roundtrip", () => {
       // Given: Schema with Application tags
-      const encodingSchema = BuilderSchema.constructed("app", [
-        BuilderSchema.primitive<string, number>("version", Encoders.singleByte, CommonTags.APPLICATION_1),
-        BuilderSchema.primitive<string, string>("data", Encoders.string, CommonTags.APPLICATION_2)
-      ], CommonTags.APPLICATION_0);
+      const encodingSchema = BuilderSchema.constructed(
+        "app",
+        [
+          BuilderSchema.primitive<string, number>(
+            "version",
+            Encoders.singleByte,
+            CommonTags.APPLICATION_1,
+          ),
+          BuilderSchema.primitive<string, string>(
+            "data",
+            Encoders.string,
+            CommonTags.APPLICATION_2,
+          ),
+        ],
+        CommonTags.APPLICATION_0,
+      );
 
-      const decodingSchema = ParserSchema.constructed("app", [
-        ParserSchema.primitive("version", (buffer) => new Uint8Array(buffer)[0], CommonTags.APPLICATION_1),
-        ParserSchema.primitive("data", (buffer) => new TextDecoder().decode(buffer), CommonTags.APPLICATION_2)
-      ], CommonTags.APPLICATION_0);
+      const decodingSchema = ParserSchema.constructed(
+        "app",
+        [
+          ParserSchema.primitive(
+            "version",
+            (buffer) => new Uint8Array(buffer)[0],
+            CommonTags.APPLICATION_1,
+          ),
+          ParserSchema.primitive(
+            "data",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.APPLICATION_2,
+          ),
+        ],
+        CommonTags.APPLICATION_0,
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(decodingSchema);
 
       const originalData = {
         version: 2,
-        data: "application data"
+        data: "application data",
       };
 
       // When: Encoding then decoding
@@ -329,28 +474,52 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should handle Private tags in schema roundtrip", () => {
       // Given: Schema with Private tags
-      const encodingSchema = BuilderSchema.constructed("private", [
-        BuilderSchema.primitive<string, Uint8Array>("data1", (data) => data.buffer as ArrayBuffer, CommonTags.PRIVATE_0),
-        BuilderSchema.primitive<string, string>("data2", Encoders.string, CommonTags.PRIVATE_1)
-      ], {
-        tagClass: TagClass.Private,
-        tagNumber: 10
-      });
+      const encodingSchema = BuilderSchema.constructed(
+        "private",
+        [
+          BuilderSchema.primitive<string, Uint8Array>(
+            "data1",
+            (data) => data.buffer as ArrayBuffer,
+            CommonTags.PRIVATE_0,
+          ),
+          BuilderSchema.primitive<string, string>(
+            "data2",
+            Encoders.string,
+            CommonTags.PRIVATE_1,
+          ),
+        ],
+        {
+          tagClass: TagClass.Private,
+          tagNumber: 10,
+        },
+      );
 
-      const decodingSchema = ParserSchema.constructed("private", [
-        ParserSchema.primitive("data1", (buffer) => new Uint8Array(buffer), CommonTags.PRIVATE_0),
-        ParserSchema.primitive("data2", (buffer) => new TextDecoder().decode(buffer), CommonTags.PRIVATE_1)
-      ], {
-        tagClass: TagClass.Private,
-        tagNumber: 10
-      });
+      const decodingSchema = ParserSchema.constructed(
+        "private",
+        [
+          ParserSchema.primitive(
+            "data1",
+            (buffer) => new Uint8Array(buffer),
+            CommonTags.PRIVATE_0,
+          ),
+          ParserSchema.primitive(
+            "data2",
+            (buffer) => new TextDecoder().decode(buffer),
+            CommonTags.PRIVATE_1,
+          ),
+        ],
+        {
+          tagClass: TagClass.Private,
+          tagNumber: 10,
+        },
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(decodingSchema);
 
       const originalData = {
         data1: new Uint8Array([0x01, 0x02, 0x03]),
-        data2: "private string"
+        data2: "private string",
       };
 
       // When: Encoding then decoding
@@ -369,17 +538,17 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.primitive<string, string>(
         "asyncField",
         Encoders.asyncString,
-        CommonTags.UTF8_STRING
+        CommonTags.UTF8_STRING,
       );
 
       const decodingSchema = ParserSchema.primitive(
         "asyncField",
         async (buffer) => {
           // Simulate async processing
-          await new Promise(resolve => setTimeout(resolve, 1));
+          await new Promise((resolve) => setTimeout(resolve, 1));
           return new TextDecoder().decode(buffer);
         },
-        CommonTags.UTF8_STRING
+        CommonTags.UTF8_STRING,
       );
 
       const builder = new SchemaBuilder(encodingSchema);

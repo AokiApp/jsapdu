@@ -10,10 +10,10 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       const optionalFieldSchema = Schema.primitive(
         "optional",
         undefined,
-        CommonTags.CONTEXT_SPECIFIC_0
+        CommonTags.CONTEXT_SPECIFIC_0,
       );
       const builder = new SchemaBuilder(optionalFieldSchema);
-      const testData = TestData.createBuffer([0xAB, 0xCD]);
+      const testData = TestData.createBuffer([0xab, 0xcd]);
 
       // When: Building the TLV structure
       const result = builder.build(testData);
@@ -22,19 +22,27 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       expect(result).toBeInstanceOf(ArrayBuffer);
       ExpectHelpers.expectTagInfo(result, CommonTags.CONTEXT_SPECIFIC_0);
       ExpectHelpers.expectValidDerEncoding(result);
-      
+
       // Context-specific [0]: tag(1) + length(1) + value(2) = 4 bytes
       expect(result.byteLength).toBe(4);
     });
 
     test("should build with multiple context-specific tags", () => {
       // Given: A schema with context-specific tags [1] and [2]
-      const schema1 = Schema.primitive("field1", undefined, CommonTags.CONTEXT_SPECIFIC_1);
-      const schema2 = Schema.primitive("field2", undefined, CommonTags.CONTEXT_SPECIFIC_2);
-      
+      const schema1 = Schema.primitive(
+        "field1",
+        undefined,
+        CommonTags.CONTEXT_SPECIFIC_1,
+      );
+      const schema2 = Schema.primitive(
+        "field2",
+        undefined,
+        CommonTags.CONTEXT_SPECIFIC_2,
+      );
+
       const builder1 = new SchemaBuilder(schema1);
       const builder2 = new SchemaBuilder(schema2);
-      
+
       const testData1 = TestData.createStringBuffer("value1");
       const testData2 = TestData.createStringBuffer("value2");
 
@@ -45,7 +53,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       // Then: Both results should be ArrayBuffer with correct tags
       expect(result1).toBeInstanceOf(ArrayBuffer);
       expect(result2).toBeInstanceOf(ArrayBuffer);
-      
+
       ExpectHelpers.expectTagInfo(result1, CommonTags.CONTEXT_SPECIFIC_1);
       ExpectHelpers.expectTagInfo(result2, CommonTags.CONTEXT_SPECIFIC_2);
       ExpectHelpers.expectStringValue(result1, "value1");
@@ -59,7 +67,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       const appSchema = Schema.primitive<string, number>(
         "version",
         Encoders.singleByte,
-        CommonTags.APPLICATION_1
+        CommonTags.APPLICATION_1,
       );
       const builder = new SchemaBuilder(appSchema);
 
@@ -70,20 +78,28 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       expect(result).toBeInstanceOf(ArrayBuffer);
       ExpectHelpers.expectTagInfo(result, CommonTags.APPLICATION_1);
       ExpectHelpers.expectValidDerEncoding(result);
-      
+
       // Application [1]: tag(1) + length(1) + value(1) = 3 bytes
       expect(result.byteLength).toBe(3);
     });
 
     test("should build complex application-specific structure", () => {
       // Given: A complex application structure with nested fields
-      const applicationSchema = Schema.constructed("application", [
-        Schema.primitive("version", Encoders.singleByte, CommonTags.APPLICATION_1),
-        Schema.primitive("data", undefined, CommonTags.APPLICATION_2),
-      ], {
-        tagClass: TagClass.Application,
-        tagNumber: 0,
-      });
+      const applicationSchema = Schema.constructed(
+        "application",
+        [
+          Schema.primitive(
+            "version",
+            Encoders.singleByte,
+            CommonTags.APPLICATION_1,
+          ),
+          Schema.primitive("data", undefined, CommonTags.APPLICATION_2),
+        ],
+        {
+          tagClass: TagClass.Application,
+          tagNumber: 0,
+        },
+      );
 
       const builder = new SchemaBuilder(applicationSchema);
       const testPayload = TestData.createBuffer([0x01, 0x02, 0x03, 0x04]);
@@ -97,7 +113,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       // Then: Result should be ArrayBuffer with constructed application tag [0]
       expect(result).toBeInstanceOf(ArrayBuffer);
       ExpectHelpers.expectValidDerEncoding(result);
-      
+
       // Verify application tag [0] with constructed flag
       const bytes = new Uint8Array(result);
       expect((bytes[0] & 0xc0) >> 6).toBe(TagClass.Application); // Application class
@@ -112,7 +128,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       const stringSchema = Schema.primitive<string, string>(
         "message",
         Encoders.utf8String,
-        CommonTags.UTF8_STRING
+        CommonTags.UTF8_STRING,
       );
       const builder = new SchemaBuilder(stringSchema);
 
@@ -131,7 +147,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       const integerSchema = Schema.primitive<string, number>(
         "number",
         Encoders.integer,
-        CommonTags.INTEGER
+        CommonTags.INTEGER,
       );
       const builder = new SchemaBuilder(integerSchema);
 
@@ -151,10 +167,10 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       const privateSchema = Schema.primitive(
         "private_data",
         undefined,
-        CommonTags.PRIVATE_0
+        CommonTags.PRIVATE_0,
       );
       const builder = new SchemaBuilder(privateSchema);
-      const testData = TestData.createBuffer([0xFF, 0xEE, 0xDD]);
+      const testData = TestData.createBuffer([0xff, 0xee, 0xdd]);
 
       // When: Building with private data
       const result = builder.build(testData);
@@ -163,7 +179,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       expect(result).toBeInstanceOf(ArrayBuffer);
       ExpectHelpers.expectTagInfo(result, CommonTags.PRIVATE_0);
       ExpectHelpers.expectValidDerEncoding(result);
-      
+
       // Private [0]: tag(1) + length(1) + value(3) = 5 bytes
       expect(result.byteLength).toBe(5);
     });
@@ -182,7 +198,7 @@ describe("SchemaBuilder - Tag-based behavior", () => {
       // Then: Should be ArrayBuffer with default universal tag 0
       expect(result).toBeInstanceOf(ArrayBuffer);
       ExpectHelpers.expectValidDerEncoding(result);
-      
+
       // Verify default universal tag 0
       const bytes = new Uint8Array(result);
       expect((bytes[0] & 0xc0) >> 6).toBe(TagClass.Universal); // Universal class

@@ -1,11 +1,20 @@
 import { describe, expect, test } from "vitest";
-import { BasicTLVParser, SchemaParser, Schema as ParserSchema, TagClass } from "../src";
-import { BasicTLVBuilder, SchemaBuilder, Schema as BuilderSchema } from "@aokiapp/tlv-builder";
-import { 
+import {
+  BasicTLVParser,
+  SchemaParser,
+  Schema as ParserSchema,
+  TagClass,
+} from "../src";
+import {
+  BasicTLVBuilder,
+  SchemaBuilder,
+  Schema as BuilderSchema,
+} from "@aokiapp/tlv-builder";
+import {
   schemaKenhojoBasicFour,
   schemaKenhojoSignature,
   schemaKenkakuEntries,
-  schemaKenkakuMyNumber 
+  schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
 import { TestData, Decoders, SampleTlvData } from "./test-helpers";
 
@@ -18,10 +27,38 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
     test("should parse any TLV built by BasicTLVBuilder", () => {
       // Given: Various TLV structures built by BasicTLVBuilder
       const testCases = [
-        { tag: { tagClass: TagClass.Universal, tagNumber: 4, constructed: false }, value: TestData.createStringBuffer("test") },
-        { tag: { tagClass: TagClass.Application, tagNumber: 1, constructed: false }, value: TestData.createBuffer([0x01, 0x02, 0x03]) },
-        { tag: { tagClass: TagClass.ContextSpecific, tagNumber: 0, constructed: false }, value: TestData.createStringBuffer("context") },
-        { tag: { tagClass: TagClass.Private, tagNumber: 10, constructed: false }, value: TestData.createBuffer([0xFF, 0xEE]) },
+        {
+          tag: {
+            tagClass: TagClass.Universal,
+            tagNumber: 4,
+            constructed: false,
+          },
+          value: TestData.createStringBuffer("test"),
+        },
+        {
+          tag: {
+            tagClass: TagClass.Application,
+            tagNumber: 1,
+            constructed: false,
+          },
+          value: TestData.createBuffer([0x01, 0x02, 0x03]),
+        },
+        {
+          tag: {
+            tagClass: TagClass.ContextSpecific,
+            tagNumber: 0,
+            constructed: false,
+          },
+          value: TestData.createStringBuffer("context"),
+        },
+        {
+          tag: {
+            tagClass: TagClass.Private,
+            tagNumber: 10,
+            constructed: false,
+          },
+          value: TestData.createBuffer([0xff, 0xee]),
+        },
       ];
 
       testCases.forEach((testCase, index) => {
@@ -41,19 +78,33 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
         expect(parsed.tag.tagNumber).toBe(testCase.tag.tagNumber);
         expect(parsed.tag.constructed).toBe(testCase.tag.constructed);
         expect(parsed.length).toBe(testCase.value.byteLength);
-        expect(new Uint8Array(parsed.value)).toEqual(new Uint8Array(testCase.value));
+        expect(new Uint8Array(parsed.value)).toEqual(
+          new Uint8Array(testCase.value),
+        );
       });
     });
 
     test("should handle constructed structures built by BasicTLVBuilder", () => {
       // Given: A constructed structure built by BasicTLVBuilder
-      const child1 = { tag: { tagClass: TagClass.Universal, tagNumber: 4, constructed: false }, length: 4, value: TestData.createStringBuffer("test"), endOffset: 0 };
-      const child2 = { tag: { tagClass: TagClass.Universal, tagNumber: 2, constructed: false }, length: 1, value: TestData.createBuffer([42]), endOffset: 0 };
+      const child1 = {
+        tag: { tagClass: TagClass.Universal, tagNumber: 4, constructed: false },
+        length: 4,
+        value: TestData.createStringBuffer("test"),
+        endOffset: 0,
+      };
+      const child2 = {
+        tag: { tagClass: TagClass.Universal, tagNumber: 2, constructed: false },
+        length: 1,
+        value: TestData.createBuffer([42]),
+        endOffset: 0,
+      };
 
       const child1Built = BasicTLVBuilder.build(child1);
       const child2Built = BasicTLVBuilder.build(child2);
 
-      const combinedValue = new Uint8Array(child1Built.byteLength + child2Built.byteLength);
+      const combinedValue = new Uint8Array(
+        child1Built.byteLength + child2Built.byteLength,
+      );
       combinedValue.set(new Uint8Array(child1Built), 0);
       combinedValue.set(new Uint8Array(child2Built), child1Built.byteLength);
 
@@ -79,17 +130,49 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
   describe("Schema interoperability validation", () => {
     test("should parse data encoded by SchemaBuilder with compatible schemas", () => {
       // Given: Compatible encoding and parsing schemas
-      const encodingSchema = BuilderSchema.constructed("compatible", [
-        BuilderSchema.primitive<string, string>("text", (data) => TestData.createStringBuffer(data), { tagNumber: 12 }),
-        BuilderSchema.primitive<string, number>("number", (data) => TestData.createBuffer([data]), { tagNumber: 2 }),
-        BuilderSchema.primitive<string, boolean>("flag", (data) => TestData.createBuffer([data ? 0xFF : 0x00]), { tagNumber: 1 }),
-      ], { tagNumber: 16 });
+      const encodingSchema = BuilderSchema.constructed(
+        "compatible",
+        [
+          BuilderSchema.primitive<string, string>(
+            "text",
+            (data) => TestData.createStringBuffer(data),
+            { tagNumber: 12 },
+          ),
+          BuilderSchema.primitive<string, number>(
+            "number",
+            (data) => TestData.createBuffer([data]),
+            { tagNumber: 2 },
+          ),
+          BuilderSchema.primitive<string, boolean>(
+            "flag",
+            (data) => TestData.createBuffer([data ? 0xff : 0x00]),
+            { tagNumber: 1 },
+          ),
+        ],
+        { tagNumber: 16 },
+      );
 
-      const parsingSchema = ParserSchema.constructed("compatible", [
-        ParserSchema.primitive("text", (buffer) => new TextDecoder().decode(buffer), { tagNumber: 12 }),
-        ParserSchema.primitive("number", (buffer) => new Uint8Array(buffer)[0], { tagNumber: 2 }),
-        ParserSchema.primitive("flag", (buffer) => new Uint8Array(buffer)[0] !== 0x00, { tagNumber: 1 }),
-      ], { tagNumber: 16 });
+      const parsingSchema = ParserSchema.constructed(
+        "compatible",
+        [
+          ParserSchema.primitive(
+            "text",
+            (buffer) => new TextDecoder().decode(buffer),
+            { tagNumber: 12 },
+          ),
+          ParserSchema.primitive(
+            "number",
+            (buffer) => new Uint8Array(buffer)[0],
+            { tagNumber: 2 },
+          ),
+          ParserSchema.primitive(
+            "flag",
+            (buffer) => new Uint8Array(buffer)[0] !== 0x00,
+            { tagNumber: 1 },
+          ),
+        ],
+        { tagNumber: 16 },
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(parsingSchema);
@@ -112,18 +195,22 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should handle async operations across package boundaries", async () => {
       // Given: Schemas with async operations
-      const encodingSchema = BuilderSchema.primitive<string, string>("asyncData",
+      const encodingSchema = BuilderSchema.primitive<string, string>(
+        "asyncData",
         async (data) => {
-          await new Promise(resolve => setTimeout(resolve, 1));
+          await new Promise((resolve) => setTimeout(resolve, 1));
           return TestData.createStringBuffer(data);
-        }, { tagNumber: 12 }
+        },
+        { tagNumber: 12 },
       );
 
-      const parsingSchema = ParserSchema.primitive("asyncData",
+      const parsingSchema = ParserSchema.primitive(
+        "asyncData",
         async (buffer) => {
-          await new Promise(resolve => setTimeout(resolve, 1));
+          await new Promise((resolve) => setTimeout(resolve, 1));
           return new TextDecoder().decode(buffer);
-        }, { tagNumber: 12 }
+        },
+        { tagNumber: 12 },
       );
 
       const builder = new SchemaBuilder(encodingSchema);
@@ -141,23 +228,31 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should validate tag constraints across packages", () => {
       // Given: Strict parsing schema with specific tag requirements
-      const strictParsingSchema = ParserSchema.primitive("strict", Decoders.string, {
-        tagClass: TagClass.Private,
-        tagNumber: 42,
-      });
-
-      const correctEncodingSchema = BuilderSchema.primitive<string, string>("strict", 
-        (data) => TestData.createStringBuffer(data), {
+      const strictParsingSchema = ParserSchema.primitive(
+        "strict",
+        Decoders.string,
+        {
           tagClass: TagClass.Private,
           tagNumber: 42,
-        }
+        },
       );
 
-      const wrongEncodingSchema = BuilderSchema.primitive<string, string>("wrong", 
-        (data) => TestData.createStringBuffer(data), {
+      const correctEncodingSchema = BuilderSchema.primitive<string, string>(
+        "strict",
+        (data) => TestData.createStringBuffer(data),
+        {
+          tagClass: TagClass.Private,
+          tagNumber: 42,
+        },
+      );
+
+      const wrongEncodingSchema = BuilderSchema.primitive<string, string>(
+        "wrong",
+        (data) => TestData.createStringBuffer(data),
+        {
           tagClass: TagClass.Universal,
           tagNumber: 12,
-        }
+        },
       );
 
       const correctBuilder = new SchemaBuilder(correctEncodingSchema);
@@ -194,31 +289,53 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
       // Build encoding schema that matches MynaCard expectations
       const encodingSchema = BuilderSchema.constructed("kenhojoBasicFour", [
-        BuilderSchema.primitive("offsets", (offsets: number[]) => {
-          const buffer = new ArrayBuffer(offsets.length * 2);
-          const view = new DataView(buffer);
-          offsets.forEach((offset, i) => view.setUint16(i * 2, offset, false));
-          return buffer;
-        }, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x21,
-        }),
-        BuilderSchema.primitive("name", (name: string) => new TextEncoder().encode(name).buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x22,
-        }),
-        BuilderSchema.primitive("address", (address: string) => new TextEncoder().encode(address).buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x23,
-        }),
-        BuilderSchema.primitive("birth", (birth: string) => new TextEncoder().encode(birth).buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x24,
-        }),
-        BuilderSchema.primitive("gender", (gender: string) => new TextEncoder().encode(gender).buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x25,
-        }),
+        BuilderSchema.primitive(
+          "offsets",
+          (offsets: number[]) => {
+            const buffer = new ArrayBuffer(offsets.length * 2);
+            const view = new DataView(buffer);
+            offsets.forEach((offset, i) =>
+              view.setUint16(i * 2, offset, false),
+            );
+            return buffer;
+          },
+          {
+            tagClass: TagClass.Private,
+            tagNumber: 0x21,
+          },
+        ),
+        BuilderSchema.primitive(
+          "name",
+          (name: string) => new TextEncoder().encode(name).buffer,
+          {
+            tagClass: TagClass.Private,
+            tagNumber: 0x22,
+          },
+        ),
+        BuilderSchema.primitive(
+          "address",
+          (address: string) => new TextEncoder().encode(address).buffer,
+          {
+            tagClass: TagClass.Private,
+            tagNumber: 0x23,
+          },
+        ),
+        BuilderSchema.primitive(
+          "birth",
+          (birth: string) => new TextEncoder().encode(birth).buffer,
+          {
+            tagClass: TagClass.Private,
+            tagNumber: 0x24,
+          },
+        ),
+        BuilderSchema.primitive(
+          "gender",
+          (gender: string) => new TextEncoder().encode(gender).buffer,
+          {
+            tagClass: TagClass.Private,
+            tagNumber: 0x25,
+          },
+        ),
       ]);
 
       const builder = new SchemaBuilder(encodingSchema);
@@ -240,41 +357,55 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       // Given: Mock signature data
       const signatureData = {
         kenhojoMyNumberHash: new Uint8Array([
-          0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x70, 0x81,
-          0x92, 0xa3, 0xb4, 0xc5, 0xd6, 0xe7, 0xf8, 0x09,
-          0x10, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87,
-          0x98, 0xa9, 0xba, 0xcb, 0xdc, 0xed, 0xfe, 0x0f
+          0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x70, 0x81, 0x92, 0xa3, 0xb4,
+          0xc5, 0xd6, 0xe7, 0xf8, 0x09, 0x10, 0x21, 0x32, 0x43, 0x54, 0x65,
+          0x76, 0x87, 0x98, 0xa9, 0xba, 0xcb, 0xdc, 0xed, 0xfe, 0x0f,
         ]),
         kenhojoBasicFourHash: new Uint8Array([
-          0xf0, 0xe1, 0xd2, 0xc3, 0xb4, 0xa5, 0x96, 0x87,
-          0x78, 0x69, 0x5a, 0x4b, 0x3c, 0x2d, 0x1e, 0x0f,
-          0x01, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
-          0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0xf0
+          0xf0, 0xe1, 0xd2, 0xc3, 0xb4, 0xa5, 0x96, 0x87, 0x78, 0x69, 0x5a,
+          0x4b, 0x3c, 0x2d, 0x1e, 0x0f, 0x01, 0x12, 0x23, 0x34, 0x45, 0x56,
+          0x67, 0x78, 0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0xf0,
         ]),
         thisSignature: new Uint8Array([
-          0x30, 0x45, 0x02, 0x20, 0x12, 0x34, 0x56, 0x78,
-          0x9a, 0xbc, 0xde, 0xf0, 0x02, 0x21, 0x00, 0x87
+          0x30, 0x45, 0x02, 0x20, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde,
+          0xf0, 0x02, 0x21, 0x00, 0x87,
         ]),
       };
 
       // Build encoding schema for signature
-      const encodingSchema = BuilderSchema.constructed("kenhojoSignature", [
-        BuilderSchema.primitive("kenhojoMyNumberHash", (data: Uint8Array) => data.buffer, {
+      const encodingSchema = BuilderSchema.constructed(
+        "kenhojoSignature",
+        [
+          BuilderSchema.primitive(
+            "kenhojoMyNumberHash",
+            (data: Uint8Array) => data.buffer,
+            {
+              tagClass: TagClass.Private,
+              tagNumber: 0x31,
+            },
+          ),
+          BuilderSchema.primitive(
+            "kenhojoBasicFourHash",
+            (data: Uint8Array) => data.buffer,
+            {
+              tagClass: TagClass.Private,
+              tagNumber: 0x32,
+            },
+          ),
+          BuilderSchema.primitive(
+            "thisSignature",
+            (data: Uint8Array) => data.buffer,
+            {
+              tagClass: TagClass.Private,
+              tagNumber: 0x33,
+            },
+          ),
+        ],
+        {
           tagClass: TagClass.Private,
-          tagNumber: 0x31,
-        }),
-        BuilderSchema.primitive("kenhojoBasicFourHash", (data: Uint8Array) => data.buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x32,
-        }),
-        BuilderSchema.primitive("thisSignature", (data: Uint8Array) => data.buffer, {
-          tagClass: TagClass.Private,
-          tagNumber: 0x33,
-        }),
-      ], {
-        tagClass: TagClass.Private,
-        tagNumber: 0x30,
-      });
+          tagNumber: 0x30,
+        },
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
 
@@ -284,9 +415,15 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse signature correctly
-      expect(Array.from((parsed as any).kenhojoMyNumberHash)).toEqual(Array.from(signatureData.kenhojoMyNumberHash));
-      expect(Array.from((parsed as any).kenhojoBasicFourHash)).toEqual(Array.from(signatureData.kenhojoBasicFourHash));
-      expect(Array.from((parsed as any).thisSignature)).toEqual(Array.from(signatureData.thisSignature));
+      expect(Array.from((parsed as any).kenhojoMyNumberHash)).toEqual(
+        Array.from(signatureData.kenhojoMyNumberHash),
+      );
+      expect(Array.from((parsed as any).kenhojoBasicFourHash)).toEqual(
+        Array.from(signatureData.kenhojoBasicFourHash),
+      );
+      expect(Array.from((parsed as any).thisSignature)).toEqual(
+        Array.from(signatureData.thisSignature),
+      );
     });
   });
 
@@ -294,14 +431,18 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
     test("should handle large data structures built by SchemaBuilder", () => {
       // Given: Large data structure
       const largeDataSize = 1024;
-      const largeContent = new Uint8Array(largeDataSize).fill(0xAB);
+      const largeContent = new Uint8Array(largeDataSize).fill(0xab);
 
-      const encodingSchema = BuilderSchema.primitive("largeData", 
-        (data: Uint8Array) => data.buffer, { tagNumber: 4 }
+      const encodingSchema = BuilderSchema.primitive(
+        "largeData",
+        (data: Uint8Array) => data.buffer,
+        { tagNumber: 4 },
       );
 
-      const parsingSchema = ParserSchema.primitive("largeData",
-        (buffer) => new Uint8Array(buffer), { tagNumber: 4 }
+      const parsingSchema = ParserSchema.primitive(
+        "largeData",
+        (buffer) => new Uint8Array(buffer),
+        { tagNumber: 4 },
       );
 
       const builder = new SchemaBuilder(encodingSchema);
@@ -313,23 +454,29 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
       // Then: Should handle large data correctly
       expect((parsed as Uint8Array).length).toBe(largeDataSize);
-      expect((parsed as Uint8Array)[0]).toBe(0xAB);
-      expect((parsed as Uint8Array)[largeDataSize - 1]).toBe(0xAB);
+      expect((parsed as Uint8Array)[0]).toBe(0xab);
+      expect((parsed as Uint8Array)[largeDataSize - 1]).toBe(0xab);
     });
 
     test("should provide meaningful error messages for schema mismatches", () => {
       // Given: Incompatible schemas
-      const encodingSchema = BuilderSchema.primitive<string, string>("mismatch",
-        (data) => TestData.createStringBuffer(data), {
+      const encodingSchema = BuilderSchema.primitive<string, string>(
+        "mismatch",
+        (data) => TestData.createStringBuffer(data),
+        {
           tagClass: TagClass.Application,
           tagNumber: 1,
-        }
+        },
       );
 
-      const parsingSchema = ParserSchema.primitive("mismatch", Decoders.string, {
-        tagClass: TagClass.Private,
-        tagNumber: 2,
-      });
+      const parsingSchema = ParserSchema.primitive(
+        "mismatch",
+        Decoders.string,
+        {
+          tagClass: TagClass.Private,
+          tagNumber: 2,
+        },
+      );
 
       const builder = new SchemaBuilder(encodingSchema);
       const parser = new SchemaParser(parsingSchema);
@@ -343,12 +490,16 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should handle empty and minimal TLV structures", () => {
       // Given: Minimal TLV structure
-      const minimalSchema = BuilderSchema.primitive<string, ArrayBuffer>("minimal",
-        () => new ArrayBuffer(0), { tagNumber: 5 }
+      const minimalSchema = BuilderSchema.primitive<string, ArrayBuffer>(
+        "minimal",
+        () => new ArrayBuffer(0),
+        { tagNumber: 5 },
       );
 
-      const parsingSchema = ParserSchema.primitive("minimal",
-        (buffer) => buffer, { tagNumber: 5 }
+      const parsingSchema = ParserSchema.primitive(
+        "minimal",
+        (buffer) => buffer,
+        { tagNumber: 5 },
       );
 
       const builder = new SchemaBuilder(minimalSchema);
@@ -360,16 +511,20 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
       // Then: Should handle empty data correctly
       expect(parsed).toBeInstanceOf(ArrayBuffer);
-      expect((parsed).byteLength).toBe(0);
+      expect(parsed.byteLength).toBe(0);
     });
   });
 
   describe("Performance and stress testing", () => {
     test("should handle rapid encode-decode cycles efficiently", () => {
       // Given: Simple schema for performance testing
-      const testSchema = ParserSchema.primitive("perf", Decoders.string, { tagNumber: 12 });
-      const buildSchema = BuilderSchema.primitive<string, string>("perf", 
-        (data) => TestData.createStringBuffer(data), { tagNumber: 12 }
+      const testSchema = ParserSchema.primitive("perf", Decoders.string, {
+        tagNumber: 12,
+      });
+      const buildSchema = BuilderSchema.primitive<string, string>(
+        "perf",
+        (data) => TestData.createStringBuffer(data),
+        { tagNumber: 12 },
       );
 
       const parser = new SchemaParser(testSchema);
@@ -395,17 +550,37 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should maintain memory efficiency in cross-package operations", () => {
       // Given: Memory-intensive operation
-      const memoryTestSchema = ParserSchema.constructed("memTest", [
-        ParserSchema.primitive("data1", (buffer) => new Uint8Array(buffer), { tagNumber: 1 }),
-        ParserSchema.primitive("data2", (buffer) => new Uint8Array(buffer), { tagNumber: 2 }),
-        ParserSchema.primitive("data3", (buffer) => new Uint8Array(buffer), { tagNumber: 3 }),
-      ], { tagNumber: 16 });
+      const memoryTestSchema = ParserSchema.constructed(
+        "memTest",
+        [
+          ParserSchema.primitive("data1", (buffer) => new Uint8Array(buffer), {
+            tagNumber: 1,
+          }),
+          ParserSchema.primitive("data2", (buffer) => new Uint8Array(buffer), {
+            tagNumber: 2,
+          }),
+          ParserSchema.primitive("data3", (buffer) => new Uint8Array(buffer), {
+            tagNumber: 3,
+          }),
+        ],
+        { tagNumber: 16 },
+      );
 
-      const buildSchema = BuilderSchema.constructed("memTest", [
-        BuilderSchema.primitive("data1", (data: Uint8Array) => data.buffer, { tagNumber: 1 }),
-        BuilderSchema.primitive("data2", (data: Uint8Array) => data.buffer, { tagNumber: 2 }),
-        BuilderSchema.primitive("data3", (data: Uint8Array) => data.buffer, { tagNumber: 3 }),
-      ], { tagNumber: 16 });
+      const buildSchema = BuilderSchema.constructed(
+        "memTest",
+        [
+          BuilderSchema.primitive("data1", (data: Uint8Array) => data.buffer, {
+            tagNumber: 1,
+          }),
+          BuilderSchema.primitive("data2", (data: Uint8Array) => data.buffer, {
+            tagNumber: 2,
+          }),
+          BuilderSchema.primitive("data3", (data: Uint8Array) => data.buffer, {
+            tagNumber: 3,
+          }),
+        ],
+        { tagNumber: 16 },
+      );
 
       const parser = new SchemaParser(memoryTestSchema);
       const builder = new SchemaBuilder(buildSchema);
@@ -425,7 +600,10 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
         totalEncoded += encoded.byteLength;
 
         const parsed = parser.parse(encoded);
-        totalParsed += (parsed as any).data1.length + (parsed as any).data2.length + (parsed as any).data3.length;
+        totalParsed +=
+          (parsed as any).data1.length +
+          (parsed as any).data2.length +
+          (parsed as any).data3.length;
       }
 
       // Then: Should handle memory operations without issues

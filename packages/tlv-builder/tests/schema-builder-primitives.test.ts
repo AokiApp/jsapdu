@@ -13,17 +13,21 @@ describe("SchemaBuilder - Primitive schemas", () => {
 
     // Builder should return ArrayBuffer, not TLVResult
     expect(result).toBeInstanceOf(ArrayBuffer);
-    
+
     // Verify DER-encoded structure
     ExpectHelpers.expectTagInfo(result, CommonTags.UTF8_STRING);
     ExpectHelpers.expectValidDerEncoding(result);
-    
+
     // For UTF8_STRING: tag(1) + length(1) + value(5) = 7 bytes total
     expect(result.byteLength).toBe(7);
   });
 
   test("should build primitive field with custom string encoding", () => {
-    const schema = Schema.primitive<string, string>("username", Encoders.string, CommonTags.APPLICATION_1);
+    const schema = Schema.primitive<string, string>(
+      "username",
+      Encoders.string,
+      CommonTags.APPLICATION_1,
+    );
     const builder = new SchemaBuilder(schema);
 
     const result = builder.build("admin");
@@ -36,7 +40,11 @@ describe("SchemaBuilder - Primitive schemas", () => {
   });
 
   test("should build primitive field with numeric encoding", () => {
-    const schema = Schema.primitive<string, number>("count", Encoders.number, CommonTags.INTEGER);
+    const schema = Schema.primitive<string, number>(
+      "count",
+      Encoders.number,
+      CommonTags.INTEGER,
+    );
     const builder = new SchemaBuilder(schema);
 
     const result = builder.build(12345);
@@ -49,7 +57,11 @@ describe("SchemaBuilder - Primitive schemas", () => {
   });
 
   test("should build primitive field with boolean encoding", () => {
-    const schema = Schema.primitive<string, boolean>("enabled", Encoders.boolean, CommonTags.CONTEXT_SPECIFIC_0);
+    const schema = Schema.primitive<string, boolean>(
+      "enabled",
+      Encoders.boolean,
+      CommonTags.CONTEXT_SPECIFIC_0,
+    );
     const builder = new SchemaBuilder(schema);
 
     const trueResult = builder.build(true);
@@ -58,16 +70,16 @@ describe("SchemaBuilder - Primitive schemas", () => {
     // Verify BOOLEAN encoding for both values
     expect(trueResult).toBeInstanceOf(ArrayBuffer);
     expect(falseResult).toBeInstanceOf(ArrayBuffer);
-    
+
     ExpectHelpers.expectTagInfo(trueResult, CommonTags.CONTEXT_SPECIFIC_0);
     ExpectHelpers.expectTagInfo(falseResult, CommonTags.CONTEXT_SPECIFIC_0);
-    
+
     // Check the actual DER-encoded boolean values in the ArrayBuffer
     const trueBytes = new Uint8Array(trueResult);
     const falseBytes = new Uint8Array(falseResult);
-    
+
     // Skip T and L to get to V (assuming single byte length)
-    expect(trueBytes[trueBytes.length - 1]).toBe(0xFF);  // true value
+    expect(trueBytes[trueBytes.length - 1]).toBe(0xff); // true value
     expect(falseBytes[falseBytes.length - 1]).toBe(0x00); // false value
   });
 });
