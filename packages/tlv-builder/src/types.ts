@@ -17,15 +17,3 @@ export interface TLVResult {
   value: ArrayBuffer;
   endOffset: number;
 }
-
-/**
- * DER encoding options for controlling build behavior
- */
-export interface DEREncodingOptions {
-  /** Validate length encoding according to DER rules */
-  validateLength?: boolean;
-  /** Enforce strict ordering for SET elements */
-  strictOrdering?: boolean;
-  /** Enable debug mode for detailed error messages */
-  debug?: boolean;
-}

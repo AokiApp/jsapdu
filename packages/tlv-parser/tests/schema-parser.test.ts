@@ -127,8 +127,8 @@ describe("SchemaParser - Schema-based parsing functionality", () => {
 
       // Then: Should return structured object
       ExpectHelpers.expectObjectStructure(result, ["name", "age"]);
-      ExpectHelpers.expectStringValue((result as any).name, "Alice");
-      ExpectHelpers.expectNumberValue((result as any).age, 30);
+      ExpectHelpers.expectStringValue(result.name, "Alice");
+      ExpectHelpers.expectNumberValue(result.age, 30);
     });
 
     test("should parse nested SEQUENCE structures", () => {
@@ -181,16 +181,16 @@ describe("SchemaParser - Schema-based parsing functionality", () => {
 
       // Then: Should return nested structured object
       ExpectHelpers.expectObjectStructure(result, ["name", "address"]);
-      ExpectHelpers.expectStringValue((result as any).name, "Bob");
-      ExpectHelpers.expectObjectStructure((result as any).address, [
+      ExpectHelpers.expectStringValue(result.name, "Bob");
+      ExpectHelpers.expectObjectStructure(result.address, [
         "street",
         "city",
       ]);
       ExpectHelpers.expectStringValue(
-        (result as any).address.street,
+        result.address.street,
         "123 Main St",
       );
-      ExpectHelpers.expectStringValue((result as any).address.city, "Anytown");
+      ExpectHelpers.expectStringValue(result.address.city, "Anytown");
     });
   });
 
@@ -374,8 +374,8 @@ describe("SchemaParser - Schema-based parsing functionality", () => {
 
       // Then: Should handle mixed sync/async correctly
       ExpectHelpers.expectObjectStructure(result, ["sync", "async"]);
-      ExpectHelpers.expectStringValue((result as any).sync, "sync_data");
-      ExpectHelpers.expectStringValue((result as any).async, "async_data");
+      ExpectHelpers.expectStringValue(result.sync, "sync_data");
+      ExpectHelpers.expectStringValue(result.async, "async_data");
     });
   });
 

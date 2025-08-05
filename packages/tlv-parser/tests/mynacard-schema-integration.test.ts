@@ -135,11 +135,11 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse all fields correctly
-      expect((parsed as any).offsets).toEqual([15, 25, 35, 45]);
-      expect((parsed as any).name).toBe("山田太郎");
-      expect((parsed as any).address).toBe("大阪府大阪市中央区1-1-1");
-      expect((parsed as any).birth).toBe("19880312");
-      expect((parsed as any).gender).toBe("1");
+      expect(parsed.offsets).toEqual([15, 25, 35, 45]);
+      expect(parsed.name).toBe("山田太郎");
+      expect(parsed.address).toBe("大阪府大阪市中央区1-1-1");
+      expect(parsed.birth).toBe("19880312");
+      expect(parsed.gender).toBe("1");
     });
 
     test("should handle empty and edge case values in basic four", () => {
@@ -189,9 +189,9 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should handle edge cases correctly
-      expect((parsed as any).offsets).toEqual([0, 65535]);
-      expect((parsed as any).name).toBe("");
-      expect((parsed as any).address).toBe(
+      expect(parsed.offsets).toEqual([0, 65535]);
+      expect(parsed.name).toBe("");
+      expect(parsed.address).toBe(
         "非常に長い住所データをテストするために、このように長い文字列を使用します。",
       );
     });
@@ -293,13 +293,13 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse binary data correctly
-      expect(Array.from((parsed as any).kenhojoMyNumberHash)).toEqual(
+      expect(Array.from(parsed.kenhojoMyNumberHash)).toEqual(
         Array.from(testData.kenhojoMyNumberHash),
       );
-      expect(Array.from((parsed as any).kenhojoBasicFourHash)).toEqual(
+      expect(Array.from(parsed.kenhojoBasicFourHash)).toEqual(
         Array.from(testData.kenhojoBasicFourHash),
       );
-      expect(Array.from((parsed as any).thisSignature)).toEqual(
+      expect(Array.from(parsed.thisSignature)).toEqual(
         Array.from(testData.thisSignature),
       );
     });
@@ -418,26 +418,26 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse image data correctly
-      expect((parsed as any).offsets).toEqual([50, 100, 150, 200, 250, 300]);
-      expect((parsed as any).birth).toBe("19921205");
-      expect((parsed as any).gender).toBe("2");
-      expect(Array.from((parsed as any).namePng)).toEqual(
+      expect(parsed.offsets).toEqual([50, 100, 150, 200, 250, 300]);
+      expect(parsed.birth).toBe("19921205");
+      expect(parsed.gender).toBe("2");
+      expect(Array.from(parsed.namePng)).toEqual(
         Array.from(pngHeader),
       );
-      expect(Array.from((parsed as any).faceJp2)).toEqual(
+      expect(Array.from(parsed.faceJp2)).toEqual(
         Array.from(jp2Header),
       );
-      expect((parsed as any).expire).toBe("20401231");
+      expect(parsed.expire).toBe("20401231");
 
       // Verify PNG header is preserved
-      const parsedPng = (parsed as any).namePng;
+      const parsedPng = parsed.namePng;
       expect(parsedPng[0]).toBe(0x89); // PNG signature first byte
       expect(parsedPng[1]).toBe(0x50); // 'P'
       expect(parsedPng[2]).toBe(0x4e); // 'N'
       expect(parsedPng[3]).toBe(0x47); // 'G'
 
       // Verify JP2 header is preserved
-      const parsedJp2 = (parsed as any).faceJp2;
+      const parsedJp2 = parsed.faceJp2;
       expect(parsedJp2[4]).toBe(0x6a); // 'j'
       expect(parsedJp2[5]).toBe(0x50); // 'P'
     });
@@ -537,10 +537,10 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse my number data correctly
-      expect(Array.from((parsed as any).myNumberPng)).toEqual(
+      expect(Array.from(parsed.myNumberPng)).toEqual(
         Array.from(myNumberPng),
       );
-      expect(Array.from((parsed as any).thisSignature)).toEqual([
+      expect(Array.from(parsed.thisSignature)).toEqual([
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe,
       ]);
     });
@@ -639,11 +639,11 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = await parser.parse(encoded, { async: true });
 
       // Then: Should parse certificate structure correctly
-      expect((parsed as any).contents).toHaveProperty("issuer");
-      expect((parsed as any).contents).toHaveProperty("subject");
-      expect((parsed as any).contents).toHaveProperty("public_key");
-      expect((parsed as any).contents.public_key).toBeInstanceOf(CryptoKey);
-      expect(Array.from((parsed as any).thisSignature)).toEqual([
+      expect(parsed.contents).toHaveProperty("issuer");
+      expect(parsed.contents).toHaveProperty("subject");
+      expect(parsed.contents).toHaveProperty("public_key");
+      expect(parsed.contents.public_key).toBeInstanceOf(CryptoKey);
+      expect(Array.from(parsed.thisSignature)).toEqual([
         0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22,
       ]);
     });
@@ -812,22 +812,22 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse the complex structure correctly
-      expect((parsed as any).basicInfo.name).toBe("佐藤花子");
-      expect((parsed as any).basicInfo.address).toBe(
+      expect(parsed.basicInfo.name).toBe("佐藤花子");
+      expect(parsed.basicInfo.address).toBe(
         "東京都新宿区歌舞伎町1-2-3 マンション405号室",
       );
-      expect(Array.from((parsed as any).visualInfo.namePng)).toEqual([
+      expect(Array.from(parsed.visualInfo.namePng)).toEqual([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
       ]);
-      expect(Array.from((parsed as any).visualInfo.faceJp2)).toEqual([
+      expect(Array.from(parsed.visualInfo.faceJp2)).toEqual([
         0x00, 0x00, 0x00, 0x0c, 0x6a, 0x50, 0x20, 0x20,
       ]);
-      expect((parsed as any).cryptoInfo.hash).toBeInstanceOf(Uint8Array);
-      expect((parsed as any).cryptoInfo.signature).toBeInstanceOf(Uint8Array);
-      expect(Array.from((parsed as any).cryptoInfo.hash)).toEqual(
+      expect(parsed.cryptoInfo.hash).toBeInstanceOf(Uint8Array);
+      expect(parsed.cryptoInfo.signature).toBeInstanceOf(Uint8Array);
+      expect(Array.from(parsed.cryptoInfo.hash)).toEqual(
         Array.from(realisticData.cryptoInfo.hash),
       );
-      expect(Array.from((parsed as any).cryptoInfo.signature)).toEqual(
+      expect(Array.from(parsed.cryptoInfo.signature)).toEqual(
         Array.from(realisticData.cryptoInfo.signature),
       );
     });

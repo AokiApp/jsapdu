@@ -100,15 +100,15 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const personBuildSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<string, string>("name", Encoders.string, {
+          BuilderSchema.primitive("name", Encoders.string, {
             tagClass: TagClass.Universal,
             tagNumber: 12,
           }),
-          BuilderSchema.primitive<string, number>("age", Encoders.singleByte, {
+          BuilderSchema.primitive("age", Encoders.singleByte, {
             tagClass: TagClass.Universal,
             tagNumber: 2,
           }),
-          BuilderSchema.primitive<string, boolean>("active", Encoders.boolean, {
+          BuilderSchema.primitive("active", Encoders.boolean, {
             tagClass: TagClass.Universal,
             tagNumber: 1,
           }),
@@ -163,9 +163,9 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Data should roundtrip perfectly
-      expect((decoded as any).name).toBe("Integration Test");
-      expect((decoded as any).age).toBe(42);
-      expect((decoded as any).active).toBe(true);
+      expect(decoded.name).toBe("Integration Test");
+      expect(decoded.age).toBe(42);
+      expect(decoded.active).toBe(true);
 
       // And: Should also work with BasicTLVParser for low-level verification
       const lowLevelParsed = BasicTLVParser.parse(encoded);
@@ -175,11 +175,11 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
 
     test("should handle async operations across packages", async () => {
       // Given: Schemas with async operations
-      const asyncBuildSchema = BuilderSchema.primitive<string, string>(
+      const asyncBuildSchema = BuilderSchema.primitive(
         "async",
         async (data) => {
           await new Promise((resolve) => setTimeout(resolve, 1));
-          return Encoders.string(data);
+          return Encoders.string(data as string);
         },
         {
           tagClass: TagClass.ContextSpecific,
@@ -288,13 +288,13 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       expect(parsed).toHaveProperty("kenhojoBasicFourHash");
       expect(parsed).toHaveProperty("thisSignature");
 
-      expect(Array.from((parsed as any).kenhojoMyNumberHash)).toEqual([
+      expect(Array.from(parsed.kenhojoMyNumberHash)).toEqual([
         0x12, 0x34, 0x56, 0x78,
       ]);
-      expect(Array.from((parsed as any).kenhojoBasicFourHash)).toEqual([
+      expect(Array.from(parsed.kenhojoBasicFourHash)).toEqual([
         0x87, 0x65, 0x43, 0x21,
       ]);
-      expect(Array.from((parsed as any).thisSignature)).toEqual([
+      expect(Array.from(parsed.thisSignature)).toEqual([
         0xab, 0xcd, 0xef, 0x01,
       ]);
     });
@@ -351,17 +351,17 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should maintain data integrity including binary data
-      expect((parsed as any).offsets).toEqual([100, 200]);
-      expect((parsed as any).birth).toBe("19900515");
-      expect((parsed as any).gender).toBe("2");
-      expect((parsed as any).publicKey).toBeDefined();
-      expect(Array.from((parsed as any).namePng.slice(0, 4))).toEqual([
+      expect(parsed.offsets).toEqual([100, 200]);
+      expect(parsed.birth).toBe("19900515");
+      expect(parsed.gender).toBe("2");
+      expect(parsed.publicKey).toBeDefined();
+      expect(Array.from(parsed.namePng.slice(0, 4))).toEqual([
         0x89, 0x50, 0x4e, 0x47,
       ]); // PNG signature
-      expect(Array.from((parsed as any).faceJp2.slice(4, 8))).toEqual([
+      expect(Array.from(parsed.faceJp2.slice(4, 8))).toEqual([
         0x6a, 0x50, 0x20, 0x20,
       ]); // JP2 signature
-      expect((parsed as any).expire).toBe("20350331");
+      expect(parsed.expire).toBe("20350331");
     });
 
     test("should work with MynaCard KenkakuMyNumber schema", () => {
@@ -437,7 +437,7 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
         // Then: Should parse my number structure
         expect(parsed).toHaveProperty("myNumberPng");
         expect(parsed).toHaveProperty("thisSignature");
-        expect(Array.from((parsed as any).myNumberPng.slice(0, 8))).toEqual([
+        expect(Array.from(parsed.myNumberPng.slice(0, 8))).toEqual([
           0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
         ]);
       } catch (error) {
@@ -461,18 +461,18 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const buildSchema = BuilderSchema.constructed(
         "dataset",
         [
-          BuilderSchema.primitive<string, number>("id", Encoders.singleByte, {
+          BuilderSchema.primitive("id", Encoders.singleByte, {
             tagNumber: 1,
           }),
-          BuilderSchema.primitive<string, string>("name", Encoders.string, {
+          BuilderSchema.primitive("name", Encoders.string, {
             tagNumber: 2,
           }),
-          BuilderSchema.primitive<string, Uint8Array>(
+          BuilderSchema.primitive(
             "data",
-            (data) => data.buffer as ArrayBuffer,
+            (data: Uint8Array) => data.buffer as ArrayBuffer,
             { tagNumber: 3 },
           ),
-          BuilderSchema.primitive<string, boolean>("active", Encoders.boolean, {
+          BuilderSchema.primitive("active", Encoders.boolean, {
             tagNumber: 4,
           }),
         ],
@@ -539,17 +539,17 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const buildSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<keyof PersonData, string>(
+          BuilderSchema.primitive(
             "name",
             Encoders.string,
             { tagNumber: 1 },
           ),
-          BuilderSchema.primitive<keyof PersonData, number>(
+          BuilderSchema.primitive(
             "age",
             Encoders.singleByte,
             { tagNumber: 2 },
           ),
-          BuilderSchema.primitive<keyof PersonData, string>(
+          BuilderSchema.primitive(
             "email",
             Encoders.string,
             { tagNumber: 3 },

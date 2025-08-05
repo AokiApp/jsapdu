@@ -133,19 +133,19 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const encodingSchema = BuilderSchema.constructed(
         "compatible",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "text",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             { tagNumber: 12 },
           ),
-          BuilderSchema.primitive<string, number>(
+          BuilderSchema.primitive(
             "number",
-            (data) => TestData.createBuffer([data]),
+            (data: number) => TestData.createBuffer([data]),
             { tagNumber: 2 },
           ),
-          BuilderSchema.primitive<string, boolean>(
+          BuilderSchema.primitive(
             "flag",
-            (data) => TestData.createBuffer([data ? 0xff : 0x00]),
+            (data: boolean) => TestData.createBuffer([data ? 0xff : 0x00]),
             { tagNumber: 1 },
           ),
         ],
@@ -188,16 +188,16 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should decode correctly
-      expect((decoded as any).text).toBe("Cross-package test");
-      expect((decoded as any).number).toBe(123);
-      expect((decoded as any).flag).toBe(true);
+      expect(decoded.text).toBe("Cross-package test");
+      expect(decoded.number).toBe(123);
+      expect(decoded.flag).toBe(true);
     });
 
     test("should handle async operations across package boundaries", async () => {
       // Given: Schemas with async operations
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "asyncData",
-        async (data) => {
+        async (data: string) => {
           await new Promise((resolve) => setTimeout(resolve, 1));
           return TestData.createStringBuffer(data);
         },
@@ -237,18 +237,18 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
         },
       );
 
-      const correctEncodingSchema = BuilderSchema.primitive<string, string>(
+      const correctEncodingSchema = BuilderSchema.primitive(
         "strict",
-        (data) => TestData.createStringBuffer(data),
+        (data: string) => TestData.createStringBuffer(data),
         {
           tagClass: TagClass.Private,
           tagNumber: 42,
         },
       );
 
-      const wrongEncodingSchema = BuilderSchema.primitive<string, string>(
+      const wrongEncodingSchema = BuilderSchema.primitive(
         "wrong",
-        (data) => TestData.createStringBuffer(data),
+        (data: string) => TestData.createStringBuffer(data),
         {
           tagClass: TagClass.Universal,
           tagNumber: 12,
@@ -346,11 +346,11 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse using production MynaCard schema
-      expect((parsed as any).offsets).toEqual([10, 20, 30, 40, 50]);
-      expect((parsed as any).name).toBe("外部システム太郎");
-      expect((parsed as any).address).toBe("神奈川県横浜市西区1-1-1");
-      expect((parsed as any).birth).toBe("19801125");
-      expect((parsed as any).gender).toBe("1");
+      expect(parsed.offsets).toEqual([10, 20, 30, 40, 50]);
+      expect(parsed.name).toBe("外部システム太郎");
+      expect(parsed.address).toBe("神奈川県横浜市西区1-1-1");
+      expect(parsed.birth).toBe("19801125");
+      expect(parsed.gender).toBe("1");
     });
 
     test("should handle complex MynaCard signature structures", () => {
@@ -415,13 +415,13 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse signature correctly
-      expect(Array.from((parsed as any).kenhojoMyNumberHash)).toEqual(
+      expect(Array.from(parsed.kenhojoMyNumberHash)).toEqual(
         Array.from(signatureData.kenhojoMyNumberHash),
       );
-      expect(Array.from((parsed as any).kenhojoBasicFourHash)).toEqual(
+      expect(Array.from(parsed.kenhojoBasicFourHash)).toEqual(
         Array.from(signatureData.kenhojoBasicFourHash),
       );
-      expect(Array.from((parsed as any).thisSignature)).toEqual(
+      expect(Array.from(parsed.thisSignature)).toEqual(
         Array.from(signatureData.thisSignature),
       );
     });
@@ -460,9 +460,9 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should provide meaningful error messages for schema mismatches", () => {
       // Given: Incompatible schemas
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "mismatch",
-        (data) => TestData.createStringBuffer(data),
+        (data: string) => TestData.createStringBuffer(data),
         {
           tagClass: TagClass.Application,
           tagNumber: 1,
@@ -490,9 +490,9 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
     test("should handle empty and minimal TLV structures", () => {
       // Given: Minimal TLV structure
-      const minimalSchema = BuilderSchema.primitive<string, ArrayBuffer>(
+      const minimalSchema = BuilderSchema.primitive(
         "minimal",
-        () => new ArrayBuffer(0),
+        (): ArrayBuffer => new ArrayBuffer(0),
         { tagNumber: 5 },
       );
 
@@ -521,9 +521,9 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
       const testSchema = ParserSchema.primitive("perf", Decoders.string, {
         tagNumber: 12,
       });
-      const buildSchema = BuilderSchema.primitive<string, string>(
+      const buildSchema = BuilderSchema.primitive(
         "perf",
-        (data) => TestData.createStringBuffer(data),
+        (data: string) => TestData.createStringBuffer(data),
         { tagNumber: 12 },
       );
 
@@ -601,9 +601,9 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
         const parsed = parser.parse(encoded);
         totalParsed +=
-          (parsed as any).data1.length +
-          (parsed as any).data2.length +
-          (parsed as any).data3.length;
+          parsed.data1.length +
+          parsed.data2.length +
+          parsed.data3.length;
       }
 
       // Then: Should handle memory operations without issues

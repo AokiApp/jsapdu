@@ -178,11 +178,11 @@ describe("MynaCard Schema Integration Tests - Builder to Parser", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).offsets).toEqual([10, 20, 30, 40]);
-      expect((decoded as any).name).toBe("田中太郎");
-      expect((decoded as any).address).toBe("東京都渋谷区1-2-3");
-      expect((decoded as any).birth).toBe("19850401");
-      expect((decoded as any).gender).toBe("1");
+      expect(decoded.offsets).toEqual([10, 20, 30, 40]);
+      expect(decoded.name).toBe("田中太郎");
+      expect(decoded.address).toBe("東京都渋谷区1-2-3");
+      expect(decoded.birth).toBe("19850401");
+      expect(decoded.gender).toBe("1");
     });
   });
 
@@ -388,19 +388,19 @@ describe("MynaCard Schema Integration Tests - Builder to Parser", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).offsets).toEqual([100, 200, 300, 400, 500]);
-      expect((decoded as any).birth).toBe("19900515");
-      expect((decoded as any).gender).toBe("2");
-      expect(Array.from((decoded as any).namePng)).toEqual(
+      expect(decoded.offsets).toEqual([100, 200, 300, 400, 500]);
+      expect(decoded.birth).toBe("19900515");
+      expect(decoded.gender).toBe("2");
+      expect(Array.from(decoded.namePng)).toEqual(
         Array.from(mockPngHeader),
       );
-      expect(Array.from((decoded as any).addressPng)).toEqual(
+      expect(Array.from(decoded.addressPng)).toEqual(
         Array.from(mockPngHeader),
       );
-      expect(Array.from((decoded as any).faceJp2)).toEqual(
+      expect(Array.from(decoded.faceJp2)).toEqual(
         Array.from(mockJp2Header),
       );
-      expect((decoded as any).expire).toBe("20350331");
+      expect(decoded.expire).toBe("20350331");
     });
   });
 
@@ -509,11 +509,11 @@ describe("MynaCard Schema Integration Tests - Builder to Parser", () => {
       const decoded = await parser.parse(encoded, { async: true });
 
       // Then: Should roundtrip correctly (checking structure, not exact key match due to crypto complexity)
-      expect((decoded as any).contents).toHaveProperty("issuer");
-      expect((decoded as any).contents).toHaveProperty("subject");
-      expect((decoded as any).contents).toHaveProperty("public_key");
-      expect((decoded as any).contents.public_key).toBeInstanceOf(CryptoKey);
-      expect(Array.from((decoded as any).thisSignature)).toEqual([
+      expect(decoded.contents).toHaveProperty("issuer");
+      expect(decoded.contents).toHaveProperty("subject");
+      expect(decoded.contents).toHaveProperty("public_key");
+      expect(decoded.contents.public_key).toBeInstanceOf(CryptoKey);
+      expect(Array.from(decoded.thisSignature)).toEqual([
         0xaa, 0xbb, 0xcc, 0xdd,
       ]);
     });
@@ -611,9 +611,9 @@ describe("MynaCard Schema Integration Tests - Builder to Parser", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).basicFour.name).toBe("鈴木花子");
-      expect((decoded as any).basicFour.birth).toBe("19950823");
-      expect(Array.from((decoded as any).signature.hash)).toEqual([
+      expect(decoded.basicFour.name).toBe("鈴木花子");
+      expect(decoded.basicFour.birth).toBe("19950823");
+      expect(Array.from(decoded.signature.hash)).toEqual([
         0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
       ]);
     });

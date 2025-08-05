@@ -160,7 +160,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
   describe("SchemaBuilder -> SchemaParser roundtrip", () => {
     test("should encode and decode simple primitive with string encoding/decoding", () => {
       // Given: Primitive schema for both encoding and decoding
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "message",
         Encoders.string,
         CommonTags.UTF8_STRING,
@@ -186,7 +186,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
 
     test("should encode and decode primitive with number encoding/decoding", () => {
       // Given: Schema for number encoding/decoding
-      const encodingSchema = BuilderSchema.primitive<string, number>(
+      const encodingSchema = BuilderSchema.primitive(
         "value",
         Encoders.integer,
         CommonTags.INTEGER,
@@ -223,17 +223,17 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "name",
             Encoders.string,
             CommonTags.UTF8_STRING,
           ),
-          BuilderSchema.primitive<string, number>(
+          BuilderSchema.primitive(
             "age",
             Encoders.singleByte,
             CommonTags.INTEGER,
           ),
-          BuilderSchema.primitive<string, boolean>(
+          BuilderSchema.primitive(
             "active",
             Encoders.boolean,
             CommonTags.BOOLEAN,
@@ -278,9 +278,9 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).name).toBe("Alice");
-      expect((decoded as any).age).toBe(30);
-      expect((decoded as any).active).toBe(true);
+      expect(decoded.name).toBe("Alice");
+      expect(decoded.age).toBe(30);
+      expect(decoded.active).toBe(true);
     });
 
     test("should encode and decode nested SEQUENCE structures", () => {
@@ -288,12 +288,12 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const addressEncodingSchema = BuilderSchema.constructed(
         "address",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "street",
             Encoders.string,
             CommonTags.UTF8_STRING,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "city",
             Encoders.string,
             CommonTags.UTF8_STRING,
@@ -305,7 +305,7 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const personEncodingSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "name",
             Encoders.string,
             CommonTags.UTF8_STRING,
@@ -354,16 +354,16 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
           street: "123 Main St",
           city: "Anytown",
         },
-      } as any;
+      };
 
       // When: Encoding then decoding
       const encoded = builder.build(originalData);
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).name).toBe("Bob");
-      expect((decoded as any).address.street).toBe("123 Main St");
-      expect((decoded as any).address.city).toBe("Anytown");
+      expect(decoded.name).toBe("Bob");
+      expect(decoded.address.street).toBe("123 Main St");
+      expect(decoded.address.city).toBe("Anytown");
     });
 
     test("should handle Context-Specific tags in schema roundtrip", () => {
@@ -371,12 +371,12 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "tagged",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "field1",
             Encoders.string,
             CommonTags.CONTEXT_SPECIFIC_0,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "field2",
             Encoders.string,
             CommonTags.CONTEXT_SPECIFIC_1,
@@ -415,8 +415,8 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).field1).toBe("context zero");
-      expect((decoded as any).field2).toBe("context one");
+      expect(decoded.field1).toBe("context zero");
+      expect(decoded.field2).toBe("context one");
     });
 
     test("should handle Application tags in schema roundtrip", () => {
@@ -424,12 +424,12 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "app",
         [
-          BuilderSchema.primitive<string, number>(
+          BuilderSchema.primitive(
             "version",
             Encoders.singleByte,
             CommonTags.APPLICATION_1,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "data",
             Encoders.string,
             CommonTags.APPLICATION_2,
@@ -468,8 +468,8 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect((decoded as any).version).toBe(2);
-      expect((decoded as any).data).toBe("application data");
+      expect(decoded.version).toBe(2);
+      expect(decoded.data).toBe("application data");
     });
 
     test("should handle Private tags in schema roundtrip", () => {
@@ -477,12 +477,12 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "private",
         [
-          BuilderSchema.primitive<string, Uint8Array>(
+          BuilderSchema.primitive(
             "data1",
-            (data) => data.buffer as ArrayBuffer,
+            (data: Uint8Array) => data.buffer as ArrayBuffer,
             CommonTags.PRIVATE_0,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "data2",
             Encoders.string,
             CommonTags.PRIVATE_1,
@@ -527,15 +527,15 @@ describe("TLV Builder -> Parser Integration - Encode then Decode", () => {
       const decoded = parser.parse(encoded);
 
       // Then: Should roundtrip correctly
-      expect(Array.from((decoded as any).data1)).toEqual([0x01, 0x02, 0x03]);
-      expect((decoded as any).data2).toBe("private string");
+      expect(Array.from(decoded.data1)).toEqual([0x01, 0x02, 0x03]);
+      expect(decoded.data2).toBe("private string");
     });
   });
 
   describe("Async schema roundtrip", () => {
     test("should handle async encoding and decoding", async () => {
       // Given: Schema with async encoding and decoding
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "asyncField",
         Encoders.asyncString,
         CommonTags.UTF8_STRING,

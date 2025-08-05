@@ -198,7 +198,7 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
         CommonTags.UTF8_STRING,
       );
 
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "message",
         (data) => TestData.createStringBuffer(data),
         CommonTags.UTF8_STRING,
@@ -236,7 +236,7 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
         CommonTags.INTEGER,
       );
 
-      const encodingSchema = BuilderSchema.primitive<string, number>(
+      const encodingSchema = BuilderSchema.primitive(
         "value",
         (num) => {
           if (num === 0) return TestData.createBuffer([0x00]);
@@ -298,9 +298,9 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "name",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.UTF8_STRING,
           ),
           BuilderSchema.primitive<string, number>(
@@ -382,14 +382,14 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const addressEncodingSchema = BuilderSchema.constructed(
         "address",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "street",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.UTF8_STRING,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "city",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.UTF8_STRING,
           ),
         ],
@@ -399,9 +399,9 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const personEncodingSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "name",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.UTF8_STRING,
           ),
           addressEncodingSchema,
@@ -455,14 +455,14 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "tagged",
         [
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "field1",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.CONTEXT_SPECIFIC_0,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "field2",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.CONTEXT_SPECIFIC_1,
           ),
         ],
@@ -520,14 +520,14 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "app",
         [
-          BuilderSchema.primitive<string, number>(
+          BuilderSchema.primitive(
             "version",
-            (data) => TestData.createBuffer([data]),
+            (data: number) => TestData.createBuffer([data]),
             CommonTags.APPLICATION_1,
           ),
-          BuilderSchema.primitive<string, string>(
+          BuilderSchema.primitive(
             "data",
-            (data) => TestData.createStringBuffer(data),
+            (data: string) => TestData.createStringBuffer(data),
             CommonTags.APPLICATION_2,
           ),
         ],
@@ -580,9 +580,9 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
       const encodingSchema = BuilderSchema.constructed(
         "private",
         [
-          BuilderSchema.primitive<Uint8Array, Uint8Array>(
+          BuilderSchema.primitive(
             "data1",
-            (data) => data.buffer,
+            (data: Uint8Array) => data.buffer as ArrayBuffer,
             CommonTags.PRIVATE_0,
           ),
           BuilderSchema.primitive<string, string>(
@@ -625,7 +625,7 @@ describe("TLV Parser -> Builder Integration - Decode then Encode", () => {
         CommonTags.UTF8_STRING,
       );
 
-      const encodingSchema = BuilderSchema.primitive<string, string>(
+      const encodingSchema = BuilderSchema.primitive(
         "asyncField",
         async (data) => {
           await new Promise((resolve) => setTimeout(resolve, 1));
