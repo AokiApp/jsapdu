@@ -54,7 +54,7 @@ type ParsedResult<S extends TLVSchema> =
 function isConstructedSchema(
   schema: TLVSchema,
 ): schema is ConstructedTLVSchema<readonly TLVSchema[]> {
-  return "fields" in schema;
+  return "fields" in schema && Array.isArray((schema as any).fields);
 }
 
 /**
@@ -167,7 +167,16 @@ export class SchemaParser<S extends TLVSchema> {
       return result as ParsedResult<T>;
     } else {
       if (schema.decode) {
-        return schema.decode(value) as ParsedResult<T>;
+        const decoded = schema.decode(value);
+        if (
+          decoded instanceof Promise ||
+          (decoded as any)?.then instanceof Function
+        ) {
+          throw new Error(
+            `Asynchronous decoder used in synchronous parse for field: ${schema.name}`,
+          );
+        }
+        return decoded as ParsedResult<T>;
       }
       return value as ParsedResult<T>;
     }
