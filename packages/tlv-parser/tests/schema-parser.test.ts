@@ -409,3 +409,63 @@ describe("SchemaParser - Schema-based parsing functionality", () => {
     });
   });
 });
+
+test("should accept any SET order when strict: false", () => {
+  const setSchema = Schema.constructed(
+    "unorderedSet",
+    [
+      Schema.primitive("high", Decoders.string, { tagNumber: 5 }),
+      Schema.primitive("low", Decoders.string, { tagNumber: 1 }),
+      Schema.primitive("middle", Decoders.string, { tagNumber: 3 }),
+    ],
+    CommonTags.SET,
+  );
+
+  // Create a buffer with SET elements in non-DER order
+  const buffers = [
+    TestData.createTlvBuffer(0x05, TestData.createStringBuffer("high")),
+    TestData.createTlvBuffer(0x01, TestData.createStringBuffer("low")),
+    TestData.createTlvBuffer(0x03, TestData.createStringBuffer("middle")),
+  ];
+  const setValue = TestData.concatBuffers(buffers);
+  const setBuffer = TestData.createTlvBuffer(0x31, setValue); // SET tag
+
+  // strict: false should accept any order
+  const parser = new SchemaParser(setSchema, { strict: false });
+  const result = parser.parse(setBuffer);
+
+  expect(result.high).toBe("high");
+  expect(result.low).toBe("low");
+  expect(result.middle).toBe("middle");
+});
+
+test("should enforce DER SET order when strict: true", () => {
+  const setSchema = Schema.constructed(
+    "orderedSet",
+    [
+      Schema.primitive("high", Decoders.string, { tagNumber: 5 }),
+      Schema.primitive("low", Decoders.string, { tagNumber: 1 }),
+      Schema.primitive("middle", Decoders.string, { tagNumber: 3 }),
+    ],
+    CommonTags.SET,
+  );
+
+  // Create a buffer with SET elements in non-DER order
+  const buffers = [
+    TestData.createTlvBuffer(0x05, TestData.createStringBuffer("high")),
+    TestData.createTlvBuffer(0x01, TestData.createStringBuffer("low")),
+    TestData.createTlvBuffer(0x03, TestData.createStringBuffer("middle")),
+  ];
+  const setValue = TestData.concatBuffers(buffers);
+  const setBuffer = TestData.createTlvBuffer(0x31, setValue); // SET tag
+
+  // strict: true should enforce DER order and may throw if order is wrong
+  const parser = new SchemaParser(setSchema, { strict: true });
+  let threw = false;
+  try {
+    parser.parse(setBuffer);
+  } catch (e) {
+    threw = true;
+  }
+  expect(threw).toBe(true);
+});

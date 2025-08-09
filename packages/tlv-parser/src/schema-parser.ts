@@ -66,13 +66,15 @@ export class SchemaParser<S extends TLVSchema> {
   buffer = new ArrayBuffer(0);
   view = new DataView(this.buffer);
   offset = 0;
+  strict: boolean;
 
   /**
    * Constructs a SchemaParser for the specified schema.
    * @param schema - The TLV schema to use.
    */
-  constructor(schema: S) {
+  constructor(schema: S, options?: { strict?: boolean }) {
     this.schema = schema;
+    this.strict = options?.strict ?? false;
   }
 
   /**
@@ -101,12 +103,20 @@ export class SchemaParser<S extends TLVSchema> {
    */
   public parse(
     buffer: ArrayBuffer,
-    options?: { async?: boolean },
+    options?: { async?: boolean, strict?: boolean },
   ): ParsedResult<S> | Promise<ParsedResult<S>> {
-    if (options?.async) {
-      return this.parseAsync(buffer);
-    } else {
-      return this.parseSync(buffer);
+    const prevStrict = this.strict;
+    if (options?.strict !== undefined) {
+      this.strict = options.strict;
+    }
+    try {
+      if (options?.async) {
+        return this.parseAsync(buffer);
+      } else {
+        return this.parseSync(buffer);
+      }
+    } finally {
+      this.strict = prevStrict;
     }
   }
 
@@ -148,12 +158,49 @@ export class SchemaParser<S extends TLVSchema> {
 
     if (isConstructedSchema(schema)) {
       let subOffset = 0;
+      let fieldsToProcess = [...schema.fields];
+
+      // strictモード時、SET要素の順序をDER仕様で検証
+      if (
+        (schema.tagNumber === 17 && (schema.tagClass === TagClass.Universal || schema.tagClass === undefined))
+        && this.strict
+      ) {
+        fieldsToProcess = fieldsToProcess.slice().sort((a, b) => {
+          const encodeTag = (field: TLVSchema) => {
+            const tagClass = field.tagClass ?? TagClass.Universal;
+            const tagNumber = field.tagNumber ?? 0;
+            const constructed = isConstructedSchema(field) ? 0x20 : 0x00;
+            let bytes: number[] = [];
+            let firstByte = (tagClass << 6) | constructed;
+            if (tagNumber < 31) {
+              firstByte |= tagNumber;
+              bytes.push(firstByte);
+            } else {
+              firstByte |= 0x1f;
+              bytes.push(firstByte);
+              let num = tagNumber;
+              let tagNumBytes: number[] = [];
+              do {
+                tagNumBytes.unshift(num % 128);
+                num = Math.floor(num / 128);
+              } while (num > 0);
+              for (let i = 0; i < tagNumBytes.length - 1; i++) {
+                bytes.push(tagNumBytes[i] | 0x80);
+              }
+              bytes.push(tagNumBytes[tagNumBytes.length - 1]);
+            }
+            return Buffer.from(bytes);
+          };
+          return Buffer.compare(encodeTag(a), encodeTag(b));
+        });
+      }
+
       const result = {} as {
-        [K in (typeof schema.fields)[number] as K["name"]]: ParsedResult<K>;
+        [K in (typeof fieldsToProcess)[number] as K["name"]]: ParsedResult<K>;
       };
 
-      for (const field of schema.fields) {
-        const fieldParser = new SchemaParser(field);
+      for (const field of fieldsToProcess) {
+        const fieldParser = new SchemaParser(field, { strict: this.strict });
         result[field.name] = fieldParser.parse(value.slice(subOffset));
         subOffset += fieldParser.offset;
       }

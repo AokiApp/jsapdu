@@ -63,13 +63,16 @@ function isConstructedSchema<F extends readonly TLVSchema[]>(
  */
 export class SchemaBuilder<S extends TLVSchema> {
   schema: S;
+  strict: boolean;
+
 
   /**
    * Constructs a SchemaBuilder for the specified schema.
    * @param schema - The TLV schema to use.
    */
-  constructor(schema: S) {
+  constructor(schema: S, options?: { strict?: boolean }) {
     this.schema = schema;
+    this.strict = options?.strict ?? true;
   }
 
   /**
@@ -98,12 +101,20 @@ export class SchemaBuilder<S extends TLVSchema> {
    */
   public build(
     data: BuildData<S>,
-    options?: { async?: boolean },
+    options?: { async?: boolean, strict?: boolean },
   ): ArrayBuffer | Promise<ArrayBuffer> {
-    if (options?.async) {
-      return this.buildAsync(data);
-    } else {
-      return this.buildSync(data);
+    const prevStrict = this.strict;
+    if (options?.strict !== undefined) {
+      this.strict = options.strict;
+    }
+    try {
+      if (options?.async) {
+        return this.buildAsync(data);
+      } else {
+        return this.buildSync(data);
+      }
+    } finally {
+      this.strict = prevStrict;
     }
   }
 
@@ -136,17 +147,41 @@ export class SchemaBuilder<S extends TLVSchema> {
     data: BuildData<T>,
   ): ArrayBuffer {
     if (isConstructedSchema(schema)) {
-      const fieldsToProcess = [...schema.fields];
+      let fieldsToProcess = [...schema.fields];
 
-      // For SET, sort fields by tag as required by DER
+      // For SET, sort fields by tag as required by DER strict mode
       if (
-        (schema.tagNumber === 17 && schema.tagClass === TagClass.Universal) ||
-        (schema.tagNumber === 17 && schema.tagClass === undefined)
+        (schema.tagNumber === 17 && (schema.tagClass === TagClass.Universal || schema.tagClass === undefined))
+        && this.strict
       ) {
-        fieldsToProcess.sort((a, b) => {
-          const tagA = a.tagNumber ?? 0;
-          const tagB = b.tagNumber ?? 0;
-          return tagA - tagB;
+        fieldsToProcess = fieldsToProcess.slice().sort((a, b) => {
+          // Encode tag bytes for comparison
+          const encodeTag = (field: TLVSchema) => {
+            const tagClass = field.tagClass ?? TagClass.Universal;
+            const tagNumber = field.tagNumber ?? 0;
+            const constructed = isConstructedSchema(field) ? 0x20 : 0x00;
+            let bytes: number[] = [];
+            let firstByte = (tagClass << 6) | constructed;
+            if (tagNumber < 31) {
+              firstByte |= tagNumber;
+              bytes.push(firstByte);
+            } else {
+              firstByte |= 0x1f;
+              bytes.push(firstByte);
+              let num = tagNumber;
+              let tagNumBytes: number[] = [];
+              do {
+                tagNumBytes.unshift(num % 128);
+                num = Math.floor(num / 128);
+              } while (num > 0);
+              for (let i = 0; i < tagNumBytes.length - 1; i++) {
+                bytes.push(tagNumBytes[i] | 0x80);
+              }
+              bytes.push(tagNumBytes[tagNumBytes.length - 1]);
+            }
+            return Buffer.from(bytes);
+          };
+          return Buffer.compare(encodeTag(a), encodeTag(b));
         });
       }
 
@@ -161,6 +196,7 @@ export class SchemaBuilder<S extends TLVSchema> {
         return this.buildWithSchemaSync(fieldSchema, fieldData as BuildData<typeof fieldSchema>);
       });
 
+      // Avoid unnecessary ArrayBuffer copies
       const totalLength = childrenBuffers.reduce(
         (sum, buf) => sum + buf.byteLength,
         0,
@@ -168,8 +204,9 @@ export class SchemaBuilder<S extends TLVSchema> {
       const childrenData = new Uint8Array(totalLength);
       let offset = 0;
       for (const buffer of childrenBuffers) {
-        childrenData.set(new Uint8Array(buffer), offset);
-        offset += buffer.byteLength;
+        const bufView = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+        childrenData.set(bufView, offset);
+        offset += bufView.byteLength;
       }
 
       return BasicTLVBuilder.build({
