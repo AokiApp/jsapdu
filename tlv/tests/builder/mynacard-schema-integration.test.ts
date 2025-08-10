@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { SchemaBuilder, Schema as BuilderSchema, TagClass } from "../../src/builder";
+import {
+  SchemaBuilder,
+  Schema as BuilderSchema,
+  TagClass,
+} from "../../src/builder";
 import { SchemaParser, Schema as ParserSchema } from "@aokiapp/tlv-parser";
 import { TestData, Encoders } from "./test-helpers";
 
@@ -391,15 +395,9 @@ describe("MynaCard Schema Integration Tests - Builder to Parser", () => {
       expect(decoded.offsets).toEqual([100, 200, 300, 400, 500]);
       expect(decoded.birth).toBe("19900515");
       expect(decoded.gender).toBe("2");
-      expect(Array.from(decoded.namePng)).toEqual(
-        Array.from(mockPngHeader),
-      );
-      expect(Array.from(decoded.addressPng)).toEqual(
-        Array.from(mockPngHeader),
-      );
-      expect(Array.from(decoded.faceJp2)).toEqual(
-        Array.from(mockJp2Header),
-      );
+      expect(Array.from(decoded.namePng)).toEqual(Array.from(mockPngHeader));
+      expect(Array.from(decoded.addressPng)).toEqual(Array.from(mockPngHeader));
+      expect(Array.from(decoded.faceJp2)).toEqual(Array.from(mockJp2Header));
       expect(decoded.expire).toBe("20350331");
     });
   });
@@ -631,7 +629,7 @@ describe("Encode-Decode Symmetry Tests", () => {
         hash: "SHA-256",
       },
       true,
-      ["sign", "verify"]
+      ["sign", "verify"],
     );
 
     const originalKey = keyPair.publicKey;
@@ -643,20 +641,20 @@ describe("Encode-Decode Symmetry Tests", () => {
     // Then: Both operations should succeed and produce valid CryptoKey objects
     expect(originalKey).toBeInstanceOf(CryptoKey);
     expect(decoded).toBeInstanceOf(CryptoKey);
-    
+
     // Verify basic key properties
     const originalJwk = await crypto.subtle.exportKey("jwk", originalKey);
     const decodedJwk = await crypto.subtle.exportKey("jwk", decoded);
-    
+
     expect(decodedJwk.kty).toBe("RSA");
     expect(decodedJwk.e).toBe("AQAB"); // Standard RSA exponent
     expect(typeof decodedJwk.n).toBe("string");
     expect(decodedJwk.n.length).toBeGreaterThan(0);
-    
+
     // Verify the encoded format is valid TLV
     expect(encoded).toBeInstanceOf(ArrayBuffer);
     expect(encoded.byteLength).toBeGreaterThan(0);
-    
+
     // Basic TLV structure check - should start with INTEGER tags
     const bytes = new Uint8Array(encoded);
     expect(bytes[0]).toBe(0x02); // First INTEGER tag for 'e'
@@ -738,12 +736,12 @@ describe("Encode-Decode Symmetry Tests", () => {
     // Given: Binary signature data
     const testData = {
       kenhojoMyNumberHash: new Uint8Array([
-        0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+        0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44,
+        0x55, 0x66, 0x77, 0x88,
       ]),
       kenhojoBasicFourHash: new Uint8Array([
-        0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
-        0xf0, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12,
+        0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0xf0, 0xde, 0xbc, 0x9a,
+        0x78, 0x56, 0x34, 0x12,
       ]),
       thisSignature: new Uint8Array([
         0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11,
@@ -759,7 +757,7 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x31,
-          }
+          },
         ),
         BuilderSchema.primitive(
           "kenhojoBasicFourHash",
@@ -767,7 +765,7 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x32,
-          }
+          },
         ),
         BuilderSchema.primitive(
           "thisSignature",
@@ -775,13 +773,13 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x33,
-          }
+          },
         ),
       ],
       {
         tagClass: TagClass.Private,
         tagNumber: 0x30,
-      }
+      },
     );
 
     const decodingSchema = ParserSchema.constructed(
@@ -793,7 +791,7 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x31,
-          }
+          },
         ),
         ParserSchema.primitive(
           "kenhojoBasicFourHash",
@@ -801,7 +799,7 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x32,
-          }
+          },
         ),
         ParserSchema.primitive(
           "thisSignature",
@@ -809,13 +807,13 @@ describe("Encode-Decode Symmetry Tests", () => {
           {
             tagClass: TagClass.Private,
             tagNumber: 0x33,
-          }
+          },
         ),
       ],
       {
         tagClass: TagClass.Private,
         tagNumber: 0x30,
-      }
+      },
     );
 
     const builder = new SchemaBuilder(encodingSchema);
@@ -827,13 +825,13 @@ describe("Encode-Decode Symmetry Tests", () => {
 
     // Then: Binary data should be perfectly preserved
     expect(Array.from(decoded.kenhojoMyNumberHash)).toEqual(
-      Array.from(testData.kenhojoMyNumberHash)
+      Array.from(testData.kenhojoMyNumberHash),
     );
     expect(Array.from(decoded.kenhojoBasicFourHash)).toEqual(
-      Array.from(testData.kenhojoBasicFourHash)
+      Array.from(testData.kenhojoBasicFourHash),
     );
     expect(Array.from(decoded.thisSignature)).toEqual(
-      Array.from(testData.thisSignature)
+      Array.from(testData.thisSignature),
     );
   });
 
@@ -842,25 +840,25 @@ describe("Encode-Decode Symmetry Tests", () => {
     const asyncEncodingSchema = BuilderSchema.primitive(
       "async",
       async (data: string) => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return MynacardEncoders.encodeText(data);
       },
       {
         tagClass: TagClass.ContextSpecific,
         tagNumber: 0,
-      }
+      },
     );
 
     const asyncDecodingSchema = ParserSchema.primitive(
       "async",
       async (buffer: ArrayBuffer) => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return MynacardDecoders.decodeText(buffer);
       },
       {
         tagClass: TagClass.ContextSpecific,
         tagNumber: 0,
-      }
+      },
     );
 
     const builder = new SchemaBuilder(asyncEncodingSchema);

@@ -539,21 +539,9 @@ describe("Cross-Package Integration Tests - Full Interoperability", () => {
       const buildSchema = BuilderSchema.constructed(
         "person",
         [
-          BuilderSchema.primitive(
-            "name",
-            Encoders.string,
-            { tagNumber: 1 },
-          ),
-          BuilderSchema.primitive(
-            "age",
-            Encoders.singleByte,
-            { tagNumber: 2 },
-          ),
-          BuilderSchema.primitive(
-            "email",
-            Encoders.string,
-            { tagNumber: 3 },
-          ),
+          BuilderSchema.primitive("name", Encoders.string, { tagNumber: 1 }),
+          BuilderSchema.primitive("age", Encoders.singleByte, { tagNumber: 2 }),
+          BuilderSchema.primitive("email", Encoders.string, { tagNumber: 3 }),
         ],
         { tagNumber: 16 },
       );

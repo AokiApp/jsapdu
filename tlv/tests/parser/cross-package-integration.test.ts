@@ -601,9 +601,7 @@ describe("Cross-Package Integration Tests - Parser-Centric View", () => {
 
         const parsed = parser.parse(encoded);
         totalParsed +=
-          parsed.data1.length +
-          parsed.data2.length +
-          parsed.data3.length;
+          parsed.data1.length + parsed.data2.length + parsed.data3.length;
       }
 
       // Then: Should handle memory operations without issues

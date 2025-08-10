@@ -54,7 +54,12 @@ type ParsedResult<S extends TLVSchema> =
 function isConstructedSchema(
   schema: TLVSchema,
 ): schema is ConstructedTLVSchema<readonly TLVSchema[]> {
-  return "fields" in schema && Array.isArray((schema as unknown as ConstructedTLVSchema<readonly TLVSchema[]>).fields);
+  return (
+    "fields" in schema &&
+    Array.isArray(
+      (schema as unknown as ConstructedTLVSchema<readonly TLVSchema[]>).fields,
+    )
+  );
 }
 
 /**

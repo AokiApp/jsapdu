@@ -54,7 +54,10 @@ export type BuildData<S extends TLVSchema> =
 function isConstructedSchema<F extends readonly TLVSchema[]>(
   schema: TLVSchema,
 ): schema is ConstructedTLVSchema<F> {
-  return "fields" in schema && Array.isArray((schema as ConstructedTLVSchema<F>).fields);
+  return (
+    "fields" in schema &&
+    Array.isArray((schema as ConstructedTLVSchema<F>).fields)
+  );
 }
 
 /**
@@ -100,7 +103,7 @@ export class SchemaBuilder<S extends TLVSchema> {
    */
   public build(
     data: BuildData<S>,
-    options?: { async?: boolean, strict?: boolean },
+    options?: { async?: boolean; strict?: boolean },
   ): ArrayBuffer | Promise<ArrayBuffer> {
     const prevStrict = this.strict;
     if (options?.strict !== undefined) {
@@ -150,8 +153,10 @@ export class SchemaBuilder<S extends TLVSchema> {
 
       // For SET, sort fields by tag as required by DER strict mode
       if (
-        (schema.tagNumber === 17 && (schema.tagClass === TagClass.Universal || schema.tagClass === undefined))
-        && this.strict
+        schema.tagNumber === 17 &&
+        (schema.tagClass === TagClass.Universal ||
+          schema.tagClass === undefined) &&
+        this.strict
       ) {
         fieldsToProcess = fieldsToProcess.slice().sort((a, b) => {
           // Encode tag bytes for comparison
@@ -183,18 +188,18 @@ export class SchemaBuilder<S extends TLVSchema> {
           return compareUint8Arrays(encodeTag(a), encodeTag(b));
         });
 
-/**
- * Compare two Uint8Arrays lexicographically.
- * Returns -1 if a < b, 1 if a > b, 0 if equal.
- */
-function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
-  }
-  if (a.length !== b.length) return a.length < b.length ? -1 : 1;
-  return 0;
-}
+        /**
+         * Compare two Uint8Arrays lexicographically.
+         * Returns -1 if a < b, 1 if a > b, 0 if equal.
+         */
+        function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
+          const len = Math.min(a.length, b.length);
+          for (let i = 0; i < len; i++) {
+            if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+          }
+          if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+          return 0;
+        }
       }
 
       const childrenBuffers = fieldsToProcess.map((fieldSchema) => {
@@ -205,7 +210,10 @@ function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
           throw new Error(`Missing required field: ${fieldName}`);
         }
 
-        return this.buildWithSchemaSync(fieldSchema, fieldData as BuildData<typeof fieldSchema>);
+        return this.buildWithSchemaSync(
+          fieldSchema,
+          fieldData as BuildData<typeof fieldSchema>,
+        );
       });
 
       // Avoid unnecessary ArrayBuffer copies
@@ -216,7 +224,8 @@ function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
       const childrenData = new Uint8Array(totalLength);
       let offset = 0;
       for (const buffer of childrenBuffers) {
-        const bufView = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+        const bufView =
+          buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
         childrenData.set(bufView, offset);
         offset += bufView.byteLength;
       }
@@ -297,7 +306,10 @@ function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
           if (fieldData === undefined) {
             throw new Error(`Missing required field: ${fieldName}`);
           }
-          return this.buildWithSchemaAsync(fieldSchema, fieldData as BuildData<typeof fieldSchema>);
+          return this.buildWithSchemaAsync(
+            fieldSchema,
+            fieldData as BuildData<typeof fieldSchema>,
+          );
         }),
       );
 

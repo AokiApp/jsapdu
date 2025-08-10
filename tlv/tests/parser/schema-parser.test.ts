@@ -182,14 +182,8 @@ describe("SchemaParser - Schema-based parsing functionality", () => {
       // Then: Should return nested structured object
       ExpectHelpers.expectObjectStructure(result, ["name", "address"]);
       ExpectHelpers.expectStringValue(result.name, "Bob");
-      ExpectHelpers.expectObjectStructure(result.address, [
-        "street",
-        "city",
-      ]);
-      ExpectHelpers.expectStringValue(
-        result.address.street,
-        "123 Main St",
-      );
+      ExpectHelpers.expectObjectStructure(result.address, ["street", "city"]);
+      ExpectHelpers.expectStringValue(result.address.street, "123 Main St");
       ExpectHelpers.expectStringValue(result.address.city, "Anytown");
     });
   });

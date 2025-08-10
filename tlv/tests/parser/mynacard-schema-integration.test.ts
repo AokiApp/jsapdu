@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { SchemaParser, Schema as ParserSchema, TagClass } from "../../src/parser";
+import {
+  SchemaParser,
+  Schema as ParserSchema,
+  TagClass,
+} from "../../src/parser";
 import { SchemaBuilder, Schema as BuilderSchema } from "@aokiapp/tlv-builder";
 import { TestData, Decoders } from "./test-helpers";
 
@@ -41,8 +45,18 @@ const MynacardDecoders = {
       const nBytes = bytes.slice(offset, offset + nLength);
 
       // Convert to base64url for JWK format
-      const eBase64url = arrayBufferToBase64url(eBytes.buffer.slice(eBytes.byteOffset, eBytes.byteOffset + eBytes.byteLength));
-      const nBase64url = arrayBufferToBase64url(nBytes.buffer.slice(nBytes.byteOffset, nBytes.byteOffset + nBytes.byteLength));
+      const eBase64url = arrayBufferToBase64url(
+        eBytes.buffer.slice(
+          eBytes.byteOffset,
+          eBytes.byteOffset + eBytes.byteLength,
+        ),
+      );
+      const nBase64url = arrayBufferToBase64url(
+        nBytes.buffer.slice(
+          nBytes.byteOffset,
+          nBytes.byteOffset + nBytes.byteLength,
+        ),
+      );
 
       // Create JWK object
       const jwk = {
@@ -62,10 +76,11 @@ const MynacardDecoders = {
           hash: "SHA-256",
         },
         true,
-        ["verify"]
+        ["verify"],
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to decode public key: ${errorMessage}`);
     }
   },
@@ -107,15 +122,16 @@ const MynacardEncoders = {
  */
 function arrayBufferToBase64url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  
-  const base64 = typeof Buffer !== "undefined"
-    ? Buffer.from(binary, 'binary').toString('base64')
-    : btoa(binary);
-  
+
+  const base64 =
+    typeof Buffer !== "undefined"
+      ? Buffer.from(binary, "binary").toString("base64")
+      : btoa(binary);
+
   // Convert base64 to base64url
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
@@ -472,12 +488,8 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       expect(parsed.offsets).toEqual([50, 100, 150, 200, 250, 300]);
       expect(parsed.birth).toBe("19921205");
       expect(parsed.gender).toBe("2");
-      expect(Array.from(parsed.namePng)).toEqual(
-        Array.from(pngHeader),
-      );
-      expect(Array.from(parsed.faceJp2)).toEqual(
-        Array.from(jp2Header),
-      );
+      expect(Array.from(parsed.namePng)).toEqual(Array.from(pngHeader));
+      expect(Array.from(parsed.faceJp2)).toEqual(Array.from(jp2Header));
       expect(parsed.expire).toBe("20401231");
 
       // Verify PNG header is preserved
@@ -588,9 +600,7 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const parsed = parser.parse(encoded);
 
       // Then: Should parse my number data correctly
-      expect(Array.from(parsed.myNumberPng)).toEqual(
-        Array.from(myNumberPng),
-      );
+      expect(Array.from(parsed.myNumberPng)).toEqual(Array.from(myNumberPng));
       expect(Array.from(parsed.thisSignature)).toEqual([
         0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe,
       ]);
@@ -603,14 +613,10 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const encodingSchema = BuilderSchema.constructed(
         "certificate",
         [
-          BuilderSchema.primitive(
-            "contents",
-            MynacardEncoders.encodeText,
-            {
-              tagClass: TagClass.Application,
-              tagNumber: 0x4e,
-            },
-          ),
+          BuilderSchema.primitive("contents", MynacardEncoders.encodeText, {
+            tagClass: TagClass.Application,
+            tagNumber: 0x4e,
+          }),
           BuilderSchema.primitive(
             "thisSignature",
             MynacardEncoders.encodeUint8Array,
@@ -632,7 +638,7 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
           ParserSchema.primitive(
             "contents",
             async (buffer) => {
-              await new Promise(resolve => setTimeout(resolve, 1));
+              await new Promise((resolve) => setTimeout(resolve, 1));
               return MynacardDecoders.decodeText(buffer);
             },
             {
@@ -864,12 +870,13 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
   describe("Error handling and edge cases", () => {
     test("should handle invalid TLV format in public key decoding", async () => {
       // Given: Invalid TLV buffer (missing INTEGER tag)
-      const invalidBuffer = new Uint8Array([0x03, 0x04, 0x01, 0x02, 0x03, 0x04]).buffer; // BIT_STRING instead of INTEGER
+      const invalidBuffer = new Uint8Array([0x03, 0x04, 0x01, 0x02, 0x03, 0x04])
+        .buffer; // BIT_STRING instead of INTEGER
 
       // When/Then: Should throw appropriate error
-      await expect(MynacardDecoders.decodePublicKey(invalidBuffer)).rejects.toThrow(
-        /Expected INTEGER tag for e/i
-      );
+      await expect(
+        MynacardDecoders.decodePublicKey(invalidBuffer),
+      ).rejects.toThrow(/Expected INTEGER tag for e/i);
     });
 
     test("should handle insufficient buffer size in public key decoding", async () => {
@@ -877,9 +884,9 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
       const smallBuffer = new Uint8Array([0x02]).buffer; // Only tag, no length
 
       // When/Then: Should throw appropriate error
-      await expect(MynacardDecoders.decodePublicKey(smallBuffer)).rejects.toThrow(
-        /Failed to decode public key/i
-      );
+      await expect(
+        MynacardDecoders.decodePublicKey(smallBuffer),
+      ).rejects.toThrow(/Failed to decode public key/i);
     });
 
     test("should handle empty buffer in offset decoding", () => {
@@ -907,16 +914,20 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
 
     test("should handle schema validation errors", () => {
       // Given: Schema expecting specific tag but data has different tag
-      const strictSchema = ParserSchema.primitive("strict", MynacardDecoders.decodeText, {
-        tagClass: TagClass.Private,
-        tagNumber: 0x21,
-      });
+      const strictSchema = ParserSchema.primitive(
+        "strict",
+        MynacardDecoders.decodeText,
+        {
+          tagClass: TagClass.Private,
+          tagNumber: 0x21,
+        },
+      );
       const parser = new SchemaParser(strictSchema);
 
       // Wrong tag (0x22 instead of expected 0x21)
       const wrongTagBuffer = TestData.createTlvBuffer(
-        0xE2, // Private class, tag 0x22
-        TestData.createStringBuffer("wrong tag")
+        0xe2, // Private class, tag 0x22
+        TestData.createStringBuffer("wrong tag"),
       );
 
       // When/Then: Should throw schema validation error
@@ -930,59 +941,67 @@ describe("MynaCard Schema Integration Tests - Parser from Builder", () => {
         async () => {
           throw new Error("Async decoding failed");
         },
-        { tagClass: TagClass.Private, tagNumber: 0x10 }
+        { tagClass: TagClass.Private, tagNumber: 0x10 },
       );
       const parser = new SchemaParser(errorSchema);
       const testBuffer = TestData.createTlvBuffer(
-        0xD0, // Private class (0xC0), primitive, tag 0x10 = 0xD0
-        TestData.createStringBuffer("test data")
+        0xd0, // Private class (0xC0), primitive, tag 0x10 = 0xD0
+        TestData.createStringBuffer("test data"),
       );
 
       // When/Then: Should properly reject with async error
       await expect(parser.parse(testBuffer, { async: true })).rejects.toThrow(
-        "Async decoding failed"
+        "Async decoding failed",
       );
     });
 
     test("should handle malformed Japanese text encoding", () => {
       // Given: Buffer with invalid UTF-8 sequence
-      const invalidUtf8Buffer = new Uint8Array([0xFF, 0xFE, 0xFD]).buffer;
+      const invalidUtf8Buffer = new Uint8Array([0xff, 0xfe, 0xfd]).buffer;
 
       // When: Decoding as text (should handle replacement characters)
       const result = MynacardDecoders.decodeText(invalidUtf8Buffer);
 
       // Then: Should not throw but return replacement characters
-      expect(typeof result).toBe('string');
+      expect(typeof result).toBe("string");
       expect(result.length).toBeGreaterThan(0);
     });
 
     test("should validate required fields in constructed schemas", () => {
       // Given: Schema with required fields but incomplete data
-      const incompleteSchema = ParserSchema.constructed("incomplete", [
-        ParserSchema.primitive("field1", MynacardDecoders.decodeText, {
+      const incompleteSchema = ParserSchema.constructed(
+        "incomplete",
+        [
+          ParserSchema.primitive("field1", MynacardDecoders.decodeText, {
+            tagClass: TagClass.Universal,
+            tagNumber: 12, // UTF8_STRING
+          }),
+          ParserSchema.primitive("field2", MynacardDecoders.decodeText, {
+            tagClass: TagClass.Universal,
+            tagNumber: 2, // INTEGER (different tag number)
+          }),
+        ],
+        {
           tagClass: TagClass.Universal,
-          tagNumber: 12, // UTF8_STRING
-        }),
-        ParserSchema.primitive("field2", MynacardDecoders.decodeText, {
-          tagClass: TagClass.Universal,
-          tagNumber: 2, // INTEGER (different tag number)
-        }),
-      ], {
-        tagClass: TagClass.Universal,
-        tagNumber: 16, // SEQUENCE
-      });
+          tagNumber: 16, // SEQUENCE
+        },
+      );
 
       // Create buffer with only first field (missing second field)
       const field1Buffer = TestData.createTlvBuffer(
-        0x0C, // Universal UTF8_STRING
-        TestData.createStringBuffer("field1 data")
+        0x0c, // Universal UTF8_STRING
+        TestData.createStringBuffer("field1 data"),
       );
-      const incompleteBuffer = TestData.createConstructedTlvBuffer(0x30, [field1Buffer]); // SEQUENCE with only one field
+      const incompleteBuffer = TestData.createConstructedTlvBuffer(0x30, [
+        field1Buffer,
+      ]); // SEQUENCE with only one field
 
       const parser = new SchemaParser(incompleteSchema);
 
       // When/Then: Should throw error when trying to parse missing field (bounds error is expected)
-      expect(() => parser.parse(incompleteBuffer)).toThrow(/outside the bounds|missing|required|not found/i);
+      expect(() => parser.parse(incompleteBuffer)).toThrow(
+        /outside the bounds|missing|required|not found/i,
+      );
     });
   });
 
