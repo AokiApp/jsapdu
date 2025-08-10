@@ -11,7 +11,7 @@ import {
   schemaKenkakuEntries,
   schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 import { arrayBufferToBase64, askPassword, getPlatform } from "../utils.js";
 

@@ -1,6 +1,6 @@
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
-import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv-parser";
+import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv/parser";
 
 /**
  * Prompts the user for a password in the terminal, masking input with asterisks.

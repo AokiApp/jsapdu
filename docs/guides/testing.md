@@ -137,7 +137,7 @@ describe("APDU Utilities", () => {
 ```typescript
 // tests/unit/tlv-parser.test.ts
 import { describe, it, expect } from "vitest";
-import { BasicTLVParser, SchemaParser, Schema } from "@aokiapp/tlv-parser";
+import { BasicTLVParser, SchemaParser, Schema } from "@aokiapp/tlv/parser";
 
 describe("TLV Parser", () => {
   describe("BasicTLVParser", () => {

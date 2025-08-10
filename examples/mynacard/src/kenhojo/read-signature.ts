@@ -5,7 +5,7 @@ import {
   KENHOJO_AP_EF,
   schemaKenhojoSignature,
 } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 import { askPassword, getPlatform, uint8ArrayToHexString } from "../utils.js";
 

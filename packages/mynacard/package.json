@@ -42,6 +42,6 @@
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
   "dependencies": {
-    "@aokiapp/tlv-parser": "^0.0.1"
+    "@aokiapp/tlv": "^0.0.1"
   }
 }

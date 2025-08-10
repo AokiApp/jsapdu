@@ -1,4 +1,4 @@
-import { BasicTLVParser } from "@aokiapp/tlv-parser";
+import { BasicTLVParser } from "@aokiapp/tlv/parser";
 
 function arrayBufferToBase64url(buffer: ArrayBuffer): string {
   if (typeof Buffer !== "undefined") {

@@ -37,8 +37,6 @@ console.log(`Success: ${response.sw === 0x9000}`);
 
 ### 📱 **Modern APIs** • async/await, Symbol.asyncDispose, and clean abstractions
 
-### ⚡ **Advanced TLV Parser** • Industry-leading schema-driven parsing with full type inference
-
 ### 🃏 **SmartCard Ready** • Built-in support for Japanese MynaCard and extensible for any card type
 
 ### 🧪 **PC/SC FFI Included** • Direct access to PC/SC functions via Foreign Function Interface (FFI)
@@ -115,7 +113,6 @@ console.log("Name:", info.name, "Address:", info.address);
 | [`@aokiapp/jsapdu-pcsc`](./packages/pcsc)            | PC/SC platform implementation    | Desktop SmartCard readers     |
 | [`@aokiapp/apdu-utils`](./packages/apdu-utils)       | APDU command builders            | Common SmartCard operations   |
 | [`@aokiapp/mynacard`](./packages/mynacard)           | Japanese MynaCard support        | Government ID integration     |
-| [`@aokiapp/tlv-parser`](./packages/tlv-parser)       | TLV data parsing                 | Structured data extraction    |
 | [`@aokiapp/pcsc-ffi-node`](./packages/pcsc-ffi-node) | PC/SC Foreign Function Interface | Low-level PC/SC access        |
 
 ## 🌟 Features
