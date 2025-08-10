@@ -41,16 +41,6 @@ Utility functions for building common APDU commands.
 - [`readBinary()`](./apdu-utils.md#readbinary) - Read binary data with options
 - [`verify()`](./apdu-utils.md#verify) - PIN verification
 
-### [@aokiapp/tlv-parser](./tlv-parser.md)
-
-TLV (Tag-Length-Value) data parsing with schema support.
-
-**Key Classes:**
-
-- [`BasicTLVParser`](./tlv-parser.md#basictlvparser) - Basic TLV parsing
-- [`SchemaParser`](./tlv-parser.md#schemaparser) - Schema-based parsing
-- [`Schema`](./tlv-parser.md#schema) - Schema definition utilities
-
 ### [@aokiapp/mynacard](./mynacard.md)
 
 Japanese MynaCard support with specialized functionality.
@@ -115,7 +105,7 @@ const cmd3 = readEfBinaryFull(0x01);
 #### TLV Data Parsing
 
 ```typescript
-import { SchemaParser, Schema } from "@aokiapp/tlv-parser";
+import { SchemaParser, Schema } from "@aokiapp/tlv/parser";
 
 const schema = Schema.constructed("data", [
   Schema.primitive("field1", decoder1),

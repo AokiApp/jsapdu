@@ -5,7 +5,7 @@ import {
   KENKAKU_AP_EF,
   schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 import { askPassword, getPlatform } from "../utils.js";
 

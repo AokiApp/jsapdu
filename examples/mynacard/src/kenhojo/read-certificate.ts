@@ -10,7 +10,7 @@ import {
   schemaCertificate,
   schemaKenhojoAuthKey,
 } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 import { askPassword, getPlatform } from "../utils.js";
 

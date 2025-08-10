@@ -71,7 +71,6 @@ jsapdu/
 ├── packages/
 │   ├── interface/        # Core abstractions
 │   ├── pcsc/            # PC/SC implementation
-│   ├── tlv-parser/      # TLV data parsing
 │   ├── apdu-utils/      # APDU utilities
 │   ├── mynacard/        # MynaCard specific code
 │   └── mynacard-demo/   # Demo applications
@@ -90,13 +89,6 @@ jsapdu/
 - Handles USB card readers
 - Manages reader lifecycle
 - Provides APDU transmission
-
-### TLV Parser Package
-
-- Parses ASN.1 TLV structures
-- Supports sync/async parsing
-- Provides schema validation
-- Handles complex data structures
 
 ## Error Handling
 

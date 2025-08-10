@@ -13,7 +13,7 @@ This package provides specialized support for Japanese government-issued MynaCar
 ## Installation
 
 ```bash
-npm install @aokiapp/mynacard @aokiapp/tlv-parser
+npm install @aokiapp/mynacard @aokiapp/tlv
 ```
 
 ## Quick Start
@@ -25,7 +25,7 @@ import {
   KENHOJO_AP_EF,
   schemaKenhojoBasicFour,
 } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 async function readBasicInfo(card, pin) {
   // Select Kenhojo application
@@ -118,7 +118,7 @@ KENKAKU_AP_EF.PIN_A; // 0x13 - 照合番号A (Verification Number A)
 
 ```typescript
 import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 const parser = new SchemaParser(schemaKenhojoBasicFour);
 const info = parser.parse(buffer);
@@ -355,10 +355,6 @@ switch (response.sw) {
     console.log(`Unexpected status: ${response.sw.toString(16)}`);
 }
 ```
-
-## Dependencies
-
-- [`@aokiapp/tlv-parser`](../tlv-parser) - TLV data parsing and schema support
 
 ## Related Packages
 

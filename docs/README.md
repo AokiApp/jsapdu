@@ -49,7 +49,6 @@ Each package has detailed README documentation:
 ### Specialized Packages
 
 - **[@aokiapp/mynacard](../packages/mynacard/README.md)** - Japanese MynaCard support
-- **[@aokiapp/tlv-parser](../packages/tlv-parser/README.md)** - TLV data parsing
 - **[@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md)** - Native PC/SC bindings
 
 ## 💡 Quick Examples
@@ -77,7 +76,7 @@ import {
   schemaKenhojoBasicFour,
 } from "@aokiapp/mynacard";
 import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
-import { SchemaParser } from "@aokiapp/tlv-parser";
+import { SchemaParser } from "@aokiapp/tlv/parser";
 
 await card.transmit(selectDf(KENHOJO_AP));
 await card.transmit(verify("1234", { ef: KENHOJO_AP_EF.PIN }));
@@ -150,7 +149,6 @@ graph TD
 - [Work with MynaCard](./guides/mynacard.md) (Japanese government ID)
 - [Handle errors properly](./guides/error-handling.md)
 - [Build APDU commands](../packages/apdu-utils/README.md)
-- [Parse TLV data](../packages/tlv-parser/README.md)
 
 #### **Platform Integration**
 

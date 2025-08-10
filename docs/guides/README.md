@@ -89,7 +89,6 @@ For experienced developers and contributors:
 - [PCSC Package](../../packages/pcsc/README.md) - Platform implementation
 - [APDU Utils Package](../../packages/apdu-utils/README.md) - Command utilities
 - [MynaCard Package](../../packages/mynacard/README.md) - Japanese card support
-- [TLV Parser Package](../../packages/tlv-parser/README.md) - Data parsing
 
 ### Related Examples
 
