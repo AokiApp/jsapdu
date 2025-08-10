@@ -356,7 +356,6 @@ switch (response.sw) {
 }
 ```
 
-
 ## Related Packages
 
 - [`@aokiapp/apdu-utils`](../apdu-utils) - APDU command utilities for card communication

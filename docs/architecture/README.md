@@ -90,7 +90,6 @@ jsapdu/
 - Manages reader lifecycle
 - Provides APDU transmission
 
-
 ## Error Handling
 
 The error system is designed to:
