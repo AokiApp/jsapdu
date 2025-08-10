@@ -54,7 +54,7 @@ type ParsedResult<S extends TLVSchema> =
 function isConstructedSchema(
   schema: TLVSchema,
 ): schema is ConstructedTLVSchema<readonly TLVSchema[]> {
-  return "fields" in schema && Array.isArray((schema as any).fields);
+  return "fields" in schema && Array.isArray((schema as unknown as ConstructedTLVSchema<readonly TLVSchema[]>).fields);
 }
 
 /**
@@ -103,7 +103,7 @@ export class SchemaParser<S extends TLVSchema> {
    */
   public parse(
     buffer: ArrayBuffer,
-    options?: { async?: boolean, strict?: boolean },
+    options?: { async?: boolean; strict?: boolean },
   ): ParsedResult<S> | Promise<ParsedResult<S>> {
     const prevStrict = this.strict;
     if (options?.strict !== undefined) {
@@ -162,15 +162,17 @@ export class SchemaParser<S extends TLVSchema> {
 
       // strictモード時、SET要素の順序をDER仕様で検証
       if (
-        (schema.tagNumber === 17 && (schema.tagClass === TagClass.Universal || schema.tagClass === undefined))
-        && this.strict
+        schema.tagNumber === 17 &&
+        (schema.tagClass === TagClass.Universal ||
+          schema.tagClass === undefined) &&
+        this.strict
       ) {
         fieldsToProcess = fieldsToProcess.slice().sort((a, b) => {
           const encodeTag = (field: TLVSchema) => {
             const tagClass = field.tagClass ?? TagClass.Universal;
             const tagNumber = field.tagNumber ?? 0;
             const constructed = isConstructedSchema(field) ? 0x20 : 0x00;
-            let bytes: number[] = [];
+            const bytes: number[] = [];
             let firstByte = (tagClass << 6) | constructed;
             if (tagNumber < 31) {
               firstByte |= tagNumber;
@@ -179,7 +181,7 @@ export class SchemaParser<S extends TLVSchema> {
               firstByte |= 0x1f;
               bytes.push(firstByte);
               let num = tagNumber;
-              let tagNumBytes: number[] = [];
+              const tagNumBytes: number[] = [];
               do {
                 tagNumBytes.unshift(num % 128);
                 num = Math.floor(num / 128);
@@ -194,18 +196,18 @@ export class SchemaParser<S extends TLVSchema> {
           return compareUint8Arrays(encodeTag(a), encodeTag(b));
         });
 
-/**
- * Compare two Uint8Arrays lexicographically.
- * Returns -1 if a < b, 1 if a > b, 0 if equal.
- */
-function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
-  }
-  if (a.length !== b.length) return a.length < b.length ? -1 : 1;
-  return 0;
-}
+        /**
+         * Compare two Uint8Arrays lexicographically.
+         * Returns -1 if a < b, 1 if a > b, 0 if equal.
+         */
+        function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
+          const len = Math.min(a.length, b.length);
+          for (let i = 0; i < len; i++) {
+            if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+          }
+          if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+          return 0;
+        }
       }
 
       const result = {} as {
@@ -230,7 +232,8 @@ function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
         const decoded = schema.decode(value);
         if (
           decoded instanceof Promise ||
-          (decoded as any)?.then instanceof Function
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+          (decoded as any).then instanceof Function
         ) {
           throw new Error(
             `Asynchronous decoder used in synchronous parse for field: ${schema.name}`,

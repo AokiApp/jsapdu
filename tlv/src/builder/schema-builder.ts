@@ -159,7 +159,7 @@ export class SchemaBuilder<S extends TLVSchema> {
             const tagClass = field.tagClass ?? TagClass.Universal;
             const tagNumber = field.tagNumber ?? 0;
             const constructed = isConstructedSchema(field) ? 0x20 : 0x00;
-            let bytes: number[] = [];
+            const bytes: number[] = [];
             let firstByte = (tagClass << 6) | constructed;
             if (tagNumber < 31) {
               firstByte |= tagNumber;
@@ -168,7 +168,7 @@ export class SchemaBuilder<S extends TLVSchema> {
               firstByte |= 0x1f;
               bytes.push(firstByte);
               let num = tagNumber;
-              let tagNumBytes: number[] = [];
+              const tagNumBytes: number[] = [];
               do {
                 tagNumBytes.unshift(num % 128);
                 num = Math.floor(num / 128);
