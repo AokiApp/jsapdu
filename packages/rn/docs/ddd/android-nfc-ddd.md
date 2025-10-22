@@ -79,7 +79,7 @@ TypeScriptの公開インタフェースは、Nitro Modulesのハイブリッド
 
 - Distribution policy: android.hardware.nfc required=false（デフォルト）。非NFC端末では [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)／[SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103) 段階で "PLATFORM_ERROR" を返却する（参照: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:119)）。
 - NPMパッケージ名（決定）: @aokiapp/jsapdu-rn
-- Java package / Bundle ID: app.aoki.jsapdu.android
+- Java package / Bundle ID: app.aoki.jsapdu.rn.android
 - 注記: RN Nitro のボイラープレートが既に namespace やクラス配置を決めている箇所（例: [packages/rn/android/build.gradle](packages/rn/android/build.gradle:34), [packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:1)）は尊重する。必要であれば仕様へ同等の事項を組み込み、ボイラープレートに頼らずとも契約が満たされるようにする。
 
 ### IsoDep運用上の設計規程（追補）

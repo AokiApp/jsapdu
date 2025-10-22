@@ -1,4 +1,4 @@
-package com.margelo.nitro.aokiapp.jsapdurn
+package app.aoki.jsapdu.rn.android
   
 import com.facebook.proguard.annotations.DoNotStrip
 

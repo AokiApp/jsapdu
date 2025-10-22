@@ -61,7 +61,7 @@
 
 - Distribution policy: android.hardware.nfc required=false（デフォルト）
 - NPM package: @aokiapp/jsapdu-rn
-- Java package / Bundle ID: app.aoki.jsapdu.android
+- Java package / Bundle ID: app.aoki.jsapdu.rn.android
 - 注記: RN Nitro のボイラープレートで既に namespace が決まっている箇所は尊重する（例: [packages/rn/android/build.gradle](packages/rn/android/build.gradle:34), [JsapduRn.kt](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:1)）。必要であれば仕様へ同等の事項を組み込み、ボイラープレートに依存しない形でも契約を満たす。
 
 ## FFI Neutrality Do / Don't
@@ -97,6 +97,6 @@
   - 受入ではマニフェスト宣言と上記エラー写像の一致を検証する（参照: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md)）。
 - Naming conventions:
   - NPM package: @aokiapp/jsapdu-rn
-  - Java package / Bundle ID: app.aoki.jsapdu.android
+  - Java package / Bundle ID: app.aoki.jsapdu.rn.android
   - Boilerplate respect: current namespace and paths originate from RN Nitro scaffold ([packages/rn/android/build.gradle](packages/rn/android/build.gradle:34), [JsapduRn.kt](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:1)). Either align code to the spec naming or codify boilerplate-derived rules in the spec so FFI contracts remain consistent ([SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17), [SmartCardDevice.class()](packages/interface/src/abstracts.ts:202), [SmartCard.class()](packages/interface/src/abstracts.ts:283)).
 - Backlog policy: track work only via GitHub Issues (monorepo AokiApp/jsapdu). See guide and index pointers [index.md](packages/rn/docs/index.md:87), [docs/README.md](docs/README.md:183).
