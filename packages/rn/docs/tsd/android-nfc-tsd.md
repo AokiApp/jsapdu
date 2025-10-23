@@ -193,7 +193,7 @@ android {
 ### 命名規約（パッケージ／バンドル）
 
 - NPMパッケージ名（決定）: @aokiapp/jsapdu-rn
-- Java package / Bundle ID 規約: app.aoki.jsapdu.rn.android（プラットフォーム名は "android"）
+- Java package / Bundle ID 規約: com.margelo.nitro.aokiapp.jsapdurn（プラットフォーム名は "android"）
 - 注記（ボイラープレート尊重）: 現在のボイラープレート namespace は [packages/rn/android/build.gradle](packages/rn/android/build.gradle:34) の com.margelo.nitro.aokiapp.jsapdurn および [JsapduRn.kt](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:1) のパスに基づく。実装では本規約に合わせるか、ボイラープレートを尊重して同等の事項を仕様に組み込み、FFI契約（[SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17)、[SmartCardDevice.class()](packages/interface/src/abstracts.ts:202)、[SmartCard.class()](packages/interface/src/abstracts.ts:283)）を満たすこと。
 
 ### R8/ProGuard（Nitro/JSI）

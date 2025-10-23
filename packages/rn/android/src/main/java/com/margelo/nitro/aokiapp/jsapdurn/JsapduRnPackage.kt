@@ -1,4 +1,4 @@
-package app.aoki.jsapdu.rn.android
+package com.margelo.nitro.aokiapp.jsapdurn
 
 import com.facebook.react.TurboReactPackage
 import com.facebook.react.bridge.NativeModule

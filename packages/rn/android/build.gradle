@@ -31,7 +31,7 @@ def getExtOrIntegerDefault(name) {
 }
 
 android {
-  namespace "app.aoki.jsapdu.rn.android"
+  namespace "com.margelo.nitro.aokiapp.jsapdurn"
 
   compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
 

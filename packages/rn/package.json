@@ -134,18 +134,6 @@
     "trailingComma": "es5",
     "useTabs": false
   },
-  "codegenConfig": {
-    "name": "AokiappJsapduRnSpec",
-    "includesGeneratedCode": true,
-    "jsSrcsDir": "./src",
-    "outputDir": {
-      "android": "android/generated/java",
-      "ios": "build/generated/ios"
-    },
-    "android": {
-      "javaPackageName": "app.aoki.jsapdu.rn"
-    }
-  },
   "react-native-builder-bob": {
     "source": "src",
     "output": "lib",
