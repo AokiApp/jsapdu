@@ -39,6 +39,7 @@
   - Platform initialized; device acquired; RF active.
 - Errors: "ALREADY_INITIALIZED", "NOT_INITIALIZED", "PLATFORM_ERROR" (see [api-contract.md](packages/rn/docs/tsd/api-contract.md:20)).
 - Threading: Non-UI-thread I/O (see [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:77)).
+- Inteface: Ensure [SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17) is extended with `extend` keyword.
 
 ## Device Checklist
 - Preconditions: Platform initialized; device acquired; RF active.
@@ -50,6 +51,7 @@
   - On detection: ready for session start; on cancellation: device released.
 - Errors: "CARD_NOT_PRESENT", "TIMEOUT", "PLATFORM_ERROR" (see [api-contract.md](packages/rn/docs/tsd/api-contract.md:36)).
 - Concurrency: Serialize RF on/off, session start/release (see [android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:42)).
+- Interface: Ensure [SmartCardDevice.class()](packages/interface/src/abstracts.ts:202) is extended with `extend` keyword.
 
 ## Card Checklist
 - Preconditions: Card present; session active.
@@ -62,6 +64,7 @@
   - Responses with data+SW1/SW2; session cleaned up on release.
 - Errors: "INVALID_PARAMETER", "PLATFORM_ERROR", "PROTOCOL_ERROR" (see [api-contract.md](packages/rn/docs/tsd/api-contract.md:62)).
 - Threading: Non-UI-thread for transceive (see [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:77)).
+- Interface: Ensure [SmartCard.class()](packages/interface/src/abstracts.ts:283) is extended with `extend` keyword.
 
 ## Naming and Boilerplate
 
