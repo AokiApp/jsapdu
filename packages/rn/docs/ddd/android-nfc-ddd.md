@@ -1,8 +1,25 @@
 # Android NFC設計詳細仕様書（DDD）
 
-本書は、React Native向けスマートカードAPDU通信ライブラリのAndroid実装に係る設計詳細を記述するものである。対象はNitro Modulesに基づくネイティブ設計であり、プラットフォーム、デバイス、カードの三層構造を基本とする。本設計は、既存のPC/SC実装の設計原則を参照しつつ、Android特有のReaderModeおよびIsoDepを用いる。
+## 🚀 初見の実装者へ
+**設計詳細が初めての方**：
+- **まず環境準備**: [guides/getting-started.md](../guides/getting-started.md)
+- **実装概要**: [my-requests.md](../my-requests.md) - なぜこの設計か
+- **実装チェックリスト**: [implementer-checklists.md](../implementer-checklists.md) - 具体的作業
 
-実装者向けのチェックリストは [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1) を参照。文書の目次は [index.md](packages/rn/docs/index.md:1) に整理する。
+## 📋 このドキュメントの役割
+本書は**アーキテクチャ・責務分担・コンポーネント設計**を詳述します。
+React Native向けスマートカードAPDU通信ライブラリのAndroid実装において、Nitro Modulesに基づく三層構造（プラットフォーム・デバイス・カード）の設計詳細を記述します。
+
+**参考にした設計**: 既存のPC/SC実装 ([packages/pcsc/](../../../pcsc/)) の設計原則
+**使用技術**: Android ReaderMode・IsoDep・Nitro Modules
+
+**関連ドキュメント**:
+- 実装チェックリスト: [implementer-checklists.md](../implementer-checklists.md)
+- ドキュメント目次: [index.md](../index.md)
+
+---
+
+# 設計詳細内容
 
 ## FFI中立性の原則
 

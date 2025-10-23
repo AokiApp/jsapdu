@@ -1,11 +1,17 @@
 # Android NFC Implementer Checklists
 
-## Read First
-- [Requirements](packages/rn/docs/rdd/android-nfc-rdd.md:1)
-- [Design Details](packages/rn/docs/ddd/android-nfc-ddd.md:1)
-- [Technical Spec](packages/rn/docs/tsd/android-nfc-tsd.md:1)
-- [API Contract](packages/rn/docs/tsd/api-contract.md:1)
-- [Interface core](packages/interface/src/abstracts.ts:1)
+## 🚀 初見の実装者へ
+**このプロジェクトが初めての方**は、まず以下で準備してください：
+- **環境セットアップ**: [guides/getting-started.md](./guides/getting-started.md) - npm install・ビルド環境
+- **プロジェクト概要**: [my-requests.md](./my-requests.md) - 作るものの理解
+- **技術理解**: [nitro-modules-guide.md](./nitro-modules-guide.md) - Nitro Modules学習
+
+## 📋 Read First (実装仕様の理解)
+- [Requirements](packages/rn/docs/rdd/android-nfc-rdd.md:1) - 機能範囲・制約
+- [Design Details](packages/rn/docs/ddd/android-nfc-ddd.md:1) - アーキテクチャ設計
+- [Technical Spec](packages/rn/docs/tsd/android-nfc-tsd.md:1) - 技術仕様・制約
+- [API Contract](packages/rn/docs/tsd/api-contract.md:1) - **最重要** 実装すべきAPI詳細
+- [Interface core](packages/interface/src/abstracts.ts:1) - 共通インターフェース定義
 
 ## Quick Start Sequence
 - Precheck: Ensure host app manifest declares NFC permission and feature per [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:94). Choose required true/false per distribution policy. See example [packages/rn/example/android/app/src/main/AndroidManifest.xml](packages/rn/example/android/app/src/main/AndroidManifest.xml:1).

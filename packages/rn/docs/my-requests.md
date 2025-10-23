@@ -1,7 +1,17 @@
 # My Requests
 
-This section provides an overview of my technical requests to implementers. This document intends to tell implementers what technical aspects need to be addressed to improve the overall quality and functionality of the project.
-Please do not edit this document directly. 
+## 🎯 初見の実装者へ
+このドキュメントは**プロジェクトオーナーから実装者への要求仕様書**です。
+「何を作るか」「なぜ作るか」「どう作るか」の方針を示します。
+
+**環境準備がまだの方**: [guides/getting-started.md](./guides/getting-started.md) で開発環境をセットアップしてください。
+
+---
+
+## 📋 要求概要
+
+この節は、実装者が対処すべき技術的側面を概説し、プロジェクト全体の品質と機能性向上を目指します。
+**このドキュメントは直接編集しないでください。**
 
 ## Requests List
 

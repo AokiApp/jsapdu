@@ -1,10 +1,27 @@
 # Android NFC技術仕様書（TSD）
 
-本書は、React Native向けスマートカードAPDU通信ライブラリのAndroid実装に係る技術仕様を定めるものである。対象はNitro Modulesを介したJSI連携によるネイティブ実装であり、公開API、型定義、スレッドおよび同期、時間制約、バッファとエンコーディング、エラーコード、互換性およびバージョニングの各観点について規定する。
+## 🚀 初見の実装者へ
+**技術仕様が初めての方**：
+- **まず環境準備**: [guides/getting-started.md](../guides/getting-started.md)
+- **要件理解**: [rdd/android-nfc-rdd.md](../rdd/android-nfc-rdd.md) - なぜこの技術仕様か
+- **設計理解**: [ddd/android-nfc-ddd.md](../ddd/android-nfc-ddd.md) - アーキテクチャ全体像
 
-本仕様はISO-DEPに基づくAPDUレベルの通信に専念し、NDEFは対象外とする。Android API Level 24以上を対象とし、ReaderModeはNFC-A、NFC-B、NFC-Fを常時有効化（固定運用）し、SKIP_NDEF によりNDEF検出を回避する。端末差による動的切替は行わない。
+## 📋 このドキュメントの役割
+本書は**技術的制約・性能要件・実装時の注意事項**を定義します。
+React Native Nitro Modules + Android NFC API による実装において、スレッド・時間制約・バッファ・エラーコード・互換性の技術仕様を規定します。
 
-実装者向けのチェックリストは [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1) を参照。文書の目次は [index.md](packages/rn/docs/index.md:1) に整理する。
+**対象技術**:
+- **Nitro Modules**: JSI連携による高性能ネイティブ実装
+- **ISO-DEP**: APDUレベル通信 (NDEF対象外)
+- **Android API 24+**: ReaderMode固定運用 (NFC-A/B/F + SKIP_NDEF)
+
+**関連ドキュメント**:
+- 実装チェックリスト: [implementer-checklists.md](../implementer-checklists.md)
+- ドキュメント目次: [index.md](../index.md)
+
+---
+
+# 技術仕様内容
 
 ## FFI中立性の原則
 

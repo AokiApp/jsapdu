@@ -1,11 +1,21 @@
-## 統合告知
-本書は範囲/制約の要点に圧縮しました。設計・仕様・契約の本文は以下に集約しています。
-- 実装手順と受入基準: [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1)
-- 公開API契約: [api-contract.md](packages/rn/docs/tsd/api-contract.md:1)
-- 技術仕様: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1)
-- 設計詳細: [android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:1)
+# Android NFC要件定義書 (RDD)
 
-# Android NFC要件定義書
+## 🚀 初見の実装者へ
+**要件定義が初めての方**：
+- **まず環境準備**: [guides/getting-started.md](../guides/getting-started.md)
+- **プロジェクト概要**: [my-requests.md](../my-requests.md) - 何を作るか
+- **実装チェックリスト**: [implementer-checklists.md](../implementer-checklists.md) - 具体的作業内容
+
+## 📋 このドキュメントの位置づけ
+本書は**要件・制約・範囲**を定義します。詳細な実装方法は以下を参照：
+- 実装手順: [implementer-checklists.md](../implementer-checklists.md)
+- API契約: [api-contract.md](../tsd/api-contract.md)
+- 技術仕様: [android-nfc-tsd.md](../tsd/android-nfc-tsd.md)
+- 設計詳細: [android-nfc-ddd.md](../ddd/android-nfc-ddd.md)
+
+---
+
+# 要件定義内容
 
 本書は、React Native向けスマートカードAPDU通信ライブラリのAndroid実装について、要件を正式に定義するものである。対象はReact Native Nitro Modulesを基盤としたネイティブ実装であり、JSレイヤーは型定義および最小限のバインディング提供に留める。
 
