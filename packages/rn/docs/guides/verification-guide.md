@@ -57,25 +57,21 @@ ls -la nitrogen/generated/android/
 
 ### 1-3: Android Gradle ビルド検証
 ```bash
-cd android
+cd projectRoot/examples/rn/android  # nitroプロジェクトは直接ビルドできず、利用側からビルドをトリガーする必要がある
 
 # クリーンビルド
 ./gradlew clean
-./gradlew assembleDebug --info
+./gradlew assembleRelease --info  # Releaseビルドをしなければならない、なぜならDebugだとJSコードはテザード前提になるから
 # ✅ 期待結果: BUILD SUCCESSFUL
 
-# AARファイル確認
-ls -la build/outputs/aar/
-# ✅ 期待結果: android-debug.aar ファイルが存在
-
 # サイズ確認 (参考値)
-du -h build/outputs/aar/android-debug.aar
+du -h projectRoot/packages/rn/android/build/outputs/aar/android-release.aar  # AARが利用側ではなくパッケージ側でビルドされ、生成される。
 # ✅ 期待結果: 50KB - 2MB 程度
 ```
 
 ### 1-4: React Native リンク検証
 ```bash
-cd ../example
+cd projectRoot/examples/rn  
 
 # 依存関係インストール
 npm install
@@ -95,7 +91,521 @@ pkill -f "react-native start" # Metro停止
 
 ---
 
-## 🧪 レベル2: 単体検証
+## 🧪 レベル2A: JVM側ユニットテスト検証（Android/Kotlin）
+
+### 2A-1: JUnit基本設定
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRnUnitTest.kt
+package com.margelo.nitro.aokiapp.jsapdurn
+
+import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.nfc.tech.IsoDep
+import io.mockk.*
+import org.junit.*
+import org.junit.Assert.*
+
+class JsapduRnUnitTest {
+    private lateinit var jsapduRn: JsapduRn
+    private val mockNfcAdapter: NfcAdapter = mockk()
+    private val mockIsoDep: IsoDep = mockk()
+    private val mockTag: Tag = mockk()
+
+    @Before
+    fun setUp() {
+        MockKAnnotations.init(this)
+        jsapduRn = JsapduRn()
+        
+        // NfcAdapter.getDefaultAdapterのモック
+        mockkStatic(NfcAdapter::class)
+        every { NfcAdapter.getDefaultAdapter(any()) } returns mockNfcAdapter
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
+        unmockkAll()
+    }
+
+    @Test
+    fun testPlatformInitialization_Success() {
+        // Given
+        every { mockNfcAdapter.isEnabled } returns true
+
+        // When & Then
+        assertDoesNotThrow {
+            runBlocking {
+                jsapduRn.initPlatform()
+            }
+        }
+    }
+
+    @Test
+    fun testPlatformInitialization_NFCNotSupported() {
+        // Given
+        every { NfcAdapter.getDefaultAdapter(any()) } returns null
+
+        // When & Then
+        assertThrows(Exception::class.java) {
+            runBlocking {
+                jsapduRn.initPlatform()
+            }
+        }
+    }
+}
+```
+
+### 2A-2: Android テストディペンデンシ（build.gradle）
+```gradle
+// android/build.gradle
+dependencies {
+    // JUnit
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4'
+    
+    // Mockk for Kotlin mocking
+    testImplementation 'io.mockk:mockk:1.13.8'
+    testImplementation 'io.mockk:mockk-android:1.13.8'
+    
+    // Robolectric for Android unit tests
+    testImplementation 'org.robolectric:robolectric:4.11'
+    
+    // Android Test (Instrumented)
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+android {
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+}
+```
+
+### 2A-3: NFC関連ユニットテスト
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/NFCManagerTest.kt
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P])
+class NFCManagerTest {
+    
+    @Test
+    fun testDeviceInfoGeneration() {
+        // Given
+        val nfcAdapter = mockk<NfcAdapter>()
+        every { nfcAdapter.isEnabled } returns true
+        
+        // When
+        val deviceInfo = jsapduRn.generateDeviceInfo(nfcAdapter)
+        
+        // Then
+        assertEquals("integrated-nfc-0", deviceInfo.id)
+        assertTrue(deviceInfo.supportsApdu)
+        assertFalse(deviceInfo.supportsHce) // 初期版
+        assertTrue(deviceInfo.isIntegratedDevice)
+        assertEquals(listOf("nfc", "androidnfc"), deviceInfo.apduApi)
+    }
+
+    @Test
+    fun testReaderModeActivation() {
+        // Given
+        val mockActivity = mockk<Activity>()
+        val mockNfcAdapter = mockk<NfcAdapter>()
+        every { mockNfcAdapter.enableReaderMode(any(), any(), any(), any()) } just Runs
+        
+        // When
+        jsapduRn.activateReaderMode(mockActivity, mockNfcAdapter)
+        
+        // Then
+        verify {
+            mockNfcAdapter.enableReaderMode(
+                mockActivity,
+                any(),
+                NfcAdapter.FLAG_READER_NFC_A or
+                NfcAdapter.FLAG_READER_NFC_B or
+                NfcAdapter.FLAG_READER_NFC_F or
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
+                null
+            )
+        }
+    }
+
+    @Test
+    fun testCardDetection_IsoDepOnly() {
+        // Given
+        val mockTag = mockk<Tag>()
+        val mockIsoDep = mockk<IsoDep>()
+        
+        every { IsoDep.get(mockTag) } returns mockIsoDep
+        every { mockIsoDep.isConnected } returns false
+        every { mockIsoDep.connect() } just Runs
+        
+        // When
+        val isValidCard = jsapduRn.isValidIsoDepCard(mockTag)
+        
+        // Then
+        assertTrue(isValidCard)
+        verify { IsoDep.get(mockTag) }
+    }
+
+    @Test
+    fun testCardDetection_NonIsoDepCard() {
+        // Given
+        val mockTag = mockk<Tag>()
+        every { IsoDep.get(mockTag) } returns null
+        
+        // When
+        val isValidCard = jsapduRn.isValidIsoDepCard(mockTag)
+        
+        // Then
+        assertFalse(isValidCard)
+    }
+}
+```
+
+### 2A-4: APDU送受信テスト
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/APDUTransmissionTest.kt
+class APDUTransmissionTest {
+    
+    @Test
+    fun testAPDUTransmission_Success() = runBlocking {
+        // Given
+        val mockIsoDep = mockk<IsoDep>()
+        val commandAPDU = byteArrayOf(0x00.toByte(), 0xA4.toByte(), 0x00.toByte(), 0x0C.toByte())
+        val responseAPDU = byteArrayOf(0x90.toByte(), 0x00.toByte()) // SW1=0x90, SW2=0x00
+        
+        every { mockIsoDep.isConnected } returns true
+        every { mockIsoDep.transceive(commandAPDU) } returns responseAPDU
+        
+        // When
+        val response = jsapduRn.transmitAPDU(mockIsoDep, commandAPDU)
+        
+        // Then
+        assertArrayEquals(byteArrayOf(), response.data) // データ部なし
+        assertEquals(0x90, response.sw1)
+        assertEquals(0x00, response.sw2)
+        verify { mockIsoDep.transceive(commandAPDU) }
+    }
+
+    @Test
+    fun testAPDUTransmission_WithData() = runBlocking {
+        // Given
+        val mockIsoDep = mockk<IsoDep>()
+        val commandAPDU = byteArrayOf(0x00.toByte(), 0xCA.toByte(), 0x9F.toByte(), 0x7F.toByte(), 0x00.toByte())
+        val responseData = byteArrayOf(0x01.toByte(), 0x02.toByte(), 0x03.toByte(), 0x90.toByte(), 0x00.toByte())
+        
+        every { mockIsoDep.isConnected } returns true
+        every { mockIsoDep.transceive(commandAPDU) } returns responseData
+        
+        // When
+        val response = jsapduRn.transmitAPDU(mockIsoDep, commandAPDU)
+        
+        // Then
+        assertArrayEquals(byteArrayOf(0x01.toByte(), 0x02.toByte(), 0x03.toByte()), response.data)
+        assertEquals(0x90, response.sw1)
+        assertEquals(0x00, response.sw2)
+    }
+
+    @Test
+    fun testAPDUTransmission_CardNotConnected() = runBlocking {
+        // Given
+        val mockIsoDep = mockk<IsoDep>()
+        every { mockIsoDep.isConnected } returns false
+        
+        // When & Then
+        assertThrows(Exception::class.java) {
+            runBlocking {
+                jsapduRn.transmitAPDU(mockIsoDep, byteArrayOf())
+            }
+        }
+    }
+
+    @Test
+    fun testExtendedAPDU_Length() {
+        // Given
+        val extendedCommand = ByteArray(65537) // 拡張APDU最大長
+        extendedCommand[0] = 0x00.toByte() // CLA
+        extendedCommand[1] = 0xA4.toByte() // INS
+        
+        // When & Then
+        assertDoesNotThrow {
+            jsapduRn.validateAPDULength(extendedCommand)
+        }
+    }
+
+    @Test
+    fun testAPDULength_ExceedsLimit() {
+        // Given
+        val oversizedCommand = ByteArray(70000) // 制限超過
+        
+        // When & Then
+        assertThrows(IllegalArgumentException::class.java) {
+            jsapduRn.validateAPDULength(oversizedCommand)
+        }
+    }
+}
+```
+
+### 2A-5: エラー写像テスト
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/ErrorMappingTest.kt
+class ErrorMappingTest {
+
+    @Test
+    fun testAndroidExceptionMapping_TagLostException() {
+        // Given
+        val tagLostException = TagLostException("Card removed")
+        
+        // When
+        val mappedError = jsapduRn.mapAndroidException(tagLostException)
+        
+        // Then
+        assertEquals("PLATFORM_ERROR", mappedError.code)
+        assertTrue(mappedError.message.contains("Card removed"))
+    }
+
+    @Test
+    fun testAndroidExceptionMapping_IOException() {
+        // Given
+        val ioException = IOException("Transceive failed")
+        
+        // When
+        val mappedError = jsapduRn.mapAndroidException(ioException)
+        
+        // Then
+        assertEquals("PLATFORM_ERROR", mappedError.code)
+    }
+
+    @Test
+    fun testAndroidExceptionMapping_SecurityException() {
+        // Given
+        val securityException = SecurityException("NFC permission denied")
+        
+        // When
+        val mappedError = jsapduRn.mapAndroidException(securityException)
+        
+        // Then
+        assertEquals("PLATFORM_ERROR", mappedError.code)
+        assertTrue(mappedError.message.contains("permission"))
+    }
+
+    @Test
+    fun testTimeoutErrorMapping() {
+        // Given
+        val timeoutDuration = 5000L
+        
+        // When
+        val timeoutError = jsapduRn.createTimeoutError(timeoutDuration)
+        
+        // Then
+        assertEquals("TIMEOUT", timeoutError.code)
+        assertTrue(timeoutError.message.contains("5000"))
+    }
+}
+```
+
+### 2A-6: ATR取得順序テスト
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/ATRRetrievalTest.kt
+class ATRRetrievalTest {
+
+    @Test
+    fun testATRRetrieval_HistoricalBytesFirst() {
+        // Given
+        val mockTag = mockk<Tag>()
+        val historicalBytes = byteArrayOf(0x3B.toByte(), 0x8F.toByte(), 0x80.toByte())
+        val ats = byteArrayOf(0x78.toByte(), 0x80.toByte(), 0x95.toByte())
+        
+        every { mockTag.id } returns byteArrayOf(0x01, 0x02, 0x03, 0x04)
+        
+        // Historical Bytesが取得可能な場合
+        every { jsapduRn.getHistoricalBytes(mockTag) } returns historicalBytes
+        every { jsapduRn.getATS(mockTag) } returns ats
+        
+        // When
+        val atr = jsapduRn.retrieveATR(mockTag)
+        
+        // Then
+        assertArrayEquals(historicalBytes, atr)
+        verify { jsapduRn.getHistoricalBytes(mockTag) }
+        verify(exactly = 0) { jsapduRn.getATS(mockTag) } // ATSは呼ばれない
+    }
+
+    @Test
+    fun testATRRetrieval_ATSFallback() {
+        // Given
+        val mockTag = mockk<Tag>()
+        val ats = byteArrayOf(0x78.toByte(), 0x80.toByte(), 0x95.toByte())
+        
+        // Historical Bytesが取得不可、ATSで代替
+        every { jsapduRn.getHistoricalBytes(mockTag) } returns null
+        every { jsapduRn.getATS(mockTag) } returns ats
+        
+        // When
+        val atr = jsapduRn.retrieveATR(mockTag)
+        
+        // Then
+        assertArrayEquals(ats, atr)
+        verify { jsapduRn.getHistoricalBytes(mockTag) }
+        verify { jsapduRn.getATS(mockTag) }
+    }
+
+    @Test
+    fun testATRRetrieval_BothUnavailable() {
+        // Given
+        val mockTag = mockk<Tag>()
+        
+        every { jsapduRn.getHistoricalBytes(mockTag) } returns null
+        every { jsapduRn.getATS(mockTag) } returns null
+        
+        // When & Then
+        assertThrows(Exception::class.java) {
+            jsapduRn.retrieveATR(mockTag)
+        }
+    }
+}
+```
+
+### 2A-7: ライフサイクル・リソース管理テスト
+```kotlin
+// android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/LifecycleTest.kt
+class LifecycleTest {
+
+    @Test
+    fun testResourceCleanup_OnDeviceRelease() {
+        // Given
+        val mockNfcAdapter = mockk<NfcAdapter>()
+        val mockActivity = mockk<Activity>()
+        every { mockNfcAdapter.disableReaderMode(mockActivity) } just Runs
+        
+        // When
+        jsapduRn.releaseDevice(mockActivity, mockNfcAdapter)
+        
+        // Then
+        verify { mockNfcAdapter.disableReaderMode(mockActivity) }
+    }
+
+    @Test
+    fun testSessionReset_IsoDepReconnection() {
+        // Given
+        val mockIsoDep = mockk<IsoDep>()
+        every { mockIsoDep.isConnected } returns true
+        every { mockIsoDep.close() } just Runs
+        every { mockIsoDep.connect() } just Runs
+        
+        // When
+        jsapduRn.resetSession(mockIsoDep)
+        
+        // Then
+        verifySequence {
+            mockIsoDep.close()
+            mockIsoDep.connect()
+        }
+    }
+
+    @Test
+    fun testScreenOffHandling_DeviceRelease() {
+        // Given - 画面オフ状態をシミュレート
+        val mockDevice = mockk<SmartCardDevice>()
+        every { mockDevice.isWaitingForCard } returns true
+        every { mockDevice.cancelWait() } just Runs
+        every { mockDevice.release() } just Runs
+        
+        // When - 画面オフイベント処理
+        jsapduRn.handleScreenOff(mockDevice)
+        
+        // Then
+        verifySequence {
+            mockDevice.cancelWait()
+            mockDevice.release()
+        }
+    }
+}
+```
+
+### 2A-8: JVM テスト実行
+```bash
+# JVM単体テスト実行
+cd packages/rn/android
+./gradlew test
+
+# 特定テストクラス実行
+./gradlew test --tests "JsapduRnUnitTest"
+
+# カバレッジレポート生成 (JaCoCo)
+./gradlew testDebugUnitTestCoverage
+
+# レポート確認
+open build/reports/coverage/test/debug/index.html
+```
+
+### 2A-9: Instrumentation テスト（実機/エミュレータ）
+```kotlin
+// android/src/androidTest/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRnInstrumentationTest.kt
+@RunWith(AndroidJUnit4::class)
+class JsapduRnInstrumentationTest {
+    
+    @get:Rule
+    val activityRule = ActivityTestRule(MainActivity::class.java)
+
+    @Test
+    fun testNFCAdapterAvailability() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val nfcAdapter = NfcAdapter.getDefaultAdapter(context)
+        
+        // 実機ではNFCアダプターが利用可能であることを確認
+        // エミュレータではnullの可能性あり
+        if (nfcAdapter != null) {
+            assertNotNull(nfcAdapter)
+            // 実機でのさらなるテスト
+        } else {
+            // エミュレータでのフォールバックテスト
+            assertTrue(true) // スキップ
+        }
+    }
+
+    @Test
+    fun testPermissionCheck() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val nfcPermission = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.NFC
+        )
+        
+        assertEquals(PackageManager.PERMISSION_GRANTED, nfcPermission)
+    }
+}
+```
+
+### 2A-10: JVM テスト検証チェックリスト
+
+**必須JVMテスト項目:**
+- [ ] プラットフォーム初期化（NFC対応/非対応端末）
+- [ ] ReaderMode有効化/無効化
+- [ ] カード検出（ISO-DEP/非ISO-DEP判定）
+- [ ] APDU送受信（正常系/異常系）
+- [ ] ATR取得順序（HB→ATS）
+- [ ] エラー写像（Android例外→SmartCardError）
+- [ ] リソース管理（取得/解放の対称性）
+- [ ] 拡張APDU長さ検証
+- [ ] タイムアウト処理
+- [ ] ライフサイクル管理（画面オフ等）
+
+**JVMテスト実行基準:**
+- [ ] 全単体テスト成功（`./gradlew test`）
+- [ ] カバレッジ80%以上（主要ロジック）
+- [ ] モック適切性（外部依存の分離）
+- [ ] エラーケース網羅（例外パス）
+- [ ] 実機Instrumentationテスト成功
+
+---
+
+## 🧪 レベル2B: 単体検証（JavaScript/Jest）
 
 ### 2-1: プラットフォーム初期化検証
 
@@ -422,6 +932,7 @@ echo "✅ 自動テスト完了"
 
 echo "=== 検証完了 ==="
 echo "🎉 すべての自動検証が成功しました"
+echo "📊 JVMカバレッジ: build/reports/coverage/test/debug/index.html を確認"
 echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行してください"
 ```
 
