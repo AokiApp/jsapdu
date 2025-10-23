@@ -186,7 +186,32 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
 }
 ```
 
-## 🚀 Step 5: ビルドとテスト実行
+## ⚡ ゼロショットビルド確認（効率優先版）
+
+**AI実装者向け**: 迷わず最短でビルドが通るかを確認する方法。セッションの最初や、チェックポイント単位で実行し、うまくいくことをverifyしてください。
+
+### 基本指示テンプレート
+```
+ボイラープレートビルド確認。事前調査禁止。まず以下コマンドを順次実行：
+1. cd packages/rn && npm install && npm run prepare
+2. cd examples/rn && npm install && cd android && ./gradlew assembleDebug
+エラー時のみファイル内容確認。
+```
+
+### コピペ用（詳細版）
+```
+packages/rn のボイラープレートビルドが通るか確認。まず `cd packages/rn && npm install && npm run prepare` を実行。成功したら次に `cd examples/rn && npm install && cd android && ./gradlew assembleDebug` を実行。エラーが出た場合のみファイル調査。事前調査禁止。
+```
+
+**原則**:
+- 事前ファイル調査は一切行わない
+- 最初にビルドコマンドを実行
+- エラーが出た場合のみ原因調査
+- BUILD SUCCESSFUL確認で完了
+
+---
+
+## 🚀 Step 5: ビルドとテスト実行（詳細版）
 
 ### 5-1: ライブラリビルド
 ```bash
