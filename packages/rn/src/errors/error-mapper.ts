@@ -3,6 +3,11 @@ import type { SmartCardErrorCode } from '@aokiapp/jsapdu-interface';
 import { ANDROID_ERROR_PATTERNS, matchesAnyPattern } from './error-patterns';
 
 /**
+ * NOTE: ANDROID_ERROR_PATTERNS are provided by './error-patterns'.
+ * Ensure this module exists and has test coverage for TagLost/IOException/Security/IllegalState/IllegalArgument patterns.
+ * TODO: Refactor this mapper to a table-driven approach to improve readability and efficiency.
+ */
+/**
  * Maps errors from React Native Nitro modules to SmartCardError
  * Ensures all errors are normalized to the SmartCardError code system
  *

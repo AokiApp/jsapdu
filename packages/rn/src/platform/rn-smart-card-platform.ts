@@ -40,6 +40,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
+  private lastDeviceInfos: RnDeviceInfo[] | null = null;
 
   constructor() {
     super();
@@ -117,14 +118,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     try {
       // Release all acquired devices in parallel
       const releasePromises = Array.from(this.acquiredDevices.values()).map(
-        (device) =>
-          device.release().catch((error) => {
-            // Log but don't throw to ensure platform cleanup continues
-            console.warn(
-              `Failed to release device ${device.getDeviceInfo().id}:`,
-              error
-            );
-          })
+        (device) => device.release()
       );
 
       await Promise.all(releasePromises);
@@ -165,7 +159,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
 
     try {
       const deviceInfos = await this.hybridObject.getDeviceInfo();
-      return deviceInfos.map((info) => new RnDeviceInfo(info));
+      const list = deviceInfos.map((info) => new RnDeviceInfo(info));
+      this.lastDeviceInfos = list;
+      return list;
     } catch (error) {
       throw mapNitroError(error);
     }
@@ -211,11 +207,15 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
       // Acquire device handle from native side
       const deviceHandle = await this.hybridObject.acquireDevice(id);
 
-      // Fetch device info to construct RnDeviceInfo
-      const deviceInfos = await this.hybridObject.getDeviceInfo();
-      const deviceInfo = deviceInfos.find((info) => info.id === id);
+      // Find device info from cache or refresh once
+      let deviceInfoObj: RnDeviceInfo | undefined =
+        this.lastDeviceInfos?.find((info) => info.id === id);
+      if (!deviceInfoObj) {
+        const infos = await this.getDeviceInfo();
+        deviceInfoObj = infos.find((info) => info.id === id);
+      }
 
-      if (!deviceInfo) {
+      if (!deviceInfoObj) {
         throw new SmartCardError(
           'READER_ERROR',
           `Device ${id} not found in device list`
@@ -223,11 +223,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
       }
 
       // Create device instance
-      const device = new RnSmartCardDevice(
-        this,
-        deviceHandle,
-        new RnDeviceInfo(deviceInfo)
-      );
+      const device = new RnSmartCardDevice(this, deviceHandle, deviceInfoObj);
 
       // Track acquired device
       this.acquiredDevices.set(id, device);

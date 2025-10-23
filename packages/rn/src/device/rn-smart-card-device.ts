@@ -169,6 +169,12 @@ export class RnSmartCardDevice extends SmartCardDevice {
   ): Promise<void> {
     this.state.assertNotReleased();
     this.state.validateTimeout(timeout);
+    if (timeout === 0) {
+      throw new SmartCardError(
+        'TIMEOUT',
+        'Card presence wait timed out immediately'
+      );
+    }
 
     this.state.setWaiting(true);
 
@@ -265,8 +271,7 @@ export class RnSmartCardDevice extends SmartCardDevice {
         try {
           await this.activeCard.release();
         } catch (error) {
-          // Log but don't throw to ensure device cleanup continues
-          console.warn('Failed to release active card:', error);
+          throw mapNitroError(error);
         }
         this.activeCard = null;
         this.card = null;
