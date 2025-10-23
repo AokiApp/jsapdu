@@ -6,9 +6,9 @@
 
 ### ベストプラクティス例
 
-- **SmartCardPlatformの実装例**  
+- **RnSmartCardPlatformの実装例**  
   ```typescript
-  export class SmartCardPlatformImpl extends SmartCardPlatform {
+  export class RnSmartCardPlatform extends SmartCardPlatform {
     async init(): Promise<void> { /* ... */ }
     async getDeviceInfo(): Promise<SmartCardDeviceInfo[]> { /* ... */ }
     async acquireDevice(id: string): Promise<SmartCardDevice> { /* ... */ }
@@ -20,12 +20,12 @@
     - NitroModuleのインスタンスをコンストラクタで受け取り、フィールドで保持する
     - SmartCard*関連abstractクラスを継承せずに実装する（→型安全性違反）
 
-- **SmartCardDeviceの実装例**  
+- **RnSmartCardDeviceの実装例**  
   - `waitForCardPresence()`は「カードが来るまで待つ」だけ。カードのAPDU送受信やATR取得はSmartCardに委譲する。
   - **アンチパターン**  
     - `waitForCardPresence()`内でAPDU送信やATR取得を行う（→責務混在）
 
-- **SmartCardの実装例**  
+- **RnSmartCardの実装例**  
   - `transmit()`は必ずCommandApdu型を受け取り、ResponseApdu型で返す。ArrayBufferやUint8Arrayの直接操作は禁止。
 
 ---
@@ -68,7 +68,7 @@
     index.tsx
   ```
 
-packages/pcsc/*を参考にするといいだろう。
+packages/pcsc/* を参考にするといいだろう。
   
 - **命名例**
   - クラス名：`SmartCardPlatformImpl`

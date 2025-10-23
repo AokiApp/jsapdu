@@ -544,7 +544,7 @@ import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-i
 
 const jsapduRn = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
 
-class NitroSmartCardPlatform implements SmartCardPlatform {
+class RnSmartCardPlatform implements SmartCardPlatform {
   async init(): Promise<void> {
     return jsapduRn.initPlatform();
   }
@@ -555,22 +555,22 @@ class NitroSmartCardPlatform implements SmartCardPlatform {
 
   async acquireDevice(deviceId: string): Promise<SmartCardDevice> {
     await jsapduRn.acquireDevice(deviceId);
-    return new NitroSmartCardDevice();
+    return new RnSmartCardDevice();
   }
 }
 
-class NitroSmartCardDevice implements SmartCardDevice {
+class RnSmartCardDevice implements SmartCardDevice {
   async waitForCardPresence(timeout?: number): Promise<void> {
     return jsapduRn.waitForCardPresence(timeout);
   }
 
   async startSession(): Promise<SmartCard> {
     await jsapduRn.startSession();
-    return new NitroSmartCard();
+    return new RnSmartCard();
   }
 }
 
-export const platform = new NitroSmartCardPlatform();
+export const platform = new RnSmartCardPlatform();
 ```
 
 ### 利点とベストプラクティス
