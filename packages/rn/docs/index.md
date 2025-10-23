@@ -33,13 +33,13 @@
       </manifest>
       ```
     - 参照: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:102), [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:113)
-    - 適用先（例プロジェクト）: [packages/rn/example/android/app/src/main/AndroidManifest.xml](packages/rn/example/android/app/src/main/AndroidManifest.xml:1)
+    - 適用先（例プロジェクト）: [examples/rn/android/app/src/main/AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1)
     - デフォルト配布方針: android.hardware.nfc required=false
       - 非NFC端末時の挙動: [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33) は成功、[SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87) は0件、[SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103) は "PLATFORM_ERROR"。
   - SDKベースライン
     - 最低: minSdk 24（必須）
     - 推奨: targetSdk 34, compileSdk 34（より高い値も許容。例は36）
-    - 例の現在設定: [packages/rn/example/android/build.gradle](packages/rn/example/android/build.gradle:3), [packages/rn/example/android/app/build.gradle](packages/rn/example/android/app/build.gradle:78)
+    - 例の現在設定: [examples/rn/android/build.gradle](examples/rn/android/build.gradle:3), [examples/rn/android/app/build.gradle](examples/rn/android/app/build.gradle:78)
 
 - 実装の5ステップ（FFI中立な公開契約準拠）
   1) プラットフォーム初期化 [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)

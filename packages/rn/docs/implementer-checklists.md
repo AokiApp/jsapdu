@@ -14,7 +14,7 @@
 - [Interface core](packages/interface/src/abstracts.ts:1) - 共通インターフェース定義
 
 ## Quick Start Sequence
-- Precheck: Ensure host app manifest declares NFC permission and feature per [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:94). Choose required true/false per distribution policy. See example [packages/rn/example/android/app/src/main/AndroidManifest.xml](packages/rn/example/android/app/src/main/AndroidManifest.xml:1).
+- Precheck: Ensure host app manifest declares NFC permission and feature per [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:94). Choose required true/false per distribution policy. See example [examples/rn/android/app/src/main/AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1).
 1. [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)
 2. [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87)
 3. [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103)
@@ -93,7 +93,7 @@
 - [Compatibility](packages/rn/docs/tsd/compat-devices.md:1)
 ## Implementer Actions（Manifest, Naming, Acceptance）
 
-- Manifest updates are implementer-owned. Architects do not change code. Update host app [AndroidManifest.xml](packages/rn/example/android/app/src/main/AndroidManifest.xml:1) to declare:
+- Manifest updates are implementer-owned. Architects do not change code. Update host app [AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1) to declare:
   - &lt;uses-permission android:name="android.permission.NFC"/&gt;
   - &lt;uses-feature android:name="android.hardware.nfc" android:required="false"/&gt;（distribution policy default）
 - 非NFC端末（distribution policy required=false）の挙動:

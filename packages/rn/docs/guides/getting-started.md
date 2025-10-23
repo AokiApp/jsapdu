@@ -208,7 +208,7 @@ ls -la build/outputs/aar/
 ### 5-2: テストアプリのセットアップ
 ```bash
 # exampleアプリでテスト
-cd packages/rn/example
+cd examples/rn
 
 # 1. 依存関係の完全インストール
 npm install
@@ -249,7 +249,7 @@ adb logcat | grep -i "JsapduRn"
 ```
 
 ### 6-2: テストアプリ側マニフェスト (完全版)
-`packages/rn/example/android/app/src/main/AndroidManifest.xml`:
+`examples/rn/android/app/src/main/AndroidManifest.xml`:
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <!-- NFC権限 -->
@@ -279,7 +279,7 @@ adb logcat | grep -i "JsapduRn"
 ## 🧪 Step 7: 基本的な動作確認
 
 ### 7-1: テストコンポーネントの作成
-`packages/rn/example/src/App.tsx`:
+`examples/rn/src/App.tsx`:
 ```typescript
 import React, { useState } from 'react';
 import {

@@ -134,7 +134,7 @@ pkill -f "react-native start" # Metro停止
 ### 2-3: 手動実機検証 (実際のNFCカード使用)
 ```bash
 # テストアプリでの手動確認
-cd packages/rn/example
+cd examples/rn
 npx react-native run-android
 
 # 実機での手順:
@@ -165,7 +165,7 @@ npx react-native run-android
 
 ### 3-1: エンドツーエンド自動テスト
 ```typescript
-// packages/rn/example/src/__tests__/integration.test.ts
+// examples/rn/src/__tests__/integration.test.ts
 describe('Integration Verification', () => {
   const CARD_TIMEOUT = 30000; // カード検出タイムアウト
 
@@ -235,7 +235,7 @@ describe('Resource Management Verification', () => {
 
 ### 4-1: レスポンス時間測定
 ```typescript
-// packages/rn/example/src/__tests__/performance.test.ts
+// examples/rn/src/__tests__/performance.test.ts
 describe('Performance Verification', () => {
   const measureTime = async (operation: () => Promise<any>) => {
     const start = performance.now();
@@ -266,7 +266,7 @@ describe('Performance Verification', () => {
 ### 4-2: メモリリーク検証
 ```bash
 # メモリプロファイリング (Android)
-cd packages/rn/example
+cd examples/rn
 
 # プロファイリング付きビルド
 npx react-native run-android --variant=release

@@ -121,7 +121,7 @@ Android公式APIにおけるISO-DEPのI/O運用について、技術仕様へ次
 
 ## 権限とGradle設定（実装要件）
 
-本節は、Android版の公開API契約を満たすために必要なホストアプリ側のマニフェスト／Gradle設定を明示する。ライブラリ側のAndroidManifestは最小化し、ホストアプリ（例: [packages/rn/example/android/app/src/main/AndroidManifest.xml](packages/rn/example/android/app/src/main/AndroidManifest.xml:1)）で権限・機能を宣言する。
+本節は、Android版の公開API契約を満たすために必要なホストアプリ側のマニフェスト／Gradle設定を明示する。ライブラリ側のAndroidManifestは最小化し、ホストアプリ（例: [examples/rn/android/app/src/main/AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1)）で権限・機能を宣言する。
 
 ### 方針
 
@@ -188,7 +188,7 @@ android {
 
 対象ファイル:
 - アプリ: app/build.gradle（または build.gradle.kts）
-- 例: [packages/rn/example/android/app/build.gradle](packages/rn/example/android/app/build.gradle:1)
+- 例: [examples/rn/android/app/build.gradle](examples/rn/android/app/build.gradle:1)
 
 ### 命名規約（パッケージ／バンドル）
 
@@ -209,7 +209,7 @@ Nitro Modulesは `@DoNotStrip` によりストリッピングを回避するが�
 }
 ```
 
-例の適用先: [packages/rn/example/android/app/proguard-rules.pro](packages/rn/example/android/app/proguard-rules.pro:1)
+例の適用先: [examples/rn/android/app/proguard-rules.pro](examples/rn/android/app/proguard-rules.pro:1)
 
 ### 受入基準（Permissions/Gradle）
 
