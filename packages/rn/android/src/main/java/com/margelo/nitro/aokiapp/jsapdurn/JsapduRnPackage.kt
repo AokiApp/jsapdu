@@ -1,22 +1,24 @@
 package com.margelo.nitro.aokiapp.jsapdurn
 
-import com.facebook.react.BaseReactPackage
+import com.facebook.proguard.annotations.DoNotStrip
+import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.facebook.react.uimanager.ViewManager
 
-class JsapduRnPackage : BaseReactPackage() {
-    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-        return null
-    }
+/**
+ * ReactPackage scaffold for RN. Nitro Modules autolinking is handled by
+ * generated gradle/cmake via nitrogen, so no classic NativeModule is exposed.
+ * Kept to satisfy project docs and IDE discovery.
+ */
+@DoNotStrip
+class JsapduRnPackage : ReactPackage {
+  override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
+    // Nitro-generated Hybrid spec handles the module; nothing to expose here.
+    return emptyList()
+  }
 
-    override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
-        return ReactModuleInfoProvider { HashMap() }
-    }
-
-    companion object {
-        init {
-            System.loadLibrary("aokiapp_jsapdurn")
-        }
-    }
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
+    return emptyList()
+  }
 }

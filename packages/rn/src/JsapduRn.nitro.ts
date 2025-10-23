@@ -28,15 +28,6 @@ export interface DeviceInfo {
 }
 
 /**
- * APDU response structure with data and status words
- */
-export interface ResponseApdu {
-  data: ArrayBuffer;
-  sw1: number;
-  sw2: number;
-}
-
-/**
  * React Native Nitro Module interface for Android NFC APDU communication
  *
  * This interface provides FFI-neutral methods for SmartCard operations
@@ -44,11 +35,10 @@ export interface ResponseApdu {
  */
 export interface JsapduRn
   extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
-  
   // ============================================================================
   // Platform Management Methods
   // ============================================================================
-  
+
   /**
    * Initialize the NFC platform
    * Precondition: Platform not initialized
@@ -56,7 +46,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "ALREADY_INITIALIZED" | "PLATFORM_ERROR"
    */
   initPlatform(): Promise<void>;
-  
+
   /**
    * Release the NFC platform and all acquired devices
    * Precondition: Platform initialized
@@ -64,7 +54,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "NOT_INITIALIZED" | "PLATFORM_ERROR"
    */
   releasePlatform(): Promise<void>;
-  
+
   /**
    * Get available NFC device information
    * Precondition: Platform initialized
@@ -72,7 +62,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "NOT_INITIALIZED" | "PLATFORM_ERROR"
    */
   getDeviceInfo(): Promise<DeviceInfo[]>;
-  
+
   /**
    * Acquire a device by its ID and activate RF
    * Precondition: Platform initialized, device ID exists in getDeviceInfo()
@@ -86,7 +76,7 @@ export interface JsapduRn
   // ============================================================================
   // Device Management Methods
   // ============================================================================
-  
+
   /**
    * Check if device is available (non-blocking)
    * @param deviceHandle Device handle from acquireDevice()
@@ -94,7 +84,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "PLATFORM_ERROR"
    */
   isDeviceAvailable(deviceHandle: string): Promise<boolean>;
-  
+
   /**
    * Check if card is present (non-blocking, lightweight)
    * @param deviceHandle Device handle from acquireDevice()
@@ -102,7 +92,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "PLATFORM_ERROR"
    */
   isCardPresent(deviceHandle: string): Promise<boolean>;
-  
+
   /**
    * Wait for card presence (blocking, event-driven)
    * Precondition: Device acquired, ReaderMode enabled
@@ -111,8 +101,8 @@ export interface JsapduRn
    * @param timeout Optional timeout in milliseconds (default: 30000ms)
    * @throws SmartCardError with code "CARD_NOT_PRESENT" | "TIMEOUT" | "PLATFORM_ERROR"
    */
-  waitForCardPresence(deviceHandle: string, timeout?: number): Promise<void>;
-  
+  waitForCardPresence(deviceHandle: string, timeout: number): Promise<void>;
+
   /**
    * Start communication session with detected card
    * Precondition: Card present
@@ -122,7 +112,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "CARD_NOT_PRESENT" | "PLATFORM_ERROR"
    */
   startSession(deviceHandle: string): Promise<string>;
-  
+
   /**
    * Release device and deactivate RF
    * Postcondition: Device released, ReaderMode stopped
@@ -134,7 +124,7 @@ export interface JsapduRn
   // ============================================================================
   // Card Communication Methods
   // ============================================================================
-  
+
   /**
    * Get ATR (Answer To Reset) or ATS (Answer To Select)
    * Preference order: Historical Bytes -> HiLayerResponse(ATS) -> PROTOCOL_ERROR
@@ -143,7 +133,7 @@ export interface JsapduRn
    * @throws SmartCardError with code "PROTOCOL_ERROR" | "PLATFORM_ERROR"
    */
   getAtr(cardHandle: string): Promise<ArrayBuffer>;
-  
+
   /**
    * Transmit APDU command to card
    * Precondition: Active session
@@ -152,15 +142,15 @@ export interface JsapduRn
    * @returns Response with data and status words (SW1, SW2)
    * @throws SmartCardError with code "INVALID_PARAMETER" | "PLATFORM_ERROR" | "PROTOCOL_ERROR"
    */
-  transmit(cardHandle: string, apdu: ArrayBuffer): Promise<ResponseApdu>;
-  
+  transmit(cardHandle: string, apdu: ArrayBuffer): Promise<ArrayBuffer>;
+
   /**
    * Reset card (re-establish ISO-DEP session)
    * @param cardHandle Card handle from startSession()
    * @throws SmartCardError with code "CARD_NOT_PRESENT" | "PLATFORM_ERROR"
    */
   reset(cardHandle: string): Promise<void>;
-  
+
   /**
    * Release card session
    * Postcondition: Card session inactive
@@ -168,14 +158,4 @@ export interface JsapduRn
    * @throws SmartCardError with code "PLATFORM_ERROR"
    */
   releaseCard(cardHandle: string): Promise<void>;
-
-  // ============================================================================
-  // Utility/Testing Methods
-  // ============================================================================
-  
-  /**
-   * Test method for basic functionality validation
-   * @deprecated Remove this after implementation is complete
-   */
-  multiply(a: number, b: number): number;
 }

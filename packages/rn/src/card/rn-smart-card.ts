@@ -161,8 +161,8 @@ export class RnSmartCard extends SmartCard {
         this.cardHandle,
         apduBytes.buffer
       );
-      const data = new Uint8Array(response.data);
-      return new ResponseApdu(data, response.sw1, response.sw2);
+      const data = new Uint8Array(response);
+      return ResponseApdu.fromUint8Array(data);
     } catch (error) {
       throw mapNitroError(error);
     }
