@@ -110,6 +110,11 @@ android {
         "generated/java",
         "generated/jni"
       ]
+      // Exclude React Native core generated specs and viewmanagers from this library
+      java {
+        exclude 'com/facebook/fbreact/specs/**'
+        exclude 'com/facebook/react/viewmanagers/**'
+      }
     }
   }
 }
@@ -122,7 +127,8 @@ repositories {
 def kotlin_version = getExtOrDefault("kotlinVersion")
 
 dependencies {
-  implementation "com.facebook.react:react-android"
+  // Do not package RN core into this AAR; let the app provide it to avoid duplicate classes
+  compileOnly "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation project(":react-native-nitro-modules")
 }

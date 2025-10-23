@@ -1,10 +1,16 @@
 {
-  "cxxNamespace": ["aokiapp_jsapdurn"],
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": [
+    "aokiapp_jsapdurn"
+  ],
   "ios": {
     "iosModuleName": "JsapduRn"
   },
   "android": {
-    "androidNamespace": ["aokiapp","jsapdurn"],
+    "androidNamespace": [
+      "aokiapp",
+      "jsapdurn"
+    ],
     "androidCxxLibName": "aokiapp_jsapdurn"
   },
   "autolinking": {
@@ -13,5 +19,7 @@
       "kotlin": "JsapduRn"
     }
   },
-  "ignorePaths": ["node_modules"]
+  "ignorePaths": [
+    "node_modules"
+  ]
 }

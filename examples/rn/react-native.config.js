@@ -1,5 +1,5 @@
-const path = require('path');
-const pkg = require('../package.json');
+const path = require("path");
+const pkg = require("./package.json");
 
 module.exports = {
   project: {
@@ -8,8 +8,8 @@ module.exports = {
     },
   },
   dependencies: {
-    [pkg.name]: {
-      root: path.join(__dirname, '..'),
+    "@aokiapp/jsapdu-rn": {
+      root: path.join(__dirname, "../../packages/rn"),
       platforms: {
         // Codegen script incorrectly fails without this
         // So we explicitly specify the platforms with empty object

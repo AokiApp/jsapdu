@@ -1,5 +1,5 @@
 {
-  "name": "@aokiapp/jsapdu-rn-example",
+  "name": "jsapdu-rn-example",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -10,14 +10,15 @@
     "build:ios": "react-native build-ios --mode Debug"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "react": "19.1.0",
     "react-native": "0.81.1",
+    "react-native-harness": "^1.0.0-alpha.17",
     "react-native-nitro-modules": "^0.31.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
-    "@babel/runtime": "^7.25.0",
     "@react-native-community/cli": "20.0.0",
     "@react-native-community/cli-platform-android": "20.0.0",
     "@react-native-community/cli-platform-ios": "20.0.0",

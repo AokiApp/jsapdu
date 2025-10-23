@@ -1,6 +1,7 @@
 package app.aoki.jsapdu.rn.android
-  
+
 import com.facebook.proguard.annotations.DoNotStrip
+import com.margelo.nitro.aokiapp.jsapdurn.HybridJsapduRnSpec
 
 @DoNotStrip
 class JsapduRn : HybridJsapduRnSpec() {
