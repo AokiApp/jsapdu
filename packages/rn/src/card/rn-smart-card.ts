@@ -1,0 +1,235 @@
+import {
+  SmartCard,
+  CommandApdu,
+  ResponseApdu,
+  SmartCardError,
+} from '@aokiapp/jsapdu-interface';
+import { mapNitroError } from '../errors/error-mapper';
+import type { RnSmartCardDevice } from '../device/rn-smart-card-device';
+
+/**
+ * React Native NFC SmartCard implementation
+ *
+ * @remarks
+ * This implementation handles:
+ * - APDU command/response transmission
+ * - ATR (Answer To Reset) / ATS (Answer To Select) retrieval
+ * - Card session reset
+ * - Extended APDU support (Lc/Le two-byte encoding)
+ *
+ * FFI-neutral terminology:
+ * - "ISO-DEP session" instead of "IsoDep connection"
+ * - "ATR/ATS" instead of Android-specific retrieval methods
+ *
+ * ATR retrieval order (Android):
+ * 1. Historical Bytes (if available)
+ * 2. HiLayerResponse (ATS) as fallback
+ * 3. PROTOCOL_ERROR if both unavailable
+ *
+ * @example
+ * ```typescript
+ * const card = await device.startSession();
+ *
+ * // Get ATR
+ * const atr = await card.getAtr();
+ * console.log('ATR:', Array.from(atr).map(b => b.toString(16)).join(' '));
+ *
+ * // Send SELECT command
+ * const select = new CommandApdu(0x00, 0xA4, 0x04, 0x00, aid);
+ * const response = await card.transmit(select);
+ *
+ * if (response.isSuccess()) {
+ *   console.log('SELECT successful');
+ * }
+ *
+ * await card.release();
+ * ```
+ */
+export class RnSmartCard extends SmartCard {
+  private cardHandle: string;
+  private isReleased = false;
+
+  constructor(parentDevice: RnSmartCardDevice, cardHandle: string) {
+    super(parentDevice);
+    this.cardHandle = cardHandle;
+  }
+
+  /**
+   * Get the underlying Nitro HybridObject instance
+   * @internal
+   */
+  private getHybrid() {
+    const device = this.parentDevice as RnSmartCardDevice;
+    return device.getPlatform().getHybridObject();
+  }
+
+  /**
+   * Assert that the card session has not been released
+   * @internal
+   * @throws {SmartCardError} with code "PLATFORM_ERROR" if card is released
+   */
+  private assertNotReleased(): void {
+    if (this.isReleased) {
+      throw new SmartCardError(
+        'PLATFORM_ERROR',
+        'Card session has been released and cannot be used'
+      );
+    }
+  }
+
+  /**
+   * Get ATR (Answer To Reset) or ATS (Answer To Select)
+   *
+   * @returns ATR/ATS bytes
+   * @throws {SmartCardError} with code "PROTOCOL_ERROR" if ATR/ATS cannot be retrieved
+   * @throws {SmartCardError} with code "PLATFORM_ERROR" if retrieval fails
+   *
+   * @remarks
+   * Retrieval order (Android):
+   * 1. Historical Bytes (preferred)
+   * 2. HiLayerResponse (ATS) as fallback
+   * 3. PROTOCOL_ERROR if both are null or length 0
+   *
+   * For Type A cards:
+   * - Historical Bytes returned if available
+   * - Otherwise ATS is returned
+   *
+   * For Type B cards:
+   * - ATS only (no Historical Bytes)
+   *
+   * The returned value is raw bytes without additional processing.
+   */
+  public async getAtr(): Promise<Uint8Array> {
+    this.assertNotReleased();
+
+    try {
+      const atrBuffer = await this.getHybrid().getAtr(this.cardHandle);
+      const atr = new Uint8Array(atrBuffer);
+
+      // Validate ATR length
+      if (atr.length === 0) {
+        throw new SmartCardError(
+          'PROTOCOL_ERROR',
+          'ATR/ATS is empty (length 0)'
+        );
+      }
+
+      return atr;
+    } catch (error) {
+      throw mapNitroError(error);
+    }
+  }
+
+  /**
+   * Transmit APDU command to the card
+   *
+   * @param apdu - APDU command to transmit
+   * @returns Response APDU with data and status words
+   * @throws {SmartCardError} with code "INVALID_PARAMETER" if command is invalid or too long
+   * @throws {SmartCardError} with code "PLATFORM_ERROR" if transmission fails
+   * @throws {SmartCardError} with code "PROTOCOL_ERROR" if response is malformed
+   *
+   * @remarks
+   * Preconditions:
+   * - Active session must exist
+   * - Card must be present
+   *
+   * APDU length limits:
+   * - Short APDU: Lc ≤ 255, Le ≤ 256
+   * - Extended APDU: Lc ≤ 65535, Le ≤ 65536
+   * - Response theoretical max: 65538 bytes (data + SW1/SW2)
+   *
+   * Extended APDU support:
+   * - Always assumed supported (mandatory)
+   * - Unsupported devices return PLATFORM_ERROR (cutoff policy)
+   * - No runtime capability detection
+   *
+   * Timeout (Android):
+   * - IsoDep.transceive() default: 5000ms (not configurable from FFI)
+   * - Timeout errors are mapped to PLATFORM_ERROR
+   *
+   * Thread safety:
+   * - Concurrent transmit() calls are serialized by mutual exclusion
+   * - I/O is executed on non-UI thread
+   */
+  public async transmit(apdu: CommandApdu): Promise<ResponseApdu> {
+    this.assertNotReleased();
+
+    try {
+      const apduBytes = apdu.toUint8Array();
+      const response = await this.getHybrid().transmit(
+        this.cardHandle,
+        apduBytes.buffer
+      );
+      const data = new Uint8Array(response.data);
+      return new ResponseApdu(data, response.sw1, response.sw2);
+    } catch (error) {
+      throw mapNitroError(error);
+    }
+  }
+
+  /**
+   * Reset the card (re-establish ISO-DEP session)
+   *
+   * @throws {SmartCardError} with code "CARD_NOT_PRESENT" if card is not present
+   * @throws {SmartCardError} with code "PLATFORM_ERROR" if reset fails
+   *
+   * @remarks
+   * Android implementation:
+   * - Closes current ISO-DEP session (IsoDep.close())
+   * - Maintains RF (ReaderMode remains active)
+   * - Re-establishes session internally (IsoDep.connect())
+   *
+   * Postconditions:
+   * - Card is in active state again
+   * - ATR/ATS can be re-retrieved
+   *
+   * If card is removed during reset:
+   * - Returns CARD_NOT_PRESENT
+   *
+   * This is equivalent to:
+   * 1. Close ISO-DEP session
+   * 2. Re-execute startSession() internally
+   */
+  public async reset(): Promise<void> {
+    this.assertNotReleased();
+
+    try {
+      await this.getHybrid().reset(this.cardHandle);
+    } catch (error) {
+      throw mapNitroError(error);
+    }
+  }
+
+  /**
+   * Release the card session
+   *
+   * @throws {SmartCardError} with code "PLATFORM_ERROR" if release fails
+   *
+   * @remarks
+   * Postconditions:
+   * - Card session is inactive
+   * - ISO-DEP connection is closed
+   * - Card handle is invalidated
+   *
+   * This method is idempotent:
+   * - Multiple calls are safe
+   * - Already released cards return immediately
+   *
+   * After release:
+   * - Device remains acquired (RF active)
+   * - New session can be started with device.startSession()
+   */
+  public async release(): Promise<void> {
+    if (this.isReleased) {
+      return; // Idempotent: already released
+    }
+
+    try {
+      await this.getHybrid().releaseCard(this.cardHandle);
+      this.isReleased = true;
+    } catch (error) {
+      throw mapNitroError(error);
+    }
+  }
+}
