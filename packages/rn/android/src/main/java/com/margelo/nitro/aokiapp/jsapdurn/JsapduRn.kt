@@ -5,7 +5,6 @@ import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.ArrayBuffer
 import app.aoki.jsapdu.rn.platform.SmartCardPlatformImpl
 import app.aoki.jsapdu.rn.device.SmartCardDeviceImpl
-import app.aoki.jsapdu.rn.platform.ReactContextProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
@@ -46,8 +45,7 @@ class JsapduRn : HybridJsapduRnSpec() {
    */
   override fun initPlatform(): Promise<Unit> = Promise.async {
     try {
-      val ctx = ReactContextProvider.getAppContextOrThrow()
-      SmartCardPlatformImpl.initialize(ctx)
+      SmartCardPlatformImpl.initialize()
     } catch (e: IllegalStateException) {
       throw e // Re-throw mapped errors as-is
     } catch (e: Exception) {
@@ -63,7 +61,6 @@ class JsapduRn : HybridJsapduRnSpec() {
   override fun releasePlatform(): Promise<Unit> = Promise.async {
     try {
       SmartCardPlatformImpl.release()
-      ReactContextProvider.clearCache()
     } catch (e: IllegalStateException) {
       throw e
     } catch (e: Exception) {

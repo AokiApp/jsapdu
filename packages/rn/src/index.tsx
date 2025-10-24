@@ -80,61 +80,20 @@ export { RnDeviceInfo } from './device/rn-device-info';
 
 export { mapNitroError } from './errors/error-mapper';
 
+import {
+  SmartCardPlatform,
+  SmartCardPlatformManager,
+} from '@aokiapp/jsapdu-interface';
 // ============================================================================
 // Factory Functions (Convenience API)
 // ============================================================================
 
 import { RnSmartCardPlatform } from './platform/rn-smart-card-platform';
 
-/**
- * Create a new SmartCard platform instance
- *
- * This is a convenience factory function that creates and returns
- * a new RnSmartCardPlatform instance. The platform is not initialized
- * automatically; you must call `init()` before use.
- *
- * @returns A new RnSmartCardPlatform instance
- *
- * @example
- * ```typescript
- * import { createPlatform } from '@aokiapp/jsapdu-rn';
- *
- * const platform = createPlatform();
- * await platform.init();
- *
- * const devices = await platform.getDeviceInfo();
- * console.log('Available devices:', devices.length);
- *
- * await platform.release();
- * ```
- */
-export function createPlatform(): RnSmartCardPlatform {
-  return new RnSmartCardPlatform();
+class RnSmartCardPlatformManager extends SmartCardPlatformManager {
+  getPlatform(): SmartCardPlatform {
+    return new RnSmartCardPlatform();
+  }
 }
 
-/**
- * Create and initialize a new SmartCard platform instance
- *
- * This is a convenience function that creates a new platform
- * and automatically calls `init()`. Use this when you want
- * a ready-to-use platform instance.
- *
- * @returns An initialized RnSmartCardPlatform instance
- * @throws {SmartCardError} with code "ALREADY_INITIALIZED" if already initialized
- * @throws {SmartCardError} with code "PLATFORM_ERROR" if NFC is not supported
- *
- * @example
- * ```typescript
- * import { createAndInitPlatform } from '@aokiapp/jsapdu-rn';
- *
- * const platform = await createAndInitPlatform();
- * const devices = await platform.getDeviceInfo();
- * // ... use platform
- * await platform.release();
- * ```
- */
-export async function createAndInitPlatform(): Promise<RnSmartCardPlatform> {
-  const platform = new RnSmartCardPlatform();
-  await platform.init();
-  return platform;
-}
+export const platformManager = new RnSmartCardPlatformManager();

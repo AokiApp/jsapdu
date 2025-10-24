@@ -14,21 +14,21 @@ import { ANDROID_ERROR_PATTERNS, matchesAnyPattern } from './error-patterns';
  * @param error - Error from native module
  * @param defaultCode - Default error code if mapping fails
  * @returns Normalized SmartCardError
- * 
+ *
  * @remarks
  * Error mapping strategy:
  * 1. Return SmartCardError as-is (already normalized)
  * 2. Map known error code strings (from native layer)
  * 3. Map Android exception patterns to PLATFORM_ERROR
  * 4. Use fromUnknownError() for generic mapping
- * 
+ *
  * Android exception→SmartCardError mapping:
  * - TagLostException → PLATFORM_ERROR (card removed)
  * - IOException → PLATFORM_ERROR (I/O failure)
  * - SecurityException → PLATFORM_ERROR (permission denied)
  * - IllegalStateException → PLATFORM_ERROR (connection state invalid)
  * - IllegalArgumentException → INVALID_PARAMETER
- * 
+ *
  * FFI-neutral error codes:
  * - NOT_INITIALIZED: Platform not initialized
  * - ALREADY_INITIALIZED: Platform already initialized
@@ -38,7 +38,7 @@ import { ANDROID_ERROR_PATTERNS, matchesAnyPattern } from './error-patterns';
  * - INVALID_PARAMETER: Invalid parameter
  * - PROTOCOL_ERROR: Protocol violation
  * - PLATFORM_ERROR: Platform-specific error (generic)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -133,7 +133,9 @@ export function mapNitroError(
   // ========================================================================
 
   // TagLostException → PLATFORM_ERROR (card removed)
-  if (matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.TAG_LOST)) {
+  if (
+    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.TAG_LOST)
+  ) {
     return new SmartCardError(
       'PLATFORM_ERROR',
       'Card was removed during operation'
@@ -141,12 +143,16 @@ export function mapNitroError(
   }
 
   // IOException → PLATFORM_ERROR (I/O failure)
-  if (matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.IO_ERROR)) {
+  if (
+    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.IO_ERROR)
+  ) {
     return new SmartCardError('PLATFORM_ERROR', `NFC I/O error: ${message}`);
   }
 
   // SecurityException → PLATFORM_ERROR (permission denied)
-  if (matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.SECURITY)) {
+  if (
+    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.SECURITY)
+  ) {
     return new SmartCardError(
       'PLATFORM_ERROR',
       'NFC permission denied or security error'
@@ -155,24 +161,36 @@ export function mapNitroError(
 
   // IllegalStateException → PLATFORM_ERROR (connection state invalid)
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.ILLEGAL_STATE)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.ILLEGAL_STATE
+    )
   ) {
-    return new SmartCardError(
-      'PLATFORM_ERROR',
-      'NFC connection state is invalid'
-    );
+    return new SmartCardError('PLATFORM_ERROR', message);
   }
 
   // IllegalArgumentException → INVALID_PARAMETER
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.ILLEGAL_ARGUMENT)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.ILLEGAL_ARGUMENT
+    )
   ) {
-    return new SmartCardError('INVALID_PARAMETER', `Invalid argument: ${message}`);
+    return new SmartCardError(
+      'INVALID_PARAMETER',
+      `Invalid argument: ${message}`
+    );
   }
 
   // NFC not supported → PLATFORM_ERROR
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.NFC_NOT_SUPPORTED)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.NFC_NOT_SUPPORTED
+    )
   ) {
     return new SmartCardError(
       'PLATFORM_ERROR',
@@ -182,26 +200,47 @@ export function mapNitroError(
 
   // NFC disabled → PLATFORM_ERROR
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.NFC_DISABLED)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.NFC_DISABLED
+    )
   ) {
-    return new SmartCardError('PLATFORM_ERROR', 'NFC is disabled on this device');
+    return new SmartCardError(
+      'PLATFORM_ERROR',
+      'NFC is disabled on this device'
+    );
   }
 
   // ReaderMode errors → PLATFORM_ERROR
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.READER_MODE_ERROR)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.READER_MODE_ERROR
+    )
   ) {
     return new SmartCardError('PLATFORM_ERROR', `ReaderMode error: ${message}`);
   }
 
   // ISO-DEP errors → PLATFORM_ERROR
-  if (matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.ISODEP_ERROR)) {
+  if (
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.ISODEP_ERROR
+    )
+  ) {
     return new SmartCardError('PLATFORM_ERROR', `ISO-DEP error: ${message}`);
   }
 
   // Connection errors → PLATFORM_ERROR
   if (
-    matchesAnyPattern(lowerMessage, lowerName, ANDROID_ERROR_PATTERNS.CONNECT_ERROR)
+    matchesAnyPattern(
+      lowerMessage,
+      lowerName,
+      ANDROID_ERROR_PATTERNS.CONNECT_ERROR
+    )
   ) {
     return new SmartCardError('PLATFORM_ERROR', `Connection error: ${message}`);
   }

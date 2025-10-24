@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   StyleSheet,
@@ -23,13 +24,15 @@ import {
 } from "@aokiapp/jsapdu-interface";
 
 import { platformManager } from "@aokiapp/jsapdu-rn";
-
+console.log("platformManager:", platformManager);
 interface TestState {
   initialized: boolean;
   devices: SmartCardDeviceInfo[];
   currentDevice: SmartCardDevice | null;
   currentCard: SmartCard | null;
   logs: string[];
+  aidInput: string;
+  rawApduInput: string;
 }
 let platform: SmartCardPlatform;
 
@@ -40,6 +43,8 @@ const NfcTestScreen: React.FC = () => {
     currentDevice: null,
     currentCard: null,
     logs: [],
+    aidInput: "",
+    rawApduInput: "",
   });
 
   const addLog = (message: string) => {
@@ -60,6 +65,24 @@ const NfcTestScreen: React.FC = () => {
     addLog(`❌ ${operation} failed: ${errorMessage}`);
     Alert.alert("Error", `${operation} failed:\n${errorMessage}`);
   };
+
+  const hexToBytes = (hex: string): Uint8Array => {
+    const clean = hex.replace(/[^0-9a-fA-F]/g, "");
+    if (clean.length % 2 !== 0) {
+      throw new Error("Hex must have even length");
+    }
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < clean.length; i += 2) {
+      bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
+    }
+    return bytes;
+  };
+
+  const bytesToHex = (bytes: Uint8Array): string =>
+    Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(" ")
+      .toUpperCase();
 
   // Test 1: Platform Initialization
   const testInitialization = async () => {
@@ -198,9 +221,7 @@ const NfcTestScreen: React.FC = () => {
     }
 
     try {
-      addLog("📤 Sending test APDU (SELECT command)...");
-
-      // Send a basic SELECT command (example: select by AID)
+      addLog("📤 Sending test APDU (SELECT command with no data)...");
       const selectCmd = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 256);
       addLog(`📝 Command: ${selectCmd.toHexString()}`);
 
@@ -211,6 +232,101 @@ const NfcTestScreen: React.FC = () => {
       );
     } catch (error) {
       handleError(error, "APDU transmission");
+    }
+  };
+
+  // Send SELECT by AID (from input)
+  const sendSelectByAid = async () => {
+    if (!state.currentCard) {
+      Alert.alert("Error", "No active card session");
+      return;
+    }
+    try {
+      if (!state.aidInput.trim()) {
+        Alert.alert("Input Required", "Enter AID hex to send SELECT by AID.");
+        return;
+      }
+      const aid = hexToBytes(state.aidInput.trim());
+      addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
+      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x00, aid, 256);
+      addLog(`📝 Command: ${cmd.toHexString()}`);
+      const res = await state.currentCard.transmit(cmd);
+      addLog(`📥 Response: ${res.toHexString()}`);
+      addLog(
+        `📊 Status: SW=${res.getSw().toString(16).padStart(4, "0").toUpperCase()} (Success: ${res.isSuccess()})`,
+      );
+    } catch (error) {
+      handleError(error, "SELECT by AID");
+    }
+  };
+
+  // Send raw APDU (from input)
+  const sendRawApdu = async () => {
+    if (!state.currentCard) {
+      Alert.alert("Error", "No active card session");
+      return;
+    }
+    try {
+      if (!state.rawApduInput.trim()) {
+        Alert.alert("Input Required", "Enter raw APDU hex (e.g. 00A40400...)");
+        return;
+      }
+      const apduBytes = hexToBytes(state.rawApduInput.trim());
+      if (apduBytes.length < 4) {
+        Alert.alert(
+          "Invalid APDU",
+          "APDU must be at least 4 bytes (CLA INS P1 P2).",
+        );
+        return;
+      }
+      const cla = apduBytes[0];
+      const ins = apduBytes[1];
+      const p1 = apduBytes[2];
+      const p2 = apduBytes[3];
+
+      let data: Uint8Array | null = null;
+      let le: number = 256;
+
+      if (apduBytes.length === 5) {
+        const leByte = apduBytes[4];
+        le = leByte === 0 ? 256 : leByte;
+      } else if (apduBytes.length >= 5) {
+        const lc = apduBytes[4];
+        if (apduBytes.length < 5 + lc) {
+          throw new Error("APDU length inconsistent with Lc");
+        }
+        data = lc > 0 ? apduBytes.slice(5, 5 + lc) : null;
+        const remaining = apduBytes.length - (5 + lc);
+        if (remaining === 1) {
+          const leByte = apduBytes[5 + lc];
+          le = leByte === 0 ? 256 : leByte;
+        } else if (remaining > 1) {
+          throw new Error(
+            "Unsupported APDU format (only short-length supported)",
+          );
+        }
+      }
+
+      addLog(
+        `📤 Sending raw APDU: CLA=${cla.toString(16).padStart(2, "0").toUpperCase()} INS=${ins
+          .toString(16)
+          .padStart(2, "0")
+          .toUpperCase()} P1=${p1.toString(16).padStart(2, "0").toUpperCase()} P2=${p2
+          .toString(16)
+          .padStart(2, "0")
+          .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`,
+      );
+
+      const cmd = new CommandApdu(cla, ins, p1, p2, data, le);
+      addLog(`📝 Command: ${cmd.toHexString()}`);
+
+      const res = await state.currentCard.transmit(cmd);
+      addLog(`📥 Response: ${res.toHexString()}`);
+      addLog(
+        `📊 Status: SW=${res.getSw().toString(16).padStart(4, "0").toUpperCase()} (Success: ${res.isSuccess()})`,
+      );
+    } catch (error) {
+      handleError(error, "Raw APDU transmission");
     }
   };
 
@@ -248,7 +364,9 @@ const NfcTestScreen: React.FC = () => {
       await releaseDevice(); // Release device first
 
       addLog("🛑 Releasing platform...");
-      await platform.release();
+      if (platform) {
+        await platform.release();
+      }
       setState((prev) => ({ ...prev, initialized: false, devices: [] }));
       addLog("✅ Platform released");
     } catch (error) {
@@ -259,6 +377,13 @@ const NfcTestScreen: React.FC = () => {
   const clearLogs = () => {
     setState((prev) => ({ ...prev, logs: [] }));
   };
+
+  useEffect(() => {
+    return () => {
+      // ensure platform and underlying resources are released
+      releasePlatform().catch(() => {});
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -351,6 +476,56 @@ const NfcTestScreen: React.FC = () => {
               disabled={!state.currentCard}
             >
               <Text style={styles.buttonText}>7. Send APDU</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View>
+            <TextInput
+              style={styles.input}
+              placeholder="AID hex (e.g. A000000003000000)"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={state.aidInput}
+              onChangeText={(text) =>
+                setState((prev) => ({ ...prev, aidInput: text }))
+              }
+            />
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (!state.currentCard || !state.aidInput.trim()) &&
+                  styles.buttonDisabled,
+              ]}
+              onPress={sendSelectByAid}
+              disabled={!state.currentCard || !state.aidInput.trim()}
+            >
+              <Text style={styles.buttonText}>Send SELECT by AID</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ marginTop: 8 }}>
+            <TextInput
+              style={styles.input}
+              placeholder="Raw APDU hex (e.g. 00A40400...)"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={state.rawApduInput}
+              onChangeText={(text) =>
+                setState((prev) => ({ ...prev, rawApduInput: text }))
+              }
+            />
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (!state.currentCard || state.rawApduInput.trim().length < 8) &&
+                  styles.buttonDisabled,
+              ]}
+              onPress={sendRawApdu}
+              disabled={
+                !state.currentCard || state.rawApduInput.trim().length < 8
+              }
+            >
+              <Text style={styles.buttonText}>Send Raw APDU</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -478,6 +653,16 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "500",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    backgroundColor: "#fff",
+    marginBottom: 8,
   },
   releaseButton: {
     backgroundColor: "#FF3B30",

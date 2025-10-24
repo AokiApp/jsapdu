@@ -4,6 +4,8 @@ import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import app.aoki.jsapdu.rn.platform.SmartCardPlatformImpl
+import android.util.Log
 
 class JsapduRnPackage : BaseReactPackage() {
     override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
@@ -11,12 +13,13 @@ class JsapduRnPackage : BaseReactPackage() {
     }
 
     override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
+        Log.d("JsapduRnPackage", "getReactModuleInfoProvider called")
         return ReactModuleInfoProvider { HashMap() }
     }
 
     companion object {
         init {
-            System.loadLibrary("aokiapp_jsapdurn")
+            aokiapp_jsapdurnOnLoad.initializeNative()
         }
     }
 }

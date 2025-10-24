@@ -14,6 +14,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
+import com.facebook.react.bridge.ReactApplicationContext
+import com.margelo.nitro.NitroModules
 
 /**
  * FFI-neutral platform manager for Android NFC with Coroutine support.
@@ -37,7 +39,7 @@ object SmartCardPlatformImpl {
   private const val DEFAULT_TIMEOUT_MS = 30000.0
 
   private val platformMutex = Mutex()
-  private var appContext: Context? = null
+  private var appContext: ReactApplicationContext? = null
   private var nfcAdapter: NfcAdapter? = null
   private var initialized: Boolean = false
 
@@ -47,13 +49,15 @@ object SmartCardPlatformImpl {
    * @param context Application context
    * @throws IllegalStateException if already initialized or NFC not supported
    */
-  suspend fun initialize(context: Context) = platformMutex.withLock {
+  suspend fun initialize() = platformMutex.withLock {
     if (initialized) {
       throw IllegalStateException("ALREADY_INITIALIZED: Platform already initialized")
     }
+
+    appContext = NitroModules.applicationContext
+      ?: throw IllegalStateException("PLATFORM_ERROR: No valid application context available")
     
     try {
-      appContext = context.applicationContext
       nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
       
       if (nfcAdapter == null) {
@@ -96,17 +100,12 @@ object SmartCardPlatformImpl {
     
     try {
       // Unregister screen state receiver
-      val ctx = appContext
-      if (ctx != null) {
-        ScreenStateReceiver.unregister(ctx)
-      }
-      
+      ScreenStateReceiver.unregister(appContext!! as Context)
+
       // Disable all ReaderMode instances and cleanup resources
       NfcReaderController.disableAll()
       SmartCardDeviceImpl.cancelAllWaitsAndRelease()
       
-      // Clear platform state
-      appContext = null
       nfcAdapter = null
       initialized = false
       
@@ -168,8 +167,7 @@ object SmartCardPlatformImpl {
     val handle = "handle-$deviceId-${System.currentTimeMillis()}"
     
     // Get current Activity for ReaderMode
-    val activity = ReactContextProvider.getCurrentActivityOrNull()
-      ?: throw IllegalStateException("PLATFORM_ERROR: No foreground Activity available for ReaderMode")
+    val activity = appContext?.getCurrentActivity() ?: throw IllegalStateException("PLATFORM_ERROR: No foreground Activity available for ReaderMode")
     
     try {
       // Acquire device in lifecycle manager first
@@ -262,9 +260,9 @@ object SmartCardPlatformImpl {
     
     try {
       // Get current Activity for ReaderMode disable
-      val activity = ReactContextProvider.getCurrentActivityOrNull()
+      val activity = appContext!!.getCurrentActivity()
       if (activity != null) {
-        NfcReaderController.disable(activity, deviceHandle)
+        NfcReaderController.disable(activity!!, deviceHandle)
       }
       
       // Release device resources
@@ -331,4 +329,5 @@ object SmartCardPlatformImpl {
       throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
     }
   }
+
 }
