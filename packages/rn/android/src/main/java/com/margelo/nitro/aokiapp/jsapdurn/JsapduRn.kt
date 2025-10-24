@@ -207,9 +207,10 @@ class JsapduRn : HybridJsapduRnSpec() {
    * @param apdu APDU command as ArrayBuffer
    * @return Promise with response APDU (data + SW1/SW2) as ArrayBuffer
    */
-  override fun transmit(cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> = Promise.async {
+  override fun transmit(cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> {
     try {
-      SmartCardPlatformImpl.transmit(cardHandle, apdu)
+      val a = ArrayBuffer.copy(apdu)
+      return Promise.async { SmartCardPlatformImpl.transmit(cardHandle, a) } 
     } catch (e: IllegalStateException) {
       throw e
     } catch (e: Exception) {

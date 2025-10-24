@@ -226,9 +226,9 @@ const NfcTestScreen: React.FC = () => {
       addLog(`📝 Command: ${selectCmd.toHexString()}`);
 
       const response = await state.currentCard.transmit(selectCmd);
-      addLog(`📥 Response: ${response.toHexString()}`);
+      addLog(`📥 Response: ${response.arrayBuffer().byteLength}`);
       addLog(
-        `📊 Status: SW=${response.getSw().toString(16).padStart(4, "0").toUpperCase()} (Success: ${response.isSuccess()})`,
+        `📊 Status: SW=${response.sw.toString(16).padStart(4, "0").toUpperCase()} `,
       );
     } catch (error) {
       handleError(error, "APDU transmission");
@@ -248,12 +248,12 @@ const NfcTestScreen: React.FC = () => {
       }
       const aid = hexToBytes(state.aidInput.trim());
       addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
-      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x00, aid, 256);
+      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x0c, aid);
       addLog(`📝 Command: ${cmd.toHexString()}`);
       const res = await state.currentCard.transmit(cmd);
-      addLog(`📥 Response: ${res.toHexString()}`);
+      addLog(`📥 Response: ${bytesToHex(res.data)}`);
       addLog(
-        `📊 Status: SW=${res.getSw().toString(16).padStart(4, "0").toUpperCase()} (Success: ${res.isSuccess()})`,
+        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
       );
     } catch (error) {
       handleError(error, "SELECT by AID");
@@ -321,9 +321,9 @@ const NfcTestScreen: React.FC = () => {
       addLog(`📝 Command: ${cmd.toHexString()}`);
 
       const res = await state.currentCard.transmit(cmd);
-      addLog(`📥 Response: ${res.toHexString()}`);
+      addLog(`📥 Response: ${bytesToHex(res.data)}`);
       addLog(
-        `📊 Status: SW=${res.getSw().toString(16).padStart(4, "0").toUpperCase()} (Success: ${res.isSuccess()})`,
+        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
       );
     } catch (error) {
       handleError(error, "Raw APDU transmission");

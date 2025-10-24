@@ -32,6 +32,7 @@ import java.nio.ByteBuffer
 object ApduTransceiver {
 
   private val transmissionMutex = Mutex()
+  private const val TAG = "ApduTransceiver"
 
   /**
    * Transmit APDU command to card with proper concurrency control.
@@ -47,7 +48,17 @@ object ApduTransceiver {
     
     val deviceHandle = CardSessionManager.getDeviceHandle(cardHandle)
       ?: throw IllegalStateException("PLATFORM_ERROR: Card session not found: $cardHandle")
+
     
+    android.util.Log.e(TAG, "transmit called: cardHandle=$cardHandle, deviceHandle=$deviceHandle")
+
+      // Convert ArrayBuffer to ByteArray for IsoDep.transceive()
+    val commandBytesBuffer: ByteBuffer = apdu.getBuffer(copyIfNeeded = true)
+    // I want to convert ByteBuffer to ByteArray
+    val commandBytes: ByteArray = commandBytesBuffer.array()
+
+    android.util.Log.e(TAG, "commandBytes size: ${commandBytes.size} bytes")
+
     // Serialize APDU transmissions to prevent race conditions
     return transmissionMutex.withLock {
       val isoDep = DeviceLifecycleManager.getIsoDep(deviceHandle)
@@ -58,20 +69,22 @@ object ApduTransceiver {
         throw IllegalStateException("PLATFORM_ERROR: IsoDep connection not established for card: $cardHandle")
       }
       
+      android.util.Log.e(TAG, "IsoDep is connected, proceeding with transmit")
+
       // Perform I/O operation on appropriate thread context
       withContext(Dispatchers.IO) {
         try {
-          // Convert ArrayBuffer to ByteArray for IsoDep.transceive()
-          val commandBytes = apdu.getBuffer(copyIfNeeded = true).array()
+          android.util.Log.e(TAG, "Transmitting APDU: ${commandBytes.joinToString(",")}")
           
           // Validate APDU length constraints (basic check)
           if (commandBytes.isEmpty()) {
             throw IllegalStateException("INVALID_PARAMETER: Empty APDU command")
           }
+          android.util.Log.e(TAG, "APDU command length validated, proceeding with transceive")
           if (commandBytes.size > 65539) { // Extended APDU max: 65535 + 4 bytes header
             throw IllegalStateException("INVALID_PARAMETER: APDU command too long: ${commandBytes.size} bytes")
           }
-          
+          android.util.Log.e(TAG, "APDU command validated, proceeding with transceive")
           // Perform actual NFC transmission
           val responseBytes = isoDep.transceive(commandBytes)
           
@@ -81,8 +94,15 @@ object ApduTransceiver {
           }
           
           // Convert response back to ArrayBuffer
-          ArrayBuffer.copy(ByteBuffer.wrap(responseBytes))
-          
+          // allocate
+          val allocatedDirectly = ByteBuffer.allocateDirect(responseBytes.size)
+          // put data
+          allocatedDirectly.put(responseBytes)
+          // reset position
+          allocatedDirectly.flip()
+
+          ArrayBuffer.wrap(allocatedDirectly)
+        
         } catch (e: IOException) {
           // NFC I/O communication failure
           throw IllegalStateException("PLATFORM_ERROR: NFC communication failed: ${e.message}")
