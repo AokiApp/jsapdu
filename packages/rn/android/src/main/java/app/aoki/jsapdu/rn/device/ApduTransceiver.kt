@@ -55,7 +55,8 @@ object ApduTransceiver {
       // Convert ArrayBuffer to ByteArray for IsoDep.transceive()
     val commandBytesBuffer: ByteBuffer = apdu.getBuffer(copyIfNeeded = true)
     // I want to convert ByteBuffer to ByteArray
-    val commandBytes: ByteArray = commandBytesBuffer.array()
+    val commandBytes: ByteArray = ByteArray(commandBytesBuffer.remaining())
+    commandBytesBuffer.get(commandBytes)
 
     android.util.Log.e(TAG, "commandBytes size: ${commandBytes.size} bytes")
 
@@ -158,8 +159,7 @@ object ApduTransceiver {
           return@withContext ArrayBuffer.copy(ByteBuffer.wrap(ats))
         }
         
-        // Neither Historical Bytes nor ATS available
-        throw IllegalStateException("PROTOCOL_ERROR: ATR/ATS not available from card")
+        return@withContext ArrayBuffer.allocate(0) // No ATR/ATS available
         
       } catch (e: TagLostException) {
         // Card physically removed during ATR retrieval
