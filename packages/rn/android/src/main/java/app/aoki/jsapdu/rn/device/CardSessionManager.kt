@@ -8,6 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * Card session management for Android NFC with Coroutine support.
@@ -31,64 +34,51 @@ object CardSessionManager {
   private const val TAG = "CardSessionManager"
 
   suspend fun startSession(deviceHandle: String): String {
-    android.util.Log.d(TAG, "startSession called: deviceHandle=$deviceHandle")
     val state = DeviceLifecycleManager.getDeviceState(deviceHandle)
       ?: run {
-        android.util.Log.e(TAG, "Device not acquired: $deviceHandle")
         throw IllegalStateException("PLATFORM_ERROR: Device not acquired: $deviceHandle")
       }
 
     if (!state.isCardPresent) {
-      android.util.Log.e(TAG, "Card not present in device: $deviceHandle")
       throw IllegalStateException("CARD_NOT_PRESENT: Card not present in device: $deviceHandle")
     }
 
     // Check if session already active for this device
     val existingCardHandle = state.activeCardHandle
     if (existingCardHandle != null && cards.containsKey(existingCardHandle)) {
-      android.util.Log.e(TAG, "Card session already active: $existingCardHandle")
       throw IllegalStateException("ALREADY_CONNECTED: Card session already active: $existingCardHandle")
     }
 
     // Get IsoDep instance and establish connection
     val isoDep = DeviceLifecycleManager.getIsoDep(deviceHandle)
       ?: run {
-        android.util.Log.e(TAG, "IsoDep not available for device: $deviceHandle")
         throw IllegalStateException("PLATFORM_ERROR: IsoDep not available for device: $deviceHandle")
       }
 
     return withContext(Dispatchers.IO) {
-      android.util.Log.d(TAG, "Attempting IsoDep connection: deviceHandle=$deviceHandle")
       try {
         // Ensure IsoDep connection is established
         if (!isoDep.isConnected) {
-          android.util.Log.d(TAG, "IsoDep.connect() called: deviceHandle=$deviceHandle")
           isoDep.connect()
         }
 
         // Generate unique card handle and register session
         val cardHandle = "card-$deviceHandle-${System.currentTimeMillis()}"
-        android.util.Log.d(TAG, "Card handle generated: $cardHandle")
 
         // Update state atomically within the lock
         sessionMutex.withLock {
           state.activeCardHandle = cardHandle
           cards[cardHandle] = deviceHandle
-          android.util.Log.d(TAG, "Session registered: cardHandle=$cardHandle, deviceHandle=$deviceHandle")
         }
 
-        android.util.Log.i(TAG, "Card session started successfully: cardHandle=$cardHandle, deviceHandle=$deviceHandle")
         cardHandle
       } catch (e: IOException) {
-        android.util.Log.e(TAG, "Failed to establish card connection: ${e.message}", e)
         throw IllegalStateException("PLATFORM_ERROR: Failed to establish card connection: ${e.message}")
       } catch (e: TagLostException) {
         // Card was removed during connection attempt
-        android.util.Log.e(TAG, "Card removed during session start: deviceHandle=$deviceHandle", e)
         DeviceLifecycleManager.markTagLost(deviceHandle)
         throw IllegalStateException("PLATFORM_ERROR: Card removed during session start")
       } catch (e: SecurityException) {
-        android.util.Log.e(TAG, "NFC permission denied: ${e.message}", e)
         throw IllegalStateException("PLATFORM_ERROR: NFC permission denied: ${e.message}")
       }
     }
@@ -110,6 +100,16 @@ object CardSessionManager {
         
         // Reconnect to reset card state
         isoDep.connect()
+        
+        // Emit CARD_SESSION_RESET on successful reconnect
+        StatusEventDispatcher.emit(
+          StatusEventType.CARD_SESSION_RESET,
+          EventPayload(
+            deviceHandle = deviceHandle,
+            cardHandle = cardHandle,
+            details = "Session reset"
+          )
+        )
         
       } catch (e: IOException) {
         // If reconnection fails, mark card as lost and propagate error

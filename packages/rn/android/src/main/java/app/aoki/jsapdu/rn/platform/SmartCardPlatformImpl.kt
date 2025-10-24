@@ -16,6 +16,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import com.facebook.react.bridge.ReactApplicationContext
 import com.margelo.nitro.NitroModules
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * FFI-neutral platform manager for Android NFC with Coroutine support.
@@ -184,6 +187,12 @@ object SmartCardPlatformImpl {
         }
       })
       
+      // Emit device acquired event
+      StatusEventDispatcher.emit(
+        StatusEventType.DEVICE_ACQUIRED,
+        EventPayload(deviceHandle = handle, cardHandle = null, details = "ReaderMode enabled")
+      )
+
       return@withLock handle
       
     } catch (e: IllegalStateException) {
@@ -236,6 +245,15 @@ object SmartCardPlatformImpl {
     try {
       DeviceLifecycleManager.waitForCardPresence(deviceHandle, timeoutMs)
     } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+      // Emit WAIT_TIMEOUT for deviceHandle
+      StatusEventDispatcher.emit(
+        StatusEventType.WAIT_TIMEOUT,
+        EventPayload(
+          deviceHandle = deviceHandle,
+          cardHandle = null,
+          details = "timeout=${timeoutMs.toLong()}ms"
+        )
+      )
       throw IllegalStateException("TIMEOUT: ${e.message}")
     } catch (e: IllegalStateException) {
       throw e // Re-throw our mapped errors
@@ -267,6 +285,12 @@ object SmartCardPlatformImpl {
       
       // Release device resources
       SmartCardDeviceImpl.release(deviceHandle)
+
+      // Emit device released event
+      StatusEventDispatcher.emit(
+        StatusEventType.DEVICE_RELEASED,
+        EventPayload(deviceHandle = deviceHandle, cardHandle = null, details = "ReaderMode disabled")
+      )
       
     } catch (e: IllegalStateException) {
       throw e

@@ -9,6 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.ByteBuffer
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * APDU transmission and ATR retrieval for Android NFC with Coroutine support.
@@ -87,6 +90,15 @@ object ApduTransceiver {
           }
           android.util.Log.e(TAG, "APDU command validated, proceeding with transceive")
           // Perform actual NFC transmission
+          // Emit APDU_SENT before transmission
+          StatusEventDispatcher.emit(
+            StatusEventType.APDU_SENT,
+            EventPayload(
+              deviceHandle = deviceHandle,
+              cardHandle = cardHandle,
+              details = "len=${commandBytes.size}"
+            )
+          )
           val responseBytes = isoDep.transceive(commandBytes)
           
           // Validate response
@@ -106,16 +118,48 @@ object ApduTransceiver {
         
         } catch (e: IOException) {
           // NFC I/O communication failure
+          StatusEventDispatcher.emit(
+            StatusEventType.APDU_FAILED,
+            EventPayload(
+              deviceHandle = deviceHandle,
+              cardHandle = cardHandle,
+              details = "IO: ${e.message}"
+            )
+          )
           throw IllegalStateException("PLATFORM_ERROR: NFC communication failed: ${e.message}")
         } catch (e: TagLostException) {
           // Card physically removed during transmission
           DeviceLifecycleManager.markTagLost(deviceHandle)
+          StatusEventDispatcher.emit(
+            StatusEventType.CARD_LOST,
+            EventPayload(
+              deviceHandle = deviceHandle,
+              cardHandle = cardHandle,
+              details = "TagLost"
+            )
+          )
           throw IllegalStateException("PLATFORM_ERROR: Card removed during APDU transmission")
         } catch (e: SecurityException) {
           // NFC permission or security constraint violation
+          StatusEventDispatcher.emit(
+            StatusEventType.APDU_FAILED,
+            EventPayload(
+              deviceHandle = deviceHandle,
+              cardHandle = cardHandle,
+              details = "Security: ${e.message}"
+            )
+          )
           throw IllegalStateException("PLATFORM_ERROR: NFC security error: ${e.message}")
         } catch (e: IllegalArgumentException) {
           // Invalid APDU format or parameter
+          StatusEventDispatcher.emit(
+            StatusEventType.APDU_FAILED,
+            EventPayload(
+              deviceHandle = deviceHandle,
+              cardHandle = cardHandle,
+              details = "Invalid APDU: ${e.message}"
+            )
+          )
           throw IllegalStateException("INVALID_PARAMETER: Invalid APDU format: ${e.message}")
         }
       }

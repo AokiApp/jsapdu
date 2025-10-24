@@ -28,6 +28,15 @@ export interface DeviceInfo {
 }
 
 /**
+ * Event payload structure for status updates
+ */
+export interface EventPayload {
+  deviceHandle?: string;
+  cardHandle?: string;
+  details?: string;
+}
+
+/**
  * React Native Nitro Module interface for Android NFC APDU communication
  *
  * This interface provides FFI-neutral methods for SmartCard operations
@@ -158,4 +167,13 @@ export interface JsapduRn
    * @throws SmartCardError with code "PLATFORM_ERROR"
    */
   releaseCard(cardHandle: string): Promise<void>;
+
+  /**
+   * Event callback for status updates (e.g., card removed)
+   * @param callback Possible values: "DEVICE_ACQUIRED", "DEVICE_RELEASED", "CARD_FOUND", "CARD_LOST"
+   * @param payload Event payload with deviceHandle, cardHandle, and details
+   */
+  onStatusUpdate(
+    callback: undefined | ((eventType: string, payload: EventPayload) => void)
+  ): void;
 }

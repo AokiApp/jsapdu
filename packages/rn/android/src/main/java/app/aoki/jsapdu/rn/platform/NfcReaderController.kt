@@ -9,6 +9,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * ReaderMode controller with Coroutine support and improved concurrency control.
@@ -84,8 +87,14 @@ object NfcReaderController : NfcAdapter.ReaderCallback {
         currentActivity = activity,
         isReaderModeEnabled = true
       )
+
+      // Emit ReaderMode enabled event
+      StatusEventDispatcher.emit(
+        StatusEventType.READER_MODE_ENABLED,
+        EventPayload(deviceHandle = deviceHandle, cardHandle = null, details = "ReaderMode enabled; presenceDelay=1000")
+      )
       
-    } catch (e: SecurityException) {
+      } catch (e: SecurityException) {
       throw IllegalStateException("PLATFORM_ERROR: NFC permission denied: ${e.message}")
     } catch (e: Exception) {
       throw IllegalStateException("PLATFORM_ERROR: Failed to enable ReaderMode: ${e.message}")
@@ -105,6 +114,11 @@ object NfcReaderController : NfcAdapter.ReaderCallback {
       val adapter = NfcAdapter.getDefaultAdapter(activity)
       if (adapter != null && deviceState.isReaderModeEnabled) {
         adapter.disableReaderMode(activity)
+        // Emit ReaderMode disabled event
+        StatusEventDispatcher.emit(
+          StatusEventType.READER_MODE_DISABLED,
+          EventPayload(deviceHandle = deviceHandle, cardHandle = null, details = "ReaderMode disabled")
+        )
       }
     } catch (e: Exception) {
       // Log error but continue cleanup - don't let disable failure block resource release

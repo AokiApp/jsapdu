@@ -10,6 +10,7 @@ import { mapNitroError } from '../errors/error-mapper';
 import { RnDeviceInfo } from '../device/rn-device-info';
 import { RnSmartCardDevice } from '../device/rn-smart-card-device';
 import { PlatformState } from './platform-state';
+import type { EventPayload } from '../JsapduRn.nitro';
 
 /**
  * React Native NFC SmartCard platform implementation
@@ -36,15 +37,68 @@ import { PlatformState } from './platform-state';
  * await platform.release();
  * ```
  */
+export type PlatformEventType =
+  | 'DEVICE_ACQUIRED'
+  | 'DEVICE_RELEASED'
+  | 'CARD_FOUND'
+  | 'CARD_LOST'
+  | 'CARD_SESSION_STARTED'
+  | 'CARD_SESSION_RESET'
+  | 'WAIT_TIMEOUT'
+  | 'POWER_STATE_CHANGED'
+  | 'NFC_STATE_CHANGED'
+  | 'APDU_SENT'
+  | 'APDU_FAILED';
+
 export class RnSmartCardPlatform extends SmartCardPlatform {
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
   private lastDeviceInfos: RnDeviceInfo[] | null = null;
+  private listeners: Map<PlatformEventType, Set<(payload: EventPayload) => void>> = new Map();
 
   constructor() {
     super();
     this.hybridObject = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
+  }
+
+  // Event subscription API (typed, thin surface)
+  public on(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+    const set = this.listeners.get(event) || new Set();
+    set.add(listener);
+    this.listeners.set(event, set);
+  }
+
+  public off(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+    const set = this.listeners.get(event);
+    if (!set) return;
+    set.delete(listener);
+    if (set.size === 0) {
+      this.listeners.delete(event);
+    }
+  }
+
+  public once(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+    const onceListener = (payload: EventPayload) => {
+      try {
+        listener(payload);
+      } finally {
+        this.off(event, onceListener);
+      }
+    };
+    this.on(event, onceListener);
+  }
+
+  private emit(event: PlatformEventType, payload: EventPayload): void {
+    const set = this.listeners.get(event);
+    if (!set || set.size === 0) return;
+    for (const l of Array.from(set)) {
+      try {
+        l(payload);
+      } catch {
+        // Protect platform layer from listener exceptions
+      }
+    }
   }
 
   /**
@@ -82,9 +136,22 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     try {
       await this.hybridObject.initPlatform();
       this.initialized = true;
+
+      this.hybridObject.onStatusUpdate(this.statusUpdateHandler);
     } catch (error) {
       throw mapNitroError(error);
     }
+  }
+
+  private statusUpdateHandler(
+    eventType: string,
+    payload: EventPayload
+  ): void {
+    const evt = eventType as PlatformEventType;
+    this.emit(evt, payload);
+    console.log(
+      `RnSmartCardPlatform Status Update: ${eventType} - Device: ${payload.deviceHandle}, Card: ${payload.cardHandle}, Details: ${payload.details}`
+    );
   }
 
   /**
@@ -112,6 +179,8 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     if (this.state.isReleasing) {
       return;
     }
+
+    this.hybridObject.onStatusUpdate(void 0);
 
     this.state.setReleasing(true);
 
@@ -208,8 +277,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
       const deviceHandle = await this.hybridObject.acquireDevice(id);
 
       // Find device info from cache or refresh once
-      let deviceInfoObj: RnDeviceInfo | undefined =
-        this.lastDeviceInfos?.find((info) => info.id === id);
+      let deviceInfoObj: RnDeviceInfo | undefined = this.lastDeviceInfos?.find(
+        (info) => info.id === id
+      );
       if (!deviceInfoObj) {
         const infos = await this.getDeviceInfo();
         deviceInfoObj = infos.find((info) => info.id === id);

@@ -7,6 +7,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 import java.util.concurrent.ConcurrentHashMap
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * Device lifecycle and state management for Android NFC with Coroutine support.
@@ -107,10 +110,21 @@ object DeviceLifecycleManager {
         deferred.complete(Unit)
       }
     }
+
+    // Emit CARD_FOUND event
+    StatusEventDispatcher.emit(
+      StatusEventType.CARD_FOUND,
+      EventPayload(
+        deviceHandle = deviceHandle,
+        cardHandle = null,
+        details = "ISO-DEP tag discovered"
+      )
+    )
   }
 
   suspend fun markTagLost(deviceHandle: String) = stateMutex.withLock {
     val state = devices[deviceHandle] ?: return@withLock
+    val lastCardHandle = state.activeCardHandle
     state.isCardPresent = false
     
     // Release active card session if exists
@@ -142,6 +156,16 @@ object DeviceLifecycleManager {
         )
       }
     }
+
+    // Emit CARD_LOST event
+    StatusEventDispatcher.emit(
+      StatusEventType.CARD_LOST,
+      EventPayload(
+        deviceHandle = deviceHandle,
+        cardHandle = lastCardHandle,
+        details = "ISO-DEP tag lost"
+      )
+    )
   }
 
   // Coroutine-based wait with timeout

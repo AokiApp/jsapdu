@@ -36,6 +36,41 @@ interface TestState {
 }
 let platform: SmartCardPlatform;
 
+ // Event subscription management for native status updates
+const eventUnsubscribers: Array<() => void> = [];
+
+function attachPlatformEvents(logger: (message: string) => void): void {
+  if (!platform) return;
+  const p: any = platform as any;
+
+  const add = (evt: string) => {
+    const handler = (payload: { deviceHandle?: string; cardHandle?: string; details?: string }) => {
+      const dev = payload?.deviceHandle ?? "";
+      const card = payload?.cardHandle ?? "";
+      const det = payload?.details ?? "";
+      logger(`📡 Event ${evt}: device=${dev} card=${card} details=${det}`);
+    };
+    p.on?.(evt, handler);
+    eventUnsubscribers.push(() => p.off?.(evt, handler));
+  };
+
+  // Core lifecycle events
+  add("DEVICE_ACQUIRED");
+  add("DEVICE_RELEASED");
+  add("CARD_FOUND");
+  add("CARD_LOST");
+  // Card session lifecycle
+  add("CARD_SESSION_STARTED");
+  add("CARD_SESSION_RESET");
+  // Timing/power/NFC
+  add("WAIT_TIMEOUT");
+  add("POWER_STATE_CHANGED");
+  add("NFC_STATE_CHANGED");
+  // APDU diagnostics
+  add("APDU_SENT");
+  add("APDU_FAILED");
+}
+
 const NfcTestScreen: React.FC = () => {
   const [state, setState] = useState<TestState>({
     initialized: false,
@@ -92,6 +127,7 @@ const NfcTestScreen: React.FC = () => {
       await platform.init();
       setState((prev) => ({ ...prev, initialized: true }));
       addLog("✅ Platform initialized successfully");
+      attachPlatformEvents(addLog);
     } catch (error) {
       handleError(error, "Platform initialization");
     }
@@ -135,7 +171,7 @@ const NfcTestScreen: React.FC = () => {
     }
 
     try {
-      const deviceId = state.devices[0].id;
+      const deviceId = state.devices[0]!.id;
       addLog(`📡 Acquiring device: ${deviceId}...`);
 
       const device = await platform.acquireDevice(deviceId);
@@ -248,7 +284,7 @@ const NfcTestScreen: React.FC = () => {
       }
       const aid = hexToBytes(state.aidInput.trim());
       addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
-      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x0c, aid);
+      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x0c, aid as unknown as Uint8Array<ArrayBuffer>);
       addLog(`📝 Command: ${cmd.toHexString()}`);
       const res = await state.currentCard.transmit(cmd);
       addLog(`📥 Response: ${bytesToHex(res.data)}`);
@@ -279,26 +315,26 @@ const NfcTestScreen: React.FC = () => {
         );
         return;
       }
-      const cla = apduBytes[0];
-      const ins = apduBytes[1];
-      const p1 = apduBytes[2];
-      const p2 = apduBytes[3];
+      const cla = apduBytes[0]!;
+      const ins = apduBytes[1]!;
+      const p1 = apduBytes[2]!;
+      const p2 = apduBytes[3]!;
 
       let data: Uint8Array | null = null;
       let le: number = 256;
 
       if (apduBytes.length === 5) {
-        const leByte = apduBytes[4];
+        const leByte = apduBytes[4]!;
         le = leByte === 0 ? 256 : leByte;
       } else if (apduBytes.length >= 5) {
-        const lc = apduBytes[4];
+        const lc = apduBytes[4]!;
         if (apduBytes.length < 5 + lc) {
           throw new Error("APDU length inconsistent with Lc");
         }
         data = lc > 0 ? apduBytes.slice(5, 5 + lc) : null;
         const remaining = apduBytes.length - (5 + lc);
         if (remaining === 1) {
-          const leByte = apduBytes[5 + lc];
+          const leByte = apduBytes[5 + lc]!;
           le = leByte === 0 ? 256 : leByte;
         } else if (remaining > 1) {
           throw new Error(
@@ -317,7 +353,8 @@ const NfcTestScreen: React.FC = () => {
           .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`,
       );
 
-      const cmd = new CommandApdu(cla, ins, p1, p2, data, le);
+      const typedData: Uint8Array<ArrayBuffer> | null = data ? (data as unknown as Uint8Array<ArrayBuffer>) : null;
+      const cmd = new CommandApdu(cla, ins, p1, p2, typedData ?? null, le);
       addLog(`📝 Command: ${cmd.toHexString()}`);
 
       const res = await state.currentCard.transmit(cmd);
@@ -367,6 +404,15 @@ const NfcTestScreen: React.FC = () => {
       if (platform) {
         await platform.release();
       }
+      // Detach platform event listeners
+      try {
+        for (const unsub of eventUnsubscribers) {
+          unsub();
+        }
+      } catch (e) {
+        console.warn('[NFC Test] detach listeners failed', e);
+      }
+      eventUnsubscribers.length = 0;
       setState((prev) => ({ ...prev, initialized: false, devices: [] }));
       addLog("✅ Platform released");
     } catch (error) {

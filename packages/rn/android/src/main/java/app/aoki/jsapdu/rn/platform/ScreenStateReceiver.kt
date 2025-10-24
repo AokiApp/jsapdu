@@ -5,9 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
+import android.nfc.NfcAdapter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
+import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
  * Enhanced screen/doze state BroadcastReceiver with Coroutine support.
@@ -59,6 +63,7 @@ object ScreenStateReceiver : BroadcastReceiver() {
         
         // Additional events for enhanced reliability
         addAction(Intent.ACTION_USER_PRESENT) // For future resume handling
+        addAction(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED) // NFC adapter state changes
         
         // Set priority to ensure early notification
         priority = IntentFilter.SYSTEM_HIGH_PRIORITY
@@ -129,6 +134,30 @@ object ScreenStateReceiver : BroadcastReceiver() {
         // User unlocked device - could be used for future resume logic
         // Currently no action needed
       }
+
+      NfcAdapter.ACTION_ADAPTER_STATE_CHANGED -> {
+        // Emit NFC adapter state changes
+        val state = intent?.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, -1) ?: -1
+        val stateStr = when (state) {
+          NfcAdapter.STATE_ON -> "on"
+          NfcAdapter.STATE_OFF -> "off"
+          NfcAdapter.STATE_TURNING_ON -> "turning_on"
+          NfcAdapter.STATE_TURNING_OFF -> "turning_off"
+          else -> "unknown"
+        }
+        try {
+          StatusEventDispatcher.emit(
+            StatusEventType.NFC_STATE_CHANGED,
+            EventPayload(
+              deviceHandle = null,
+              cardHandle = null,
+              details = stateStr
+            )
+          )
+        } catch (_: Exception) {
+          // Suppress event emission errors
+        }
+      }
     }
   }
 
@@ -138,6 +167,20 @@ object ScreenStateReceiver : BroadcastReceiver() {
    * @param reason Human-readable reason for the cleanup (for logging)
    */
   private fun handlePowerStateChange(reason: String) {
+    // Emit POWER_STATE_CHANGED prior to cleanup
+    try {
+      StatusEventDispatcher.emit(
+        StatusEventType.POWER_STATE_CHANGED,
+        EventPayload(
+          deviceHandle = null,
+          cardHandle = null,
+          details = reason
+        )
+      )
+    } catch (_: Exception) {
+      // Suppress event emission errors
+    }
+
     val callback = onCancelAndRelease ?: return
     
     try {

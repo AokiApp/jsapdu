@@ -249,4 +249,22 @@ class JsapduRn : HybridJsapduRnSpec() {
       throw IllegalStateException("PLATFORM_ERROR: Failed to release card: ${e.message}")
     }
   }
+
+  /**
+   * Set status update callback.
+   * @param callback Possible values: "DEVICE_ACQUIRED", "DEVICE_RELEASED", "CARD_FOUND", "CARD_LOST"
+   */
+  override fun onStatusUpdate(callback: ((eventType: String, payload: EventPayload) -> Unit)?): Unit {
+    if (callback == null) {
+      StatusEventDispatcher.clear()
+      return
+    }
+    StatusEventDispatcher.setCallback { eventType, payload ->
+      try {
+        callback.invoke(eventType, payload)
+      } catch (_: Throwable) {
+        // Suppress exceptions from JS callback to avoid native crash
+      }
+    }
+  }
 }
