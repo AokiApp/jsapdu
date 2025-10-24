@@ -169,12 +169,7 @@ export class RnSmartCardDevice extends SmartCardDevice {
   ): Promise<void> {
     this.state.assertNotReleased();
     this.state.validateTimeout(timeout);
-    if (timeout === 0) {
-      throw new SmartCardError(
-        'TIMEOUT',
-        'Card presence wait timed out immediately'
-      );
-    }
+    // timeout==0 is handled by DeviceState.validateTimeout()
 
     this.state.setWaiting(true);
 

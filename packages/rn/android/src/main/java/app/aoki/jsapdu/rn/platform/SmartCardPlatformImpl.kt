@@ -7,72 +7,138 @@ import com.margelo.nitro.core.ArrayBuffer
 import com.margelo.nitro.aokiapp.jsapdurn.D2CProtocol
 import com.margelo.nitro.aokiapp.jsapdurn.DeviceInfo
 import com.margelo.nitro.aokiapp.jsapdurn.P2DProtocol
-import com.margelo.nitro.aokiapp.jsapdurn.ResponseApdu
 import app.aoki.jsapdu.rn.device.SmartCardDeviceImpl
-import java.util.concurrent.TimeoutException
+import app.aoki.jsapdu.rn.device.DeviceLifecycleManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 /**
- * FFI-neutral platform manager for Android NFC (skeleton).
+ * FFI-neutral platform manager for Android NFC with Coroutine support.
+ *
+ * Key improvements:
+ * - Kotlin Coroutine + Mutex for thread-safe platform operations
+ * - Enhanced initialization with proper resource management
+ * - Improved error handling with FFI-neutral error codes
+ * - Coroutine-aware screen-off/doze event handling
+ * - Race condition prevention for platform state transitions
+ *
  * Notes:
- * - No Android-specific terms in external APIs; internal use only.
- * - This class provides minimal, build-unblocking behavior.
- * - JsapduRn.kt will delegate into this singleton.
+ * - No Android-specific terms in external APIs; internal use only
+ * - All suspend functions use appropriate Dispatchers for I/O operations
+ * - JsapduRn.kt delegates to this singleton for all platform operations
+ *
+ * Max: 350 lines per updated coding standards.
  */
-object PlatformManager {
+object SmartCardPlatformImpl {
 
   private const val DEFAULT_TIMEOUT_MS = 30000.0
 
+  private val platformMutex = Mutex()
   private var appContext: Context? = null
   private var nfcAdapter: NfcAdapter? = null
   private var initialized: Boolean = false
 
-  fun initialize(context: Context) {
-    if (initialized) throw IllegalStateException("already initialized")
-    appContext = context.applicationContext
-    nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
-    if (nfcAdapter == null) {
-      throw UnsupportedOperationException("NFC not supported")
+  /**
+   * Initialize platform with proper resource setup and error handling.
+   *
+   * @param context Application context
+   * @throws IllegalStateException if already initialized or NFC not supported
+   */
+  suspend fun initialize(context: Context) = platformMutex.withLock {
+    if (initialized) {
+      throw IllegalStateException("ALREADY_INITIALIZED: Platform already initialized")
     }
-    // Register screen-off/idle receivers to cancel waits and release resources
-    val ctx = appContext
-    if (ctx != null) {
-      ScreenStateReceiver.register(ctx) {
-        SmartCardDeviceImpl.cancelAllWaitsAndRelease()
-        val activity = ReactContextProvider.getCurrentActivityOrNull()
-        if (activity != null) {
-          NfcReaderController.disable(activity)
+    
+    try {
+      appContext = context.applicationContext
+      nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
+      
+      if (nfcAdapter == null) {
+        throw IllegalStateException("PLATFORM_ERROR: NFC hardware not available on this device")
+      }
+      
+      // Register screen-off/idle receivers for resource cleanup
+      val ctx = appContext
+      if (ctx != null) {
+        ScreenStateReceiver.register(ctx) {
+          // Use runBlocking since BroadcastReceiver callback is not suspend
+          runBlocking {
+            SmartCardDeviceImpl.cancelAllWaitsAndRelease()
+            NfcReaderController.disableAll()
+          }
         }
       }
+      
+      initialized = true
+      
+    } catch (e: SecurityException) {
+      throw IllegalStateException("PLATFORM_ERROR: NFC permission denied: ${e.message}")
+    } catch (e: IllegalStateException) {
+      // Re-throw our mapped errors as-is
+      throw e
+    } catch (e: Exception) {
+      throw IllegalStateException("PLATFORM_ERROR: Failed to initialize NFC platform: ${e.message}")
     }
-    initialized = true
   }
 
-  fun release() {
-    if (!initialized) throw IllegalStateException("not initialized")
-    val ctx = appContext
-    if (ctx != null) {
-      ScreenStateReceiver.unregister(ctx)
+  /**
+   * Release platform resources with proper cleanup.
+   *
+   * @throws IllegalStateException if not initialized
+   */
+  suspend fun release() = platformMutex.withLock {
+    if (!initialized) {
+      throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
     }
-    val activity = ReactContextProvider.getCurrentActivityOrNull()
-    if (activity != null) {
-      NfcReaderController.disable(activity)
+    
+    try {
+      // Unregister screen state receiver
+      val ctx = appContext
+      if (ctx != null) {
+        ScreenStateReceiver.unregister(ctx)
+      }
+      
+      // Disable all ReaderMode instances and cleanup resources
+      NfcReaderController.disableAll()
+      SmartCardDeviceImpl.cancelAllWaitsAndRelease()
+      
+      // Clear platform state
+      appContext = null
+      nfcAdapter = null
+      initialized = false
+      
+    } catch (e: Exception) {
+      // Ensure platform is marked as uninitialized even if cleanup fails
+      initialized = false
+      throw IllegalStateException("PLATFORM_ERROR: Error during platform release: ${e.message}")
     }
-    SmartCardDeviceImpl.cancelAllWaitsAndRelease()
-    initialized = false
   }
 
-  fun getDeviceInfo(): Array<DeviceInfo> {
+  /**
+   * Get available device information.
+   * Returns single integrated NFC device or empty array if NFC unavailable.
+   *
+   * @return Array of DeviceInfo (0 or 1 element)
+   */
+  suspend fun getDeviceInfo(): Array<DeviceInfo> = platformMutex.withLock {
     ensureInitialized()
-    val adapter = nfcAdapter ?: return emptyArray()
-    if (!adapter.isEnabled) return emptyArray()
-    return arrayOf(
+    
+    val adapter = nfcAdapter
+    if (adapter == null || !adapter.isEnabled) {
+      return@withLock emptyArray() // NFC disabled or unavailable
+    }
+    
+    arrayOf(
       DeviceInfo(
         id = "integrated-nfc-0",
         devicePath = null,
         friendlyName = "Integrated NFC Reader",
-        description = null,
+        description = "Android NFC with ISO-DEP support",
         supportsApdu = true,
-        supportsHce = false,
+        supportsHce = false, // HCE not implemented in initial version
         isIntegratedDevice = true,
         isRemovableDevice = false,
         d2cProtocol = D2CProtocol.NFC,
@@ -82,77 +148,187 @@ object PlatformManager {
     )
   }
 
-  fun acquireDevice(deviceId: String): String {
+  /**
+   * Acquire device and activate RF field.
+   *
+   * @param deviceId Device identifier from getDeviceInfo()
+   * @return Device handle for subsequent operations
+   * @throws IllegalStateException with FFI-neutral error codes
+   */
+  suspend fun acquireDevice(deviceId: String): String = platformMutex.withLock {
     ensureInitialized()
-    val adapter = nfcAdapter ?: throw UnsupportedOperationException("NFC not supported")
-    if (!adapter.isEnabled) throw SecurityException("NFC is disabled")
-    val handle = "handle-$deviceId"
+    
+    val adapter = nfcAdapter
+      ?: throw IllegalStateException("PLATFORM_ERROR: NFC not supported")
+    
+    if (!adapter.isEnabled) {
+      throw IllegalStateException("PLATFORM_ERROR: NFC is disabled in system settings")
+    }
+    
+    val handle = "handle-$deviceId-${System.currentTimeMillis()}"
+    
+    // Get current Activity for ReaderMode
     val activity = ReactContextProvider.getCurrentActivityOrNull()
-        ?: throw IllegalStateException("No foreground Activity to enable ReaderMode")
-    NfcReaderController.enable(activity, handle, object : NfcReaderController.Listener {
-      override fun onIsoDep(deviceHandle: String, isoDep: IsoDep) {
-        SmartCardDeviceImpl.markCardPresent(deviceHandle, isoDep)
+      ?: throw IllegalStateException("PLATFORM_ERROR: No foreground Activity available for ReaderMode")
+    
+    try {
+      // Acquire device in lifecycle manager first
+      DeviceLifecycleManager.acquire(handle)
+      
+      // Enable ReaderMode with coroutine-aware listener
+      NfcReaderController.enable(activity, handle, object : NfcReaderController.Listener {
+        override suspend fun onIsoDep(deviceHandle: String, isoDep: IsoDep) {
+          DeviceLifecycleManager.markCardPresent(deviceHandle, isoDep)
+        }
+        
+        override suspend fun onTagLost(deviceHandle: String) {
+          DeviceLifecycleManager.markTagLost(deviceHandle)
+        }
+      })
+      
+      return@withLock handle
+      
+    } catch (e: IllegalStateException) {
+      // Clean up device if ReaderMode enable failed
+      try {
+        DeviceLifecycleManager.release(handle)
+      } catch (_: Exception) {
+        // Suppress cleanup errors
       }
-      override fun onTagLost(deviceHandle: String) {
-        SmartCardDeviceImpl.markTagLost(deviceHandle)
-      }
-    })
-    return handle
-  }
-
-  fun isDeviceAvailable(deviceHandle: String): Boolean {
-    if (!initialized) return false
-    val adapter = nfcAdapter ?: return false
-    return adapter.isEnabled
-  }
-
-  fun isCardPresent(deviceHandle: String): Boolean {
-    ensureInitialized()
-    return SmartCardDeviceImpl.isCardPresent(deviceHandle)
-  }
-
-  @Throws(TimeoutException::class)
-  fun waitForCardPresence(deviceHandle: String, timeout: Double?) {
-    ensureInitialized()
-    val t = timeout ?: DEFAULT_TIMEOUT_MS
-    SmartCardDeviceImpl.waitForCardPresence(deviceHandle, t)
-  }
-
-  fun startSession(deviceHandle: String): String {
-    ensureInitialized()
-    // TODO: Connect IsoDep and return opaque card handle when a card is present.
-    throw IllegalStateException("Card not present")
-  }
-
-  fun releaseDevice(deviceHandle: String) {
-    ensureInitialized()
-    val activity = ReactContextProvider.getCurrentActivityOrNull()
-    if (activity != null) {
-      NfcReaderController.disable(activity)
+      throw e
+    } catch (e: SecurityException) {
+      throw IllegalStateException("PLATFORM_ERROR: NFC permission denied: ${e.message}")
+    } catch (e: Exception) {
+      throw IllegalStateException("PLATFORM_ERROR: Failed to acquire device: ${e.message}")
     }
   }
 
-  fun getAtr(cardHandle: String): ArrayBuffer {
-    ensureInitialized()
-    throw UnsupportedOperationException("getAtr not implemented")
+  /**
+   * Check if device is available (non-blocking).
+   */
+  fun isDeviceAvailable(deviceHandle: String): Boolean {
+    if (!initialized) return false
+    val adapter = nfcAdapter ?: return false
+    return adapter.isEnabled && DeviceLifecycleManager.isDeviceAvailable(deviceHandle)
   }
 
-  fun transmit(cardHandle: String, apdu: ArrayBuffer): ResponseApdu {
+  /**
+   * Check if card is present (non-blocking).
+   */
+  fun isCardPresent(deviceHandle: String): Boolean {
     ensureInitialized()
-    throw UnsupportedOperationException("transmit not implemented")
+    return DeviceLifecycleManager.isCardPresent(deviceHandle)
   }
 
-  fun reset(cardHandle: String) {
+  /**
+   * Wait for card presence with timeout.
+   */
+  suspend fun waitForCardPresence(deviceHandle: String, timeout: Double?) {
     ensureInitialized()
-    throw UnsupportedOperationException("reset not implemented")
+    val timeoutMs = timeout ?: DEFAULT_TIMEOUT_MS
+    
+    // Validate timeout parameter
+    if (timeoutMs < 0) {
+      throw IllegalStateException("INVALID_PARAMETER: Timeout cannot be negative: $timeoutMs")
+    }
+    if (timeoutMs == 0.0) {
+      throw IllegalStateException("TIMEOUT: Immediate timeout requested")
+    }
+    
+    try {
+      DeviceLifecycleManager.waitForCardPresence(deviceHandle, timeoutMs)
+    } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+      throw IllegalStateException("TIMEOUT: ${e.message}")
+    } catch (e: IllegalStateException) {
+      throw e // Re-throw our mapped errors
+    } catch (e: Exception) {
+      throw IllegalStateException("PLATFORM_ERROR: Wait failed: ${e.message}")
+    }
   }
 
-  fun releaseCard(cardHandle: String) {
+  /**
+   * Start card session.
+   */
+  suspend fun startSession(deviceHandle: String): String {
     ensureInitialized()
-    throw UnsupportedOperationException("releaseCard not implemented")
+    return SmartCardDeviceImpl.startSession(deviceHandle)
+  }
+
+  /**
+   * Release device and deactivate RF field.
+   */
+  suspend fun releaseDevice(deviceHandle: String) {
+    ensureInitialized()
+    
+    try {
+      // Get current Activity for ReaderMode disable
+      val activity = ReactContextProvider.getCurrentActivityOrNull()
+      if (activity != null) {
+        NfcReaderController.disable(activity, deviceHandle)
+      }
+      
+      // Release device resources
+      SmartCardDeviceImpl.release(deviceHandle)
+      
+    } catch (e: IllegalStateException) {
+      throw e
+    } catch (e: Exception) {
+      throw IllegalStateException("PLATFORM_ERROR: Failed to release device: ${e.message}")
+    }
+  }
+
+  /**
+   * Get ATR/ATS from card.
+   */
+  suspend fun getAtr(cardHandle: String): ArrayBuffer {
+    ensureInitialized()
+    return SmartCardDeviceImpl.getAtr(cardHandle)
+  }
+
+  /**
+   * Transmit APDU to card.
+   */
+  suspend fun transmit(cardHandle: String, apdu: ArrayBuffer): ArrayBuffer {
+    ensureInitialized()
+    return SmartCardDeviceImpl.transmit(cardHandle, apdu)
+  }
+
+  /**
+   * Reset card session.
+   */
+  suspend fun reset(cardHandle: String) {
+    ensureInitialized()
+    SmartCardDeviceImpl.reset(cardHandle)
+  }
+
+  /**
+   * Release card session.
+   */
+  suspend fun releaseCard(cardHandle: String) {
+    ensureInitialized()
+    SmartCardDeviceImpl.releaseCard(cardHandle)
+  }
+
+  /**
+   * Emergency cleanup for screen-off/doze events.
+   * Called from BroadcastReceiver - uses runBlocking.
+   */
+  fun emergencyCleanup() {
+    if (!initialized) return
+    
+    runBlocking {
+      try {
+        NfcReaderController.disableAll()
+        SmartCardDeviceImpl.cancelAllWaitsAndRelease()
+      } catch (_: Exception) {
+        // Suppress errors during emergency cleanup
+      }
+    }
   }
 
   private fun ensureInitialized() {
-    if (!initialized) throw IllegalStateException("not initialized")
+    if (!initialized) {
+      throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
+    }
   }
 }

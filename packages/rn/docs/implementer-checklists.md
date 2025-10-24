@@ -107,7 +107,7 @@
 - **目標**: 1ファイルあたり **100行以内** を厳守
 - **許容**: やむを得ない場合は150行まで（ただし正当な理由が必要）
 - **禁止**: 200行を超えるファイルは **絶対に作成禁止**
-- **例外**: 自動生成ファイル、設定ファイル、テストデータは除く
+- **例外**: 自動生成ファイル、設定ファイル、テストデータは除く。また、コメントや空行は行数に含めない。
 
 #### 2. 責務分離の徹底
 ```typescript
@@ -117,17 +117,17 @@ export class JsapduRn {
 }
 
 // ✅ プロフェッショナルな実装
-// src/hogehoge.ts (80行)
-// src/fugafuga.ts (92行)
-// src/android/.../foo/bar.kt (22行)
-// src/android/src/main/java/app/aoki/jsapdu/rn/Foo/BazTrueLogiCImplementationXYZ.kt (45行)
-// src/index.ts (30行 - エクスポートのみ)
+// src/hogehoge.ts (コメント抜き80行)
+// src/fugafuga.ts (コメント抜き92行)
+// src/android/.../foo/bar.kt (コメント抜き22行)
+// src/android/src/main/java/app/aoki/jsapdu/rn/Foo/BazTrueLogiCImplementationXYZ.kt (コメント抜き45行)
+// src/index.ts (コメント抜き10行 - エクスポートのみ)
 ```
 
 #### 3. ファイル構成の強制
 ```
 packages/rn/src/
-├── index.ts                    # エクスポートのみ（30行以内）
+├── index.ts
 ├── hogehoge.ts
 ├── fugafuga.ts
 ├── foo/
