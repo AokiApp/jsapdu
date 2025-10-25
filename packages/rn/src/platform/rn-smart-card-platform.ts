@@ -50,55 +50,19 @@ export type PlatformEventType =
   | 'APDU_SENT'
   | 'APDU_FAILED';
 
-export class RnSmartCardPlatform extends SmartCardPlatform {
+export type PlatformEventPayload = EventPayload;
+
+export class RnSmartCardPlatform extends SmartCardPlatform<{
+  [key in PlatformEventType]: (payload: PlatformEventPayload) => void;
+}> {
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
   private lastDeviceInfos: RnDeviceInfo[] | null = null;
-  private listeners: Map<PlatformEventType, Set<(payload: EventPayload) => void>> = new Map();
 
   constructor() {
     super();
     this.hybridObject = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
-  }
-
-  // Event subscription API (typed, thin surface)
-  public on(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
-    const set = this.listeners.get(event) || new Set();
-    set.add(listener);
-    this.listeners.set(event, set);
-  }
-
-  public off(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
-    const set = this.listeners.get(event);
-    if (!set) return;
-    set.delete(listener);
-    if (set.size === 0) {
-      this.listeners.delete(event);
-    }
-  }
-
-  public once(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
-    const onceListener = (payload: EventPayload) => {
-      try {
-        listener(payload);
-      } finally {
-        this.off(event, onceListener);
-      }
-    };
-    this.on(event, onceListener);
-  }
-
-  private emit(event: PlatformEventType, payload: EventPayload): void {
-    const set = this.listeners.get(event);
-    if (!set || set.size === 0) return;
-    for (const l of Array.from(set)) {
-      try {
-        l(payload);
-      } catch {
-        // Protect platform layer from listener exceptions
-      }
-    }
   }
 
   /**
@@ -143,12 +107,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     }
   }
 
-  private statusUpdateHandler(
-    eventType: string,
-    payload: EventPayload
-  ): void {
+  private statusUpdateHandler(eventType: string, payload: EventPayload): void {
     const evt = eventType as PlatformEventType;
-    this.emit(evt, payload);
+    this.eventEmitter.emit(evt, payload);
     console.log(
       `RnSmartCardPlatform Status Update: ${eventType} - Device: ${payload.deviceHandle}, Card: ${payload.cardHandle}, Details: ${payload.details}`
     );

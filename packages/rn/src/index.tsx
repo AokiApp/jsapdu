@@ -69,7 +69,7 @@
 // Core Implementation Classes
 // ============================================================================
 
-export { RnSmartCardPlatform } from './platform/rn-smart-card-platform';
+export * from './platform/rn-smart-card-platform';
 export { RnSmartCardDevice } from './device/rn-smart-card-device';
 export { RnSmartCard } from './card/rn-smart-card';
 export { RnDeviceInfo } from './device/rn-device-info';
@@ -80,10 +80,7 @@ export { RnDeviceInfo } from './device/rn-device-info';
 
 export { mapNitroError } from './errors/error-mapper';
 
-import {
-  SmartCardPlatform,
-  SmartCardPlatformManager,
-} from '@aokiapp/jsapdu-interface';
+import { SmartCardPlatformManager } from '@aokiapp/jsapdu-interface';
 // ============================================================================
 // Factory Functions (Convenience API)
 // ============================================================================
@@ -91,7 +88,7 @@ import {
 import { RnSmartCardPlatform } from './platform/rn-smart-card-platform';
 
 class RnSmartCardPlatformManager extends SmartCardPlatformManager {
-  getPlatform(): SmartCardPlatform {
+  getPlatform() {
     return new RnSmartCardPlatform();
   }
 }

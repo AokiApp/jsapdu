@@ -16,22 +16,15 @@ import {
   SmartCardError,
   CommandApdu,
   SmartCardDeviceInfo,
-  SmartCardPlatform,
 } from "@aokiapp/jsapdu-interface";
 
-import { platformManager } from "@aokiapp/jsapdu-rn";
+import {
+  platformManager,
+  type PlatformEventType,
+  type PlatformEventPayload,
+  RnSmartCardPlatform,
+} from "@aokiapp/jsapdu-rn";
 console.log("platformManager:", platformManager);
-
-type PlatformEventPayload = {
-  deviceHandle?: string;
-  cardHandle?: string;
-  details?: string;
-};
-
-interface PlatformEventEmitter {
-  on?(evt: string, handler: (payload: PlatformEventPayload) => void): void;
-  off?(evt: string, handler: (payload: PlatformEventPayload) => void): void;
-}
 
 interface TestState {
   initialized: boolean;
@@ -42,24 +35,23 @@ interface TestState {
   aidInput: string;
   rawApduInput: string;
 }
-let platform: SmartCardPlatform;
+let platform: RnSmartCardPlatform;
 
 // Event subscription management for native status updates
 const eventUnsubscribers: Array<() => void> = [];
 
 function attachPlatformEvents(logger: (message: string) => void): void {
   if (!platform) return;
-  const p = platform as unknown as PlatformEventEmitter;
 
-  const add = (evt: string) => {
+  const add = (evt: PlatformEventType) => {
     const handler = (payload: PlatformEventPayload) => {
-      const dev = payload?.deviceHandle ?? "";
-      const card = payload?.cardHandle ?? "";
-      const det = payload?.details ?? "";
+      const dev = payload.deviceHandle ?? "";
+      const card = payload.cardHandle ?? "";
+      const det = payload.details ?? "";
       logger(`📡 Event ${evt}: device=${dev} card=${card} details=${det}`);
     };
-    p.on?.(evt, handler);
-    eventUnsubscribers.push(() => p.off?.(evt, handler));
+    const off = platform.on(evt, handler);
+    eventUnsubscribers.push(() => off());
   };
 
   // Core lifecycle events
@@ -131,7 +123,7 @@ const NfcTestScreen: React.FC = () => {
   const testInitialization = async () => {
     try {
       addLog("🚀 Initializing NFC platform...");
-      platform = platformManager.getPlatform() as unknown as SmartCardPlatform;
+      platform = platformManager.getPlatform();
       await platform.init();
       setState((prev) => ({ ...prev, initialized: true }));
       addLog("✅ Platform initialized successfully");
