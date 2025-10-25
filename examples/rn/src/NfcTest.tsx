@@ -426,6 +426,7 @@ const NfcTestScreen: React.FC = () => {
     } catch (error) {
       handleError(error, "Platform release");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const clearLogs = () => {

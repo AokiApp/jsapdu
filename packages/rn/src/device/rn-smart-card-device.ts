@@ -232,7 +232,7 @@ export class RnSmartCardDevice extends SmartCardDevice {
    * HCE is planned for future implementation.
    * This method will be implemented when HCE support is added.
    */
-  public async startHceSession(): Promise<EmulatedCard> {
+  public startHceSession(): Promise<EmulatedCard> {
     throw new SmartCardError(
       'UNSUPPORTED_OPERATION',
       'HCE (Host Card Emulation) is not supported in the initial version'

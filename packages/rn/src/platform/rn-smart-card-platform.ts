@@ -101,7 +101,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       await this.hybridObject.initPlatform();
       this.initialized = true;
 
-      this.hybridObject.onStatusUpdate(this.statusUpdateHandler);
+      this.hybridObject.onStatusUpdate(this.statusUpdateHandler.bind(this));
     } catch (error) {
       throw mapNitroError(error);
     }
