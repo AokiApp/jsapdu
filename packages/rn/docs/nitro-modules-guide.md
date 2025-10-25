@@ -23,20 +23,24 @@ React Native Nitro Modules は、mrousavy 氏によって開発された新世�
 ### 従来の Turbo Modules vs Nitro Modules
 
 **Turbo Modules の課題:**
+
 ```mermaid
 graph LR;
     JS--> C++ --> Objective-C --> Swift;
 ```
+
 - 多層のブリッジング
 - 型安全性の欠如
 - 複雑な設定
 - プロパティサポートの限定
 
 **Nitro Modules の解決:**
+
 ```mermaid
 graph LR;
     JS--> C++ --> Swift;
 ```
+
 - 直接的なJSI連携
 - 完全な型安全性
 - 自動コード生成
@@ -77,7 +81,7 @@ packages/rn/
     "iosModuleName": "JsapduRn"
   },
   "android": {
-    "androidNamespace": ["aokiapp","jsapdurn"],
+    "androidNamespace": ["aokiapp", "jsapdurn"],
     "androidCxxLibName": "aokiapp_jsapdurn"
   },
   "autolinking": {
@@ -123,7 +127,7 @@ export interface JsapduRn
 
 ```kotlin
 package com.margelo.nitro.aokiapp.jsapdurn
-  
+
 import com.facebook.proguard.annotations.DoNotStrip
 
 @DoNotStrip
@@ -229,12 +233,13 @@ Nitro Modules は Promise ベースの非同期処理を完全サポートしま
 
 ```typescript
 interface ImageProcessor extends HybridObject {
-  processImage(path: string): Promise<ArrayBuffer>
-  calculateFibonacci(n: number): Promise<bigint>
+  processImage(path: string): Promise<ArrayBuffer>;
+  calculateFibonacci(n: number): Promise<bigint>;
 }
 ```
 
 **Swift実装**:
+
 ```swift
 class HybridImageProcessor : HybridImageProcessorSpec {
   func processImage(path: String) -> Promise<ArrayBuffer> {
@@ -252,12 +257,13 @@ class HybridImageProcessor : HybridImageProcessorSpec {
 効率的なバイナリデータ共有が可能：
 
 ```typescript
-const editor = NitroModules.createHybridObject<ImageEditor>('ImageEditor')
-const buffer = editor.createBuffer(1024)
-const processedBuffer = editor.processBuffer(buffer)
+const editor = NitroModules.createHybridObject<ImageEditor>('ImageEditor');
+const buffer = editor.createBuffer(1024);
+const processedBuffer = editor.processBuffer(buffer);
 ```
 
 **Swift でのArrayBuffer操作**:
+
 ```swift
 func createBuffer(size: Double) throws -> ArrayBuffer {
   let buffer = ArrayBuffer.allocate(size: Int(size))
@@ -276,22 +282,22 @@ TypeScript で定義した構造体をそのまま使用：
 
 ```typescript
 interface Person {
-  name: string
-  age: number
+  name: string;
+  age: number;
 }
 
 interface Car {
-  year: number
-  make: string
-  model: string
-  driver: Person
-  passengers: Person[]
+  year: number;
+  make: string;
+  model: string;
+  driver: Person;
+  passengers: Person[];
 }
 
 interface CarDatabase extends HybridObject {
-  saveCar(car: Car): void
-  getCar(id: string): Car | undefined
-  getAllDrivers(): Person[]
+  saveCar(car: Car): void;
+  getCar(id: string): Car | undefined;
+  getAllDrivers(): Person[];
 }
 ```
 
@@ -301,15 +307,18 @@ JavaScript 関数をネイティブ側で直接実行：
 
 ```typescript
 interface DeviceInfo extends HybridObject {
-  listenToOrientation(onChanged: (orientation: 'portrait' | 'landscape') => void): void
+  listenToOrientation(
+    onChanged: (orientation: 'portrait' | 'landscape') => void
+  ): void;
   requestPermission(
     onSuccess: () => void,
     onFailure: (error: Error) => void
-  ): void
+  ): void;
 }
 ```
 
 **Swift実装**:
+
 ```swift
 func listenToOrientation(onChanged: @escaping (Orientation) -> Void) {
   NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification) { _ in
@@ -325,18 +334,18 @@ React Native View の拡張も可能：
 
 ```typescript
 interface CameraProps extends HybridViewProps {
-  enableFlash: boolean
-  zoom: number
-  onCaptured: (image: ArrayBuffer) => void
+  enableFlash: boolean;
+  zoom: number;
+  onCaptured: (image: ArrayBuffer) => void;
 }
 
 interface CameraMethods extends HybridViewMethods {
-  takePhoto(): Promise<ArrayBuffer>
-  startRecording(): void
-  stopRecording(): Promise<string>
+  takePhoto(): Promise<ArrayBuffer>;
+  startRecording(): void;
+  stopRecording(): Promise<string>;
 }
 
-export type CameraView = HybridView<CameraProps, CameraMethods>
+export type CameraView = HybridView<CameraProps, CameraMethods>;
 ```
 
 ### 6. Worklets 対応
@@ -344,19 +353,20 @@ export type CameraView = HybridView<CameraProps, CameraMethods>
 react-native-reanimated との完全統合：
 
 ```typescript
-const math = NitroModules.createHybridObject<Math>('Math')
-const boxed = NitroModules.box(math)
+const math = NitroModules.createHybridObject<Math>('Math');
+const boxed = NitroModules.box(math);
 
 runOnUI(() => {
-  'worklet'
-  const unboxed = boxed.unbox()
-  const result = unboxed.add(10, 20)
-})()
+  'worklet';
+  const unboxed = boxed.unbox();
+  const result = unboxed.add(10, 20);
+})();
 ```
 
 ## 開発ワークフロー
 
 ### 1. プロジェクト初期化
+
 ```bash
 npx nitrogen@latest init react-native-jsapdu
 # または
@@ -364,6 +374,7 @@ npx create-nitro-module@latest
 ```
 
 ### 2. 依存関係のインストール
+
 ```bash
 npm install react-native-nitro-modules --save-dev
 npm install nitrogen --save-dev
@@ -371,6 +382,7 @@ cd ios && pod install
 ```
 
 ### 3. 開発サイクル
+
 1. **TypeScript インターフェース定義**: [`JsapduRn.nitro.ts`](packages/rn/src/JsapduRn.nitro.ts) でメソッドを定義
 2. **コード生成**: `npx nitrogen` で platform 固有のコードを生成
 3. **ネイティブ実装**: 生成された Spec クラスを継承して実装
@@ -379,6 +391,7 @@ cd ios && pod install
 ### 4. ビルド統合
 
 **iOS (Podspec)**:
+
 ```ruby
 Pod::Spec.new do |s|
   s.source_files = [ ... ]
@@ -388,6 +401,7 @@ end
 ```
 
 **Android (build.gradle)**:
+
 ```gradle
 apply from: '../nitrogen/generated/android/aokiapp_jsapdurn+autolinking.gradle'
 ```
@@ -395,12 +409,14 @@ apply from: '../nitrogen/generated/android/aokiapp_jsapdurn+autolinking.gradle'
 ## 実装時の注意点
 
 ### 命名規約
+
 - **TypeScript**: `JsapduRn` (PascalCase)
 - **Kotlin**: `JsapduRn` (PascalCase)
 - **Swift**: `JsapduRn` (PascalCase)
 - **Package**: `com.margelo.nitro.aokiapp.jsapdurn`
 
 ### ProGuard/R8 対応
+
 Kotlinクラスには `@DoNotStrip` アノテーションが必要：
 
 ```kotlin
@@ -411,11 +427,13 @@ class JsapduRn : HybridJsapduRnSpec() {
 ```
 
 ### エラーハンドリング
+
 - **Kotlin**: 例外をスローすることで JS 側にエラーを伝達
 - **Swift**: `throws` キーワードで例外対応
 - **自動メモリ管理**: JavaScript 関数の参照は自動的に管理される
 
 ### 型安全性
+
 - **コンパイル時チェック**: TypeScript → Native の完全な型検証
 - **ランタイム検証**: 不正な型変換は自動的にエラーになる
 - **null safety**: Optional 型の適切な処理
@@ -443,41 +461,42 @@ class JsapduRn : HybridJsapduRnSpec() {
 ```typescript
 import type { HybridObject } from 'react-native-nitro-modules';
 
-export interface JsapduRn extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
+export interface JsapduRn
+  extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
   // SmartCardPlatform methods
-  initPlatform(): Promise<void>
-  releasePlatform(): Promise<void>
-  getDeviceInfo(): Promise<DeviceInfo[]>
-  acquireDevice(deviceId: string): Promise<SmartCardDevice>
+  initPlatform(): Promise<void>;
+  releasePlatform(): Promise<void>;
+  getDeviceInfo(): Promise<DeviceInfo[]>;
+  acquireDevice(deviceId: string): Promise<SmartCardDevice>;
 
   // SmartCardDevice methods
-  waitForCardPresence(timeout?: number): Promise<void>
-  startSession(): Promise<SmartCard>
-  isCardPresent(): Promise<boolean>
-  releaseDevice(): Promise<void>
+  waitForCardPresence(timeout?: number): Promise<void>;
+  startSession(): Promise<SmartCard>;
+  isCardPresent(): Promise<boolean>;
+  releaseDevice(): Promise<void>;
 
   // SmartCard methods
-  getAtr(): Promise<ArrayBuffer>
-  transmit(apdu: ArrayBuffer): Promise<ResponseApdu>
-  reset(): Promise<void>
-  releaseCard(): Promise<void>
+  getAtr(): Promise<ArrayBuffer>;
+  transmit(apdu: ArrayBuffer): Promise<ResponseApdu>;
+  reset(): Promise<void>;
+  releaseCard(): Promise<void>;
 }
 
 interface DeviceInfo {
-  id: string
-  supportsApdu: boolean
-  supportsHce: boolean
-  isIntegratedDevice: boolean
-  isRemovableDevice: boolean
-  d2cProtocol: string
-  p2dProtocol: string
-  apduApi: string[]
+  id: string;
+  supportsApdu: boolean;
+  supportsHce: boolean;
+  isIntegratedDevice: boolean;
+  isRemovableDevice: boolean;
+  d2cProtocol: string;
+  p2dProtocol: string;
+  apduApi: string[];
 }
 
 interface ResponseApdu {
-  data: ArrayBuffer
-  sw1: number
-  sw2: number
+  data: ArrayBuffer;
+  sw1: number;
+  sw2: number;
 }
 ```
 
@@ -491,7 +510,7 @@ class JsapduRn : HybridJsapduRnSpec() {
   private var nfcAdapter: NfcAdapter? = null
   private var currentTag: Tag? = null
   private var isoDep: IsoDep? = null
-  
+
   override fun initPlatform(): Promise<Unit> = Promise.async {
     val context = reactContext
     nfcAdapter = NfcAdapter.getDefaultAdapter(context)
@@ -502,13 +521,13 @@ class JsapduRn : HybridJsapduRnSpec() {
 
   override fun waitForCardPresence(timeout: Double?): Promise<Unit> = Promise.async {
     // ReaderMode implementation
-    val flags = NfcAdapter.FLAG_READER_NFC_A or 
+    val flags = NfcAdapter.FLAG_READER_NFC_A or
                 NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-    
+
     nfcAdapter?.enableReaderMode(
       currentActivity,
-      { tag -> 
+      { tag ->
         currentTag = tag
         // Notify completion
       },
@@ -519,15 +538,15 @@ class JsapduRn : HybridJsapduRnSpec() {
 
   override fun transmit(apdu: ArrayBuffer): Promise<ResponseApdu> = Promise.async {
     val command = apdu.data
-    val response = isoDep?.transceive(command) 
+    val response = isoDep?.transceive(command)
       ?: throw Exception("Card not connected")
-    
+
     // Parse response (data + SW1/SW2)
     val dataLen = response.size - 2
     val data = response.copyOfRange(0, dataLen)
     val sw1 = response[dataLen].toInt() and 0xFF
     val sw2 = response[dataLen + 1].toInt() and 0xFF
-    
+
     ResponseApdu(ArrayBuffer.copy(data), sw1, sw2)
   }
 }
@@ -540,7 +559,11 @@ class JsapduRn : HybridJsapduRnSpec() {
 ```typescript
 import { NitroModules } from 'react-native-nitro-modules';
 import type { JsapduRn } from './JsapduRn.nitro';
-import { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
+import {
+  SmartCardPlatform,
+  SmartCardDevice,
+  SmartCard,
+} from '@aokiapp/jsapdu-interface';
 
 const jsapduRn = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
 
@@ -576,11 +599,13 @@ export const platform = new RnSmartCardPlatform();
 ### 利点とベストプラクティス
 
 #### パフォーマンス最適化
+
 - **直接メモリアクセス**: ArrayBuffer による効率的なAPDU転送
 - **非同期処理**: Promise による UI ブロックの回避
 - **ガベージコレクション最適化**: ネイティブオブジェクトの適切な管理
 
 #### エラーハンドリング戦略
+
 ```typescript
 // FFI中立なエラーマッピング
 try {
@@ -594,6 +619,7 @@ try {
 ```
 
 #### 型安全性の活用
+
 - **コンパイル時チェック**: TypeScript インターフェースによる厳密な型検証
 - **ランタイム保証**: Nitro による自動的な型変換とバリデーション
 - **プラットフォーム抽象化**: OS固有詳細の隠蔽

@@ -1,6 +1,7 @@
 # 実装検証・動作確認ガイド
 
 **📋 注意**: このガイドは検証手順の補完です。**実装内容の詳細・受入基準**は以下を参照：
+
 - **受入基準の詳細**: [implementer-checklists.md](../implementer-checklists.md) - 各コンポーネントの受入基準
 - **性能要件**: [android-nfc-tsd.md](../tsd/android-nfc-tsd.md) - 時間制約・性能基準
 - **テスト計画**: [rdd/test-plan.md](../rdd/test-plan.md) - 包括的テスト戦略
@@ -10,10 +11,12 @@
 ## 🎯 このガイドの位置づけ
 
 **既存の品質管理体系を補完**する実践的検証手順を提供します：
+
 - **既存**: [implementer-checklists.md](../implementer-checklists.md) の受入基準（何を満たすべきか）
 - **このガイド**: 受入基準を満たしているかの**確認方法**（どう検証するか）
 
 ### 検証レベルと既存仕様との対応
+
 1. **ビルド検証** → [android-nfc-tsd.md](../tsd/android-nfc-tsd.md) の環境要件確認
 2. **単体検証** → [api-contract.md](../tsd/api-contract.md) の各メソッド契約確認
 3. **統合検証** → [implementer-checklists.md](../implementer-checklists.md) の受入基準確認
@@ -25,6 +28,7 @@
 ## 🔨 レベル1: ビルド検証
 
 ### 1-1: TypeScript コンパイル検証
+
 ```bash
 cd packages/rn
 
@@ -38,6 +42,7 @@ npx eslint src/ --ext .ts,.tsx
 ```
 
 ### 1-2: Nitro コード生成検証
+
 ```bash
 # 生成ファイルのクリア
 rm -rf nitrogen/generated/
@@ -56,6 +61,7 @@ ls -la nitrogen/generated/android/
 ```
 
 ### 1-3: Android Gradle ビルド検証
+
 ```bash
 cd projectRoot/examples/rn/android  # nitroプロジェクトは直接ビルドできず、利用側からビルドをトリガーする必要がある
 
@@ -70,8 +76,9 @@ du -h projectRoot/packages/rn/android/build/outputs/aar/android-release.aar  # A
 ```
 
 ### 1-4: React Native リンク検証
+
 ```bash
-cd projectRoot/examples/rn  
+cd projectRoot/examples/rn
 
 # 依存関係インストール
 npm install
@@ -94,6 +101,7 @@ pkill -f "react-native start" # Metro停止
 ## 🧪 レベル2A: JVM側ユニットテスト検証（Android/Kotlin）
 
 ### 2A-1: JUnit基本設定
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRnUnitTest.kt
 package com.margelo.nitro.aokiapp.jsapdurn
@@ -115,7 +123,7 @@ class JsapduRnUnitTest {
     fun setUp() {
         MockKAnnotations.init(this)
         jsapduRn = JsapduRn()
-        
+
         // NfcAdapter.getDefaultAdapterのモック
         mockkStatic(NfcAdapter::class)
         every { NfcAdapter.getDefaultAdapter(any()) } returns mockNfcAdapter
@@ -156,20 +164,21 @@ class JsapduRnUnitTest {
 ```
 
 ### 2A-2: Android テストディペンデンシ（build.gradle）
+
 ```gradle
 // android/build.gradle
 dependencies {
     // JUnit
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4'
-    
+
     // Mockk for Kotlin mocking
     testImplementation 'io.mockk:mockk:1.13.8'
     testImplementation 'io.mockk:mockk-android:1.13.8'
-    
+
     // Robolectric for Android unit tests
     testImplementation 'org.robolectric:robolectric:4.11'
-    
+
     // Android Test (Instrumented)
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:core:1.5.0'
@@ -187,21 +196,22 @@ android {
 ```
 
 ### 2A-3: NFC関連ユニットテスト
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/NFCManagerTest.kt
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class NFCManagerTest {
-    
+
     @Test
     fun testDeviceInfoGeneration() {
         // Given
         val nfcAdapter = mockk<NfcAdapter>()
         every { nfcAdapter.isEnabled } returns true
-        
+
         // When
         val deviceInfo = jsapduRn.generateDeviceInfo(nfcAdapter)
-        
+
         // Then
         assertEquals("integrated-nfc-0", deviceInfo.id)
         assertTrue(deviceInfo.supportsApdu)
@@ -216,10 +226,10 @@ class NFCManagerTest {
         val mockActivity = mockk<Activity>()
         val mockNfcAdapter = mockk<NfcAdapter>()
         every { mockNfcAdapter.enableReaderMode(any(), any(), any(), any()) } just Runs
-        
+
         // When
         jsapduRn.activateReaderMode(mockActivity, mockNfcAdapter)
-        
+
         // Then
         verify {
             mockNfcAdapter.enableReaderMode(
@@ -239,14 +249,14 @@ class NFCManagerTest {
         // Given
         val mockTag = mockk<Tag>()
         val mockIsoDep = mockk<IsoDep>()
-        
+
         every { IsoDep.get(mockTag) } returns mockIsoDep
         every { mockIsoDep.isConnected } returns false
         every { mockIsoDep.connect() } just Runs
-        
+
         // When
         val isValidCard = jsapduRn.isValidIsoDepCard(mockTag)
-        
+
         // Then
         assertTrue(isValidCard)
         verify { IsoDep.get(mockTag) }
@@ -257,10 +267,10 @@ class NFCManagerTest {
         // Given
         val mockTag = mockk<Tag>()
         every { IsoDep.get(mockTag) } returns null
-        
+
         // When
         val isValidCard = jsapduRn.isValidIsoDepCard(mockTag)
-        
+
         // Then
         assertFalse(isValidCard)
     }
@@ -268,23 +278,24 @@ class NFCManagerTest {
 ```
 
 ### 2A-4: APDU送受信テスト
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/APDUTransmissionTest.kt
 class APDUTransmissionTest {
-    
+
     @Test
     fun testAPDUTransmission_Success() = runBlocking {
         // Given
         val mockIsoDep = mockk<IsoDep>()
         val commandAPDU = byteArrayOf(0x00.toByte(), 0xA4.toByte(), 0x00.toByte(), 0x0C.toByte())
         val responseAPDU = byteArrayOf(0x90.toByte(), 0x00.toByte()) // SW1=0x90, SW2=0x00
-        
+
         every { mockIsoDep.isConnected } returns true
         every { mockIsoDep.transceive(commandAPDU) } returns responseAPDU
-        
+
         // When
         val response = jsapduRn.transmitAPDU(mockIsoDep, commandAPDU)
-        
+
         // Then
         assertArrayEquals(byteArrayOf(), response.data) // データ部なし
         assertEquals(0x90, response.sw1)
@@ -298,13 +309,13 @@ class APDUTransmissionTest {
         val mockIsoDep = mockk<IsoDep>()
         val commandAPDU = byteArrayOf(0x00.toByte(), 0xCA.toByte(), 0x9F.toByte(), 0x7F.toByte(), 0x00.toByte())
         val responseData = byteArrayOf(0x01.toByte(), 0x02.toByte(), 0x03.toByte(), 0x90.toByte(), 0x00.toByte())
-        
+
         every { mockIsoDep.isConnected } returns true
         every { mockIsoDep.transceive(commandAPDU) } returns responseData
-        
+
         // When
         val response = jsapduRn.transmitAPDU(mockIsoDep, commandAPDU)
-        
+
         // Then
         assertArrayEquals(byteArrayOf(0x01.toByte(), 0x02.toByte(), 0x03.toByte()), response.data)
         assertEquals(0x90, response.sw1)
@@ -316,7 +327,7 @@ class APDUTransmissionTest {
         // Given
         val mockIsoDep = mockk<IsoDep>()
         every { mockIsoDep.isConnected } returns false
-        
+
         // When & Then
         assertThrows(Exception::class.java) {
             runBlocking {
@@ -331,7 +342,7 @@ class APDUTransmissionTest {
         val extendedCommand = ByteArray(65537) // 拡張APDU最大長
         extendedCommand[0] = 0x00.toByte() // CLA
         extendedCommand[1] = 0xA4.toByte() // INS
-        
+
         // When & Then
         assertDoesNotThrow {
             jsapduRn.validateAPDULength(extendedCommand)
@@ -342,7 +353,7 @@ class APDUTransmissionTest {
     fun testAPDULength_ExceedsLimit() {
         // Given
         val oversizedCommand = ByteArray(70000) // 制限超過
-        
+
         // When & Then
         assertThrows(IllegalArgumentException::class.java) {
             jsapduRn.validateAPDULength(oversizedCommand)
@@ -352,6 +363,7 @@ class APDUTransmissionTest {
 ```
 
 ### 2A-5: エラー写像テスト
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/ErrorMappingTest.kt
 class ErrorMappingTest {
@@ -360,10 +372,10 @@ class ErrorMappingTest {
     fun testAndroidExceptionMapping_TagLostException() {
         // Given
         val tagLostException = TagLostException("Card removed")
-        
+
         // When
         val mappedError = jsapduRn.mapAndroidException(tagLostException)
-        
+
         // Then
         assertEquals("PLATFORM_ERROR", mappedError.code)
         assertTrue(mappedError.message.contains("Card removed"))
@@ -373,10 +385,10 @@ class ErrorMappingTest {
     fun testAndroidExceptionMapping_IOException() {
         // Given
         val ioException = IOException("Transceive failed")
-        
+
         // When
         val mappedError = jsapduRn.mapAndroidException(ioException)
-        
+
         // Then
         assertEquals("PLATFORM_ERROR", mappedError.code)
     }
@@ -385,10 +397,10 @@ class ErrorMappingTest {
     fun testAndroidExceptionMapping_SecurityException() {
         // Given
         val securityException = SecurityException("NFC permission denied")
-        
+
         // When
         val mappedError = jsapduRn.mapAndroidException(securityException)
-        
+
         // Then
         assertEquals("PLATFORM_ERROR", mappedError.code)
         assertTrue(mappedError.message.contains("permission"))
@@ -398,10 +410,10 @@ class ErrorMappingTest {
     fun testTimeoutErrorMapping() {
         // Given
         val timeoutDuration = 5000L
-        
+
         // When
         val timeoutError = jsapduRn.createTimeoutError(timeoutDuration)
-        
+
         // Then
         assertEquals("TIMEOUT", timeoutError.code)
         assertTrue(timeoutError.message.contains("5000"))
@@ -410,6 +422,7 @@ class ErrorMappingTest {
 ```
 
 ### 2A-6: ATR取得順序テスト
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/ATRRetrievalTest.kt
 class ATRRetrievalTest {
@@ -420,16 +433,16 @@ class ATRRetrievalTest {
         val mockTag = mockk<Tag>()
         val historicalBytes = byteArrayOf(0x3B.toByte(), 0x8F.toByte(), 0x80.toByte())
         val ats = byteArrayOf(0x78.toByte(), 0x80.toByte(), 0x95.toByte())
-        
+
         every { mockTag.id } returns byteArrayOf(0x01, 0x02, 0x03, 0x04)
-        
+
         // Historical Bytesが取得可能な場合
         every { jsapduRn.getHistoricalBytes(mockTag) } returns historicalBytes
         every { jsapduRn.getATS(mockTag) } returns ats
-        
+
         // When
         val atr = jsapduRn.retrieveATR(mockTag)
-        
+
         // Then
         assertArrayEquals(historicalBytes, atr)
         verify { jsapduRn.getHistoricalBytes(mockTag) }
@@ -441,14 +454,14 @@ class ATRRetrievalTest {
         // Given
         val mockTag = mockk<Tag>()
         val ats = byteArrayOf(0x78.toByte(), 0x80.toByte(), 0x95.toByte())
-        
+
         // Historical Bytesが取得不可、ATSで代替
         every { jsapduRn.getHistoricalBytes(mockTag) } returns null
         every { jsapduRn.getATS(mockTag) } returns ats
-        
+
         // When
         val atr = jsapduRn.retrieveATR(mockTag)
-        
+
         // Then
         assertArrayEquals(ats, atr)
         verify { jsapduRn.getHistoricalBytes(mockTag) }
@@ -459,10 +472,10 @@ class ATRRetrievalTest {
     fun testATRRetrieval_BothUnavailable() {
         // Given
         val mockTag = mockk<Tag>()
-        
+
         every { jsapduRn.getHistoricalBytes(mockTag) } returns null
         every { jsapduRn.getATS(mockTag) } returns null
-        
+
         // When & Then
         assertThrows(Exception::class.java) {
             jsapduRn.retrieveATR(mockTag)
@@ -472,6 +485,7 @@ class ATRRetrievalTest {
 ```
 
 ### 2A-7: ライフサイクル・リソース管理テスト
+
 ```kotlin
 // android/src/test/java/com/margelo/nitro/aokiapp/jsapdurn/LifecycleTest.kt
 class LifecycleTest {
@@ -482,10 +496,10 @@ class LifecycleTest {
         val mockNfcAdapter = mockk<NfcAdapter>()
         val mockActivity = mockk<Activity>()
         every { mockNfcAdapter.disableReaderMode(mockActivity) } just Runs
-        
+
         // When
         jsapduRn.releaseDevice(mockActivity, mockNfcAdapter)
-        
+
         // Then
         verify { mockNfcAdapter.disableReaderMode(mockActivity) }
     }
@@ -497,10 +511,10 @@ class LifecycleTest {
         every { mockIsoDep.isConnected } returns true
         every { mockIsoDep.close() } just Runs
         every { mockIsoDep.connect() } just Runs
-        
+
         // When
         jsapduRn.resetSession(mockIsoDep)
-        
+
         // Then
         verifySequence {
             mockIsoDep.close()
@@ -515,10 +529,10 @@ class LifecycleTest {
         every { mockDevice.isWaitingForCard } returns true
         every { mockDevice.cancelWait() } just Runs
         every { mockDevice.release() } just Runs
-        
+
         // When - 画面オフイベント処理
         jsapduRn.handleScreenOff(mockDevice)
-        
+
         // Then
         verifySequence {
             mockDevice.cancelWait()
@@ -529,6 +543,7 @@ class LifecycleTest {
 ```
 
 ### 2A-8: JVM テスト実行
+
 ```bash
 # JVM単体テスト実行
 cd packages/rn/android
@@ -545,11 +560,12 @@ open build/reports/coverage/test/debug/index.html
 ```
 
 ### 2A-9: Instrumentation テスト（実機/エミュレータ）
+
 ```kotlin
 // android/src/androidTest/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRnInstrumentationTest.kt
 @RunWith(AndroidJUnit4::class)
 class JsapduRnInstrumentationTest {
-    
+
     @get:Rule
     val activityRule = ActivityTestRule(MainActivity::class.java)
 
@@ -557,7 +573,7 @@ class JsapduRnInstrumentationTest {
     fun testNFCAdapterAvailability() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val nfcAdapter = NfcAdapter.getDefaultAdapter(context)
-        
+
         // 実機ではNFCアダプターが利用可能であることを確認
         // エミュレータではnullの可能性あり
         if (nfcAdapter != null) {
@@ -576,7 +592,7 @@ class JsapduRnInstrumentationTest {
             context,
             android.Manifest.permission.NFC
         )
-        
+
         assertEquals(PackageManager.PERMISSION_GRANTED, nfcPermission)
     }
 }
@@ -585,6 +601,7 @@ class JsapduRnInstrumentationTest {
 ### 2A-10: JVM テスト検証チェックリスト
 
 **必須JVMテスト項目:**
+
 - [ ] プラットフォーム初期化（NFC対応/非対応端末）
 - [ ] ReaderMode有効化/無効化
 - [ ] カード検出（ISO-DEP/非ISO-DEP判定）
@@ -597,6 +614,7 @@ class JsapduRnInstrumentationTest {
 - [ ] ライフサイクル管理（画面オフ等）
 
 **JVMテスト実行基準:**
+
 - [ ] 全単体テスト成功（`./gradlew test`）
 - [ ] カバレッジ80%以上（主要ロジック）
 - [ ] モック適切性（外部依存の分離）
@@ -610,16 +628,19 @@ class JsapduRnInstrumentationTest {
 ### 2-1: プラットフォーム初期化検証
 
 **テスト対象:**
+
 - 初期化成功確認
 - 二重初期化防止
 - デバイス情報取得
 
 **検証方法:**
+
 - Jestテストケースの作成
 - 正常系・異常系の両方をテスト
 - cleanup処理の適切な実装
 
 **期待結果:**
+
 - init() が正常完了する
 - 二重init()でエラーが発生する
 - getDeviceInfo()で適切なデバイス情報が返る
@@ -627,21 +648,25 @@ class JsapduRnInstrumentationTest {
 ### 2-2: デバイス管理検証
 
 **テスト対象:**
+
 - デバイス取得成功
 - 不正デバイスID処理
 - デバイス解放処理
 
 **検証方法:**
+
 - 各テストでの前処理・後処理統一
 - エラーケースの網羅的確認
 - リソースリークの確認
 
 **期待結果:**
+
 - 有効デバイスIDで取得成功
 - 無効デバイスIDでエラー発生
 - 適切なクリーンアップ完了
 
 ### 2-3: 手動実機検証 (実際のNFCカード使用)
+
 ```bash
 # テストアプリでの手動確認
 cd examples/rn
@@ -656,7 +681,7 @@ npx react-native run-android
 #   - "初期化完了" 表示
 #   - ログに "✅ プラットフォーム初期化完了"
 
-# ✅ デバイス検出段階  
+# ✅ デバイス検出段階
 #   - "デバイス検出: 1件" 表示
 #   - デバイスID: integrated-nfc-0 表示
 
@@ -674,53 +699,61 @@ npx react-native run-android
 ## 🔗 レベル3: 統合検証
 
 ### 3-1: エンドツーエンド自動テスト
+
 ```typescript
 // examples/rn/src/__tests__/integration.test.ts
 describe('Integration Verification', () => {
   const CARD_TIMEOUT = 30000; // カード検出タイムアウト
 
-  test('should perform complete card interaction', async () => {
-    // この部分は実際のカードが必要なため、CI環境ではスキップ
-    if (process.env.CI || !process.env.ENABLE_NFC_TESTS) {
-      return;
-    }
+  test(
+    'should perform complete card interaction',
+    async () => {
+      // この部分は実際のカードが必要なため、CI環境ではスキップ
+      if (process.env.CI || !process.env.ENABLE_NFC_TESTS) {
+        return;
+      }
 
-    // 完全なフロー
-    await SmartCardPlatform.init();
-    
-    const devices = await SmartCardPlatform.getDeviceInfo();
-    expect(devices.length).toBeGreaterThan(0);
-    
-    const device = await SmartCardPlatform.acquireDevice(devices[0].id);
-    
-    // カード検出 (手動でカードをタッチする必要がある)
-    console.log('Please touch NFC card now...');
-    await device.waitForCardPresence(CARD_TIMEOUT);
-    
-    const card = await device.startSession();
-    
-    // ATR取得
-    const atr = await card.getAtr();
-    expect(atr).toBeInstanceOf(ArrayBuffer);
-    expect(atr.byteLength).toBeGreaterThan(0);
-    
-    // 基本的なSELECT命令
-    const selectMf = new Uint8Array([0x00, 0xA4, 0x00, 0x0C, 0x02, 0x3F, 0x00]);
-    const response = await card.transmit(selectMf.buffer);
-    
-    expect(response).toHaveProperty('sw1');
-    expect(response).toHaveProperty('sw2');
-    expect(response).toHaveProperty('data');
-    
-    // クリーンアップ
-    await card.release();
-    await device.release();
-    await SmartCardPlatform.release();
-  }, CARD_TIMEOUT + 5000);
+      // 完全なフロー
+      await SmartCardPlatform.init();
+
+      const devices = await SmartCardPlatform.getDeviceInfo();
+      expect(devices.length).toBeGreaterThan(0);
+
+      const device = await SmartCardPlatform.acquireDevice(devices[0].id);
+
+      // カード検出 (手動でカードをタッチする必要がある)
+      console.log('Please touch NFC card now...');
+      await device.waitForCardPresence(CARD_TIMEOUT);
+
+      const card = await device.startSession();
+
+      // ATR取得
+      const atr = await card.getAtr();
+      expect(atr).toBeInstanceOf(ArrayBuffer);
+      expect(atr.byteLength).toBeGreaterThan(0);
+
+      // 基本的なSELECT命令
+      const selectMf = new Uint8Array([
+        0x00, 0xa4, 0x00, 0x0c, 0x02, 0x3f, 0x00,
+      ]);
+      const response = await card.transmit(selectMf.buffer);
+
+      expect(response).toHaveProperty('sw1');
+      expect(response).toHaveProperty('sw2');
+      expect(response).toHaveProperty('data');
+
+      // クリーンアップ
+      await card.release();
+      await device.release();
+      await SmartCardPlatform.release();
+    },
+    CARD_TIMEOUT + 5000
+  );
 });
 ```
 
 ### 3-2: リソース管理検証
+
 ```typescript
 describe('Resource Management Verification', () => {
   test('should handle multiple init/release cycles', async () => {
@@ -744,6 +777,7 @@ describe('Resource Management Verification', () => {
 ## 📊 レベル4: 性能検証
 
 ### 4-1: レスポンス時間測定
+
 ```typescript
 // examples/rn/src/__tests__/performance.test.ts
 describe('Performance Verification', () => {
@@ -756,24 +790,25 @@ describe('Performance Verification', () => {
   test('should initialize within acceptable time', async () => {
     const initTime = await measureTime(() => SmartCardPlatform.init());
     expect(initTime).toBeLessThan(1000); // 1秒以内
-    
+
     await SmartCardPlatform.release();
   });
 
   test('should get device info quickly', async () => {
     await SmartCardPlatform.init();
-    
-    const deviceInfoTime = await measureTime(() => 
+
+    const deviceInfoTime = await measureTime(() =>
       SmartCardPlatform.getDeviceInfo()
     );
     expect(deviceInfoTime).toBeLessThan(100); // 100ms以内
-    
+
     await SmartCardPlatform.release();
   });
 });
 ```
 
 ### 4-2: メモリリーク検証
+
 ```bash
 # メモリプロファイリング (Android)
 cd examples/rn
@@ -795,24 +830,25 @@ diff memory_before.txt memory_after.txt
 ```
 
 ### 4-3: 並行処理検証
+
 ```typescript
 describe('Concurrency Verification', () => {
   test('should handle sequential operations safely', async () => {
     await SmartCardPlatform.init();
-    
+
     // 連続してデバイス情報を取得
-    const promises = Array(10).fill(0).map(() => 
-      SmartCardPlatform.getDeviceInfo()
-    );
-    
+    const promises = Array(10)
+      .fill(0)
+      .map(() => SmartCardPlatform.getDeviceInfo());
+
     const results = await Promise.all(promises);
-    
+
     // すべて同じ結果が返ることを確認
-    results.forEach(devices => {
+    results.forEach((devices) => {
       expect(devices).toHaveLength(1);
       expect(devices[0].id).toBe('integrated-nfc-0');
     });
-    
+
     await SmartCardPlatform.release();
   });
 });
@@ -823,53 +859,57 @@ describe('Concurrency Verification', () => {
 ## 🛡️ レベル5: 堅牢性検証
 
 ### 5-1: エラー処理検証
+
 ```typescript
 describe('Error Handling Verification', () => {
   test('should handle uninitialized access', async () => {
-    await expect(SmartCardPlatform.getDeviceInfo())
-      .rejects.toThrow('Not initialized');
-    
-    await expect(SmartCardPlatform.acquireDevice('test'))
-      .rejects.toThrow('Not initialized');
+    await expect(SmartCardPlatform.getDeviceInfo()).rejects.toThrow(
+      'Not initialized'
+    );
+
+    await expect(SmartCardPlatform.acquireDevice('test')).rejects.toThrow(
+      'Not initialized'
+    );
   });
 
   test('should handle device acquisition without init', async () => {
-    await expect(SmartCardPlatform.acquireDevice('integrated-nfc-0'))
-      .rejects.toThrow('Not initialized');
+    await expect(
+      SmartCardPlatform.acquireDevice('integrated-nfc-0')
+    ).rejects.toThrow('Not initialized');
   });
 
   test('should handle card operations without device', async () => {
     await SmartCardPlatform.init();
-    
+
     // デバイス取得せずにカード待機
     await expect(async () => {
       const device = await SmartCardPlatform.acquireDevice('integrated-nfc-0');
       await device.release(); // デバイス解放
       await device.waitForCardPresence(1000); // 解放後の操作
     }).rejects.toThrow();
-    
+
     await SmartCardPlatform.release();
   });
 });
 ```
 
 ### 5-2: タイムアウト処理検証
+
 ```typescript
 describe('Timeout Verification', () => {
   test('should timeout on card wait', async () => {
     await SmartCardPlatform.init();
     const device = await SmartCardPlatform.acquireDevice('integrated-nfc-0');
-    
+
     // 短いタイムアウトでカード待機 (カードをタッチしない)
     const start = performance.now();
-    await expect(device.waitForCardPresence(1000))
-      .rejects.toThrow('TIMEOUT');
+    await expect(device.waitForCardPresence(1000)).rejects.toThrow('TIMEOUT');
     const elapsed = performance.now() - start;
-    
+
     // タイムアウト時間が正確であることを確認 (±10%の誤差許容)
     expect(elapsed).toBeGreaterThan(900);
     expect(elapsed).toBeLessThan(1500);
-    
+
     await device.release();
     await SmartCardPlatform.release();
   });
@@ -877,11 +917,12 @@ describe('Timeout Verification', () => {
 ```
 
 ### 5-3: 異常状態回復検証
+
 ```typescript
 describe('Recovery Verification', () => {
   test('should recover from platform errors', async () => {
     await SmartCardPlatform.init();
-    
+
     try {
       // 意図的にエラーを発生させる
       await SmartCardPlatform.acquireDevice('invalid-device');
@@ -890,7 +931,7 @@ describe('Recovery Verification', () => {
       const devices = await SmartCardPlatform.getDeviceInfo();
       expect(devices).toHaveLength(1);
     }
-    
+
     await SmartCardPlatform.release();
   });
 });
@@ -901,6 +942,7 @@ describe('Recovery Verification', () => {
 ## 🚀 検証実行スクリプト
 
 ### 自動化検証スクリプト
+
 ```bash
 #!/bin/bash
 # packages/rn/scripts/verify.sh
@@ -937,6 +979,7 @@ echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行�
 ```
 
 ### 検証レポート生成
+
 ```bash
 # 検証結果の保存
 ./scripts/verify.sh 2>&1 | tee verification_report_$(date +%Y%m%d_%H%M%S).txt
@@ -947,45 +990,52 @@ echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行�
 ## ✅ 検証完了基準
 
 ### 必須クリア項目
+
 - [ ] **ビルド検証**: エラーなくビルド完了
-- [ ] **単体検証**: 全テストケース成功  
+- [ ] **単体検証**: 全テストケース成功
 - [ ] **統合検証**: エンドツーエンドフロー成功
 - [ ] **性能検証**: 応答時間が基準値以内
 - [ ] **堅牢性検証**: エラー処理が適切
 
-### 手動確認項目  
+### 手動確認項目
+
 - [ ] **実機テスト**: NFCカード読み取り成功
 - [ ] **ATR表示**: 正しいATR値が表示される
 - [ ] **エラー通知**: 適切なエラーメッセージ表示
 - [ ] **リソース解放**: メモリリークなし
 
 ### 出荷基準
+
 **すべての必須クリア項目 + 手動確認項目が完了した場合のみ、実装完了とする**
 
 ---
 
 このガイドにより、実装の各段階で**能動的な品質保証**が可能になり、問題の早期発見と修正ができます。
+
 ## 📊 レベル6: 実装品質・完了度検証
 
 ### 6-1: 実装完了度チェックリスト
 
 **Platform実装完了基準 ([implementer-checklists.md](../implementer-checklists.md) の Platform Checklist準拠):**
+
 - [ ] SmartCardPlatform.init() が正常動作
-- [ ] SmartCardPlatform.release() が正常動作  
+- [ ] SmartCardPlatform.release() が正常動作
 - [ ] SmartCardPlatform.getDeviceInfo() が適切なデバイス情報返却
 - [ ] SmartCardPlatform.acquireDevice() でReaderMode有効化
 - [ ] 二重初期化・未初期化エラー処理が適切
 - [ ] 非NFC端末で適切なエラー返却 ("PLATFORM_ERROR")
 
 **Device実装完了基準 ([implementer-checklists.md](../implementer-checklists.md) の Device Checklist準拠):**
-- [ ] SmartCardDevice.waitForCardPresence() でカード検出待機  
+
+- [ ] SmartCardDevice.waitForCardPresence() でカード検出待機
 - [ ] タイムアウト処理が仕様通り (30秒デフォルト)
 - [ ] 画面オフ/Doze時にTIMEOUT返却・デバイス解放
 - [ ] ISO-DEPタグのみ検出、FeliCa/NDEF内部抑制
 - [ ] SmartCardDevice.startSession() でセッション確立
 - [ ] 適切なリソース管理・解放処理
 
-**Card実装完了基準 ([implementer-checklists.md](../implementer-checklists.md) の Card Checklist準拠):**  
+**Card実装完了基準 ([implementer-checklists.md](../implementer-checklists.md) の Card Checklist準拠):**
+
 - [ ] SmartCard.getAtr() で適切なATR返却 (HB→ATS順序)
 - [ ] SmartCard.transmit() でAPDU送受信成功
 - [ ] 拡張APDU対応 (Lc/Le二バイト)
@@ -996,12 +1046,14 @@ echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行�
 ### 6-2: アーキテクチャ品質検証基準
 
 **FFI中立性準拠 ([nitro-method-conventions.md](../nitro-method-conventions.md) 準拠):**
+
 - [ ] **用語置換適切**: ReaderMode→RF有効化、IsoDep→ISO-DEPセッション (内部のみ)
 - [ ] **FFI非露出**: メソッド名・引数・戻り値にAndroid語なし
 - [ ] **apduApi返却**: ["nfc", "androidnfc"] 両方含む
 - [ ] **エラー正規化**: 全てSmartCardErrorコード体系
 
 **設計原則準拠 ([android-nfc-ddd.md](../ddd/android-nfc-ddd.md) 準拠):**
+
 - [ ] **責務分離**: Platform/Device/Card層の明確分離
 - [ ] **排他制御**: ReaderMode有効化/無効化・セッション管理の直列化
 - [ ] **リソース管理**: RAII パターン・例外安全性
@@ -1010,11 +1062,13 @@ echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行�
 ### 6-3: 技術仕様準拠検証 ([android-nfc-tsd.md](../tsd/android-nfc-tsd.md) 準拠)
 
 **性能基準:**
+
 - [ ] 時間制約遵守 (init: <1s, getDeviceInfo: <100ms, transmit: <3s)
 - [ ] メモリ制限遵守 (常駐<5MB, APDU<100KB)
 - [ ] レスポンス時間安定性 (±10%以内)
 
 **技術制約:**
+
 - [ ] UI Thread完全回避
 - [ ] 拡張APDU常時使用前提
 - [ ] APDU長規程遵守 ([length-limits.md](../tsd/length-limits.md))
@@ -1023,12 +1077,14 @@ echo "📱 手動検証: 実機でアプリを起動してNFCテストを実行�
 ### 6-4: 最終出荷判定基準
 
 **🔴 出荷阻害要因 (1つでもあれば出荷不可):**
+
 - [ ] 基本機能の不動作
 - [ ] メモリリーク・クラッシュ
 - [ ] 性能基準の大幅未達
 - [ ] セキュリティ脆弱性
 
 **🟠 品質改善要因 (改善推奨):**
+
 - [ ] エラーメッセージの不適切さ
 - [ ] 一部端末での性能劣化
 - [ ] テストカバレッジ不足

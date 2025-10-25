@@ -1,21 +1,26 @@
 # Android NFC技術仕様書（TSD）
 
 ## 🚀 初見の実装者へ
+
 **技術仕様が初めての方**：
+
 - **まず環境準備**: [guides/getting-started.md](../guides/getting-started.md)
 - **要件理解**: [rdd/android-nfc-rdd.md](../rdd/android-nfc-rdd.md) - なぜこの技術仕様か
 - **設計理解**: [ddd/android-nfc-ddd.md](../ddd/android-nfc-ddd.md) - アーキテクチャ全体像
 
 ## 📋 このドキュメントの役割
+
 本書は**技術的制約・性能要件・実装時の注意事項**を定義します。
 React Native Nitro Modules + Android NFC API による実装において、スレッド・時間制約・バッファ・エラーコード・互換性の技術仕様を規定します。
 
 **対象技術**:
+
 - **Nitro Modules**: JSI連携による高性能ネイティブ実装
 - **ISO-DEP**: APDUレベル通信 (NDEF対象外)
 - **Android API 24+**: ReaderMode固定運用 (NFC-A/B/F + SKIP_NDEF)
 
 **関連ドキュメント**:
+
 - 実装チェックリスト: [implementer-checklists.md](../implementer-checklists.md)
 - ドキュメント目次: [index.md](../index.md)
 
@@ -68,6 +73,7 @@ APDU送受信はカードのアクティブ状態に依存し、非アクティ�
 カード検出の待機は呼出側がタイムアウト値を指定する。推奨値は実用環境における検出時間の分布を踏まえ、数秒から十数秒の範囲が望ましい。APDU送受信におけるタイムアウトは、カードおよび端末の実装差に依存するため、必要に応じて呼出側設定とする。タイムアウト発生時は [TimeoutError.class()](packages/interface/src/errors.ts:84) を返却し、再試行の可否は上位設計に委ねる。
 
 ### 画面オフ／Doze検知（実装方針：自動監視）
+
 - 実装方法（確定）
   - Nitro Module内で [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33) 時にBroadcastReceiverを自動登録
   - 監視対象：ACTION_SCREEN_OFF、ACTION_USER_PRESENT、ACTION_DEVICE_IDLE_MODE_CHANGED
@@ -100,6 +106,7 @@ APDUコマンドのシリアライズは [CommandApdu.toUint8Array()](packages/i
 対象環境はAndroid API Level 24以上とする。ReaderModeのフラグは NFC_A | NFC_B | NFC_F | SKIP_NDEF（固定運用）とし、端末差による動的切替は行わない。NFC_V（ISO15693）は対象外。端末により応答長やイベントタイミングの差異が生じる可能性があるため、時間制約やバッファ管理に関する制約は本仕様に従って扱う。
 
 ReaderModeフラグ採用理由（確定方針：完全固定）
+
 - A/B/F を固定で有効化することで検出経路の実装差を低減し、FeliCa 等の非対象タグは SKIP_NDEF と待機側の内部抑制で無視されるため、成立条件（ISO-DEP）の一貫性を維持できる。
 - ベンダ差により F を無効化すると一部端末でイベント配信の順序が不安定化する事例があるため、固定構成が安全側。
 - 対象外プロトコルは公開FFIへ露出しない（成立しない）ため、性能負荷は受入基準内で許容。
@@ -155,6 +162,7 @@ NFC権限と機能の宣言（NDEFは対象外、HCEは初期版範囲外のた�
 ```
 
 注記:
+
 - HCEは将来対応のため `android.hardware.nfc.hce` は宣言しない（初期版は受動読取のみ）。
 - required=false を選択する場合、非対応端末では [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33) ないし [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103) 時に "PLATFORM_ERROR" を返す実装注意を適用する。
 
@@ -187,6 +195,7 @@ android {
 ```
 
 対象ファイル:
+
 - アプリ: app/build.gradle（または build.gradle.kts）
 - 例: [examples/rn/android/app/build.gradle](examples/rn/android/app/build.gradle:1)
 

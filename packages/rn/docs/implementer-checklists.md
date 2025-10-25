@@ -1,12 +1,15 @@
 # Android NFC Implementer Checklists
 
 ## 🚀 初見の実装者へ
+
 **このプロジェクトが初めての方**は、まず以下で準備してください：
+
 - **環境セットアップ**: [guides/getting-started.md](./guides/getting-started.md) - npm install・ビルド環境
 - **プロジェクト概要**: [my-requests.md](./my-requests.md) - 作るものの理解
 - **技術理解**: [nitro-modules-guide.md](./nitro-modules-guide.md) - Nitro Modules学習
 
 ## 📋 Read First (実装仕様の理解)
+
 - [Requirements](packages/rn/docs/rdd/android-nfc-rdd.md:1) - 機能範囲・制約
 - [Design Details](packages/rn/docs/ddd/android-nfc-ddd.md:1) - アーキテクチャ設計
 - [Technical Spec](packages/rn/docs/tsd/android-nfc-tsd.md:1) - 技術仕様・制約
@@ -14,7 +17,9 @@
 - [Interface core](packages/interface/src/abstracts.ts:1) - 共通インターフェース定義
 
 ## Quick Start Sequence
+
 - Precheck: Ensure host app manifest declares NFC permission and feature per [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:94). Choose required true/false per distribution policy. See example [examples/rn/android/app/src/main/AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1).
+
 1. [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)
 2. [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87)
 3. [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103)
@@ -26,6 +31,7 @@
 9. [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39)
 
 ## Platform Checklist
+
 - Preconditions: Not initialized; NFC permission granted; host manifest declares NFC permission and feature; ReaderMode未対応端末は取得不可（acquire時に "PLATFORM_ERROR"）。参照: [android-nfc-rdd.md](packages/rn/docs/rdd/android-nfc-rdd.md:28), [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:94).
 - Actions:
   - Initialize platform via [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33).
@@ -42,6 +48,7 @@
 - Inteface: Ensure [SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17) is extended with `extend` keyword.
 
 ## Device Checklist
+
 - Preconditions: Platform initialized; device acquired; RF active.
 - Actions:
   - Non-blocking presence check [SmartCardDevice.isCardPresent()](packages/interface/src/abstracts.ts:240).
@@ -54,6 +61,7 @@
 - Interface: Ensure [SmartCardDevice.class()](packages/interface/src/abstracts.ts:202) is extended with `extend` keyword.
 
 ## Card Checklist
+
 - Preconditions: Card present; session active.
 - Actions:
   - Retrieve ATR/ATS via [SmartCard.getAtr()](packages/interface/src/abstracts.ts:293), prefer Historical Bytes, else HiLayerResponse; else "PROTOCOL_ERROR" (see [api-contract.md](packages/rn/docs/tsd/api-contract.md:46)).
@@ -74,17 +82,20 @@
 - 注記: RN Nitro のボイラープレートで既に namespace が決まっている箇所は尊重する（例: [packages/rn/android/build.gradle](packages/rn/android/build.gradle:34), [JsapduRn.kt](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:1)）。必要であれば仕様へ同等の事項を組み込み、ボイラープレートに依存しない形でも契約を満たす。
 
 ## FFI Neutrality Do / Don't
+
 - Do: use neutral terms and contracts [SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17), [SmartCardDevice.class()](packages/interface/src/abstracts.ts:202), [SmartCard.class()](packages/interface/src/abstracts.ts:283).
 - Do: set apduApi to ["nfc","androidnfc"]（Android returns both）; OS名 'androidnfc' を含める。
 - Don't: expose ReaderMode, IsoDep, Intent, Activity in public FFI (see [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:7)).
 - Don't: run I/O on UI thread.
 
 ## Term Substitution
+
 - ReaderMode → RF enable/disable (internal).
 - IsoDep → ISO-DEP session (internal).
 - Android lifecycle → app foreground state (internal), not in FFI.
 
 ## Acceptance Criteria (per component)
+
 - Platform: init/acquire/release per contract; RF activated on acquire, deactivated on release; errors mapped per contract.
 - Device: wait cancels on screen-off/Doze with TIMEOUT; proper release on cancellation.
 - Card: APDU length rules enforced; ATR/ATS retrieval order; non-UI-thread I/O; proper error mapping.
@@ -92,9 +103,11 @@
 ## 💀 プロフェッショナル・コーディング規約（厳格遵守）
 
 ### ファイル分割の原則
+
 **⚠️ 警告: 一つのファイルに多数の行を書くような馬鹿な実装は、技術的負債を生み出し、プロジェクト全体の品質を著しく低下させる愚行である。**
 
 実装者がこのような馬鹿な行動を取ることで、以下の問題を招く：
+
 - **可読性の破綻**: 巨大なファイルは理解困難で、バグの温床となる
 - **保守性の悪化**: 変更時の影響範囲が予測不可能になる
 - **レビュー困難**: コードレビューが形骸化し、品質管理が破綻する
@@ -104,12 +117,14 @@
 ### 強制ルール
 
 #### 1. ファイルサイズ制限
+
 - **目標**: 1ファイルあたり **100行以内** を厳守
 - **許容**: やむを得ない場合は150行まで（ただし正当な理由が必要）
 - **禁止**: 200行を超えるファイルは **絶対に作成禁止**
 - **例外**: 自動生成ファイル、設定ファイル、テストデータは除く。また、コメントや空行は行数に含めない。
 
 #### 2. 責務分離の徹底
+
 ```typescript
 // ❌ 馬鹿な実装例（index.ts に全部詰め込み）
 export class JsapduRn {
@@ -125,6 +140,7 @@ export class JsapduRn {
 ```
 
 #### 3. ファイル構成の強制
+
 ```
 packages/rn/src/
 ├── index.ts
@@ -155,7 +171,9 @@ packages/rn/src/
 ```
 
 #### 4. コードレビュー基準
+
 **レビュー時の必須チェック項目:**
+
 - [ ] ファイル行数が100行以内か？(ただし正統な理由がある場合は150行まで許容)
 - [ ] 単一責務原則に従っているか？
 - [ ] 適切にファイル分割されているか？
@@ -163,11 +181,13 @@ packages/rn/src/
 - [ ] 各クラス・関数が適切なサイズか？
 
 ### 受入基準
+
 - **Green**: 全ファイル100行以内、適切な責務分離
 - **Yellow**: 一部150行以内、軽微な改善余地あり
 - **Red**: 200行超過ファイル存在、即座に**リジェクト**
 
 ### 検査ツール
+
 ```bash
 # ファイル行数チェック（CI/CDに組み込み必須）
 find packages/rn/src -name "*.ts" -not -path "*/node_modules/*" | \
@@ -175,14 +195,17 @@ xargs wc -l | awk '$1 > 100 {print "❌ VIOLATION: " $2 " has " $1 " lines (limi
 ```
 
 ### けん制メッセージ
+
 **実装者への警告:**
 「`index.ts`や単一ファイルに全ての実装を詰め込む行為は、プロフェッショナルとして恥ずべき愚行である。適切なファイル分割ができない実装者は、このプロジェクトに参加する資格がない。」
 
 ## Canonical References
+
 - [API Contract](packages/rn/docs/tsd/api-contract.md:1)
 - [Technical Spec](packages/rn/docs/tsd/android-nfc-tsd.md:1)
 - [Length Limits](packages/rn/docs/tsd/length-limits.md:1)
 - [Compatibility](packages/rn/docs/tsd/compat-devices.md:1)
+
 ## Implementer Actions（Manifest, Naming, Acceptance）
 
 - Manifest updates are implementer-owned. Architects do not change code. Update host app [AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1) to declare:

@@ -1,7 +1,9 @@
 # 実装者向けクイックガイド（5分で把握）
 
 ## 🚀 初見の方へ
+
 **初めてこのプロジェクトに関わる方**は、まず以下で全体像を把握してください：
+
 - **プロジェクト概要**: [my-requests.md](./my-requests.md) - 何を作るか・なぜ作るか
 - **環境セットアップ**: [guides/getting-started.md](./guides/getting-started.md) - npm install・ビルド環境準備
 - **Nitro Modules理解**: [nitro-modules-guide.md](./nitro-modules-guide.md) - 使用技術の詳細
@@ -42,11 +44,11 @@
     - 例の現在設定: [examples/rn/android/build.gradle](examples/rn/android/build.gradle:3), [examples/rn/android/app/build.gradle](examples/rn/android/app/build.gradle:78)
 
 - 実装の5ステップ（FFI中立な公開契約準拠）
-  1) プラットフォーム初期化 [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)
-  2) デバイス情報取得 [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87) → 現行は統合NFCデバイスを単一IDで返す（受入基準は0または1件）。非NFC端末では0件。将来は複数デバイス（例: BLEリーダ）を許容。IDは例示 "integrated-nfc-0"。apduApi=["nfc","androidnfc"]。supportsHce=false（初期版）。公開スキーマはインタフェース定義に一致させ、追加のケイパは含めない。
-  3) デバイス取得でRFを有効化 [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103)
-  4) タグ検出の待機 [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259)（イベント駆動。タイムアウト/キャンセルで終了）
-  5) セッション開始とI/O [SmartCardDevice.startSession()](packages/interface/src/abstracts.ts:249), [SmartCard.transmit()](packages/interface/src/abstracts.ts:300), [SmartCard.getAtr()](packages/interface/src/abstracts.ts:293)
+  1. プラットフォーム初期化 [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)
+  2. デバイス情報取得 [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87) → 現行は統合NFCデバイスを単一IDで返す（受入基準は0または1件）。非NFC端末では0件。将来は複数デバイス（例: BLEリーダ）を許容。IDは例示 "integrated-nfc-0"。apduApi=["nfc","androidnfc"]。supportsHce=false（初期版）。公開スキーマはインタフェース定義に一致させ、追加のケイパは含めない。
+  3. デバイス取得でRFを有効化 [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103)
+  4. タグ検出の待機 [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259)（イベント駆動。タイムアウト/キャンセルで終了）
+  5. セッション開始とI/O [SmartCardDevice.startSession()](packages/interface/src/abstracts.ts:249), [SmartCard.transmit()](packages/interface/src/abstracts.ts:300), [SmartCard.getAtr()](packages/interface/src/abstracts.ts:293)
      - 終了時はカード→デバイス→プラットフォームの順で解放 [SmartCard.release()](packages/interface/src/abstracts.ts:312), [SmartCardDevice.release()](packages/interface/src/abstracts.ts:269), [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39)
 
 - ライフサイクルとフラグ（確定方針）
@@ -82,6 +84,7 @@
 
 - 実装行動の基準は [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1) を最優先とし、本文重複は避けて契約・仕様へリンクします。  
   詳細契約は [api-contract.md](packages/rn/docs/tsd/api-contract.md:1)、技術仕様は [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1)、設計詳細は [android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:1) を参照してください。
+
 # Android NFC ドキュメント索引
 
 本書は、Android版スマートカードAPDU通信ライブラリ（React Native/Nitro）の文書全体を俯瞰し、実装者が迷わず正しい実装に到達できるようにするための索引と運用指針を提供する。重複や記述揺れを避け、単一の情報源へ誘導する。
@@ -96,6 +99,7 @@
 6. 要件定義（範囲・非機能・方針）: [android-nfc-rdd.md](packages/rn/docs/rdd/android-nfc-rdd.md:1)
 
 付録（必要時に参照）
+
 - 互換性・端末差異: [compat-devices.md](packages/rn/docs/tsd/compat-devices.md:1)
 - APDU長規程: [length-limits.md](packages/rn/docs/tsd/length-limits.md:1)
 - 試験計画: [test-plan.md](packages/rn/docs/rdd/test-plan.md:1)
@@ -115,6 +119,7 @@
 - 解放: [SmartCard.release()](packages/interface/src/abstracts.ts:312), [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39)
 
 ## API契約チートシート（抜粋）
+
 - 非同期（Promise）
   - [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33), [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39), [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87), [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103), [SmartCardDevice.isDeviceAvailable()](packages/interface/src/abstracts.ts:231), [SmartCardDevice.isCardPresent()](packages/interface/src/abstracts.ts:240), [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259), [SmartCardDevice.startSession()](packages/interface/src/abstracts.ts:249), [SmartCard.reset()](packages/interface/src/abstracts.ts:306), [SmartCard.transmit()](packages/interface/src/abstracts.ts:300), [SmartCard.release()](packages/interface/src/abstracts.ts:312)
 - 代表的エラー写像（抜粋）
@@ -128,7 +133,9 @@
   - 端末固有上限は [compat-devices.md](packages/rn/docs/tsd/compat-devices.md:1) を参照。規程の詳細は [length-limits.md](packages/rn/docs/tsd/length-limits.md:1)
 
 ## 公開契約抜粋（メソッド・引数・戻り値）
+
 - DeviceInfo サンプル（インタフェース準拠）
+
 ```json
 {
   "id": "integrated-nfc-0",
@@ -138,9 +145,10 @@
   "isRemovableDevice": false,
   "d2cProtocol": "nfc",
   "p2dProtocol": "nfc",
-  "apduApi": ["nfc","androidnfc"]
+  "apduApi": ["nfc", "androidnfc"]
 }
 ```
+
 - 戻り値例（代表）
   - ResponseApdu: data+SW1/SW2（[ResponseApdu.class()](packages/interface/src/apdu/response-apdu.ts:1)）
 - ATR 返却規則（Android）

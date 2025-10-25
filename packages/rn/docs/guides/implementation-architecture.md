@@ -1,6 +1,7 @@
 # 実装アーキテクチャ方針
 
 **📋 注意**: このドキュメントは既存仕様の**補完**です。詳細な設計方針は以下を参照：
+
 - **設計詳細**: [android-nfc-ddd.md](../ddd/android-nfc-ddd.md) - 責務分担・全体構成
 - **命名規約**: [nitro-method-conventions.md](../nitro-method-conventions.md) - FFI中立・命名方針
 - **技術制約**: [android-nfc-tsd.md](../tsd/android-nfc-tsd.md) - スレッド・同期・制約
@@ -10,6 +11,7 @@
 ## 📋 このドキュメントの役割
 
 **既存の包括的設計仕様**を、実装者が迷わず適用できるよう**実践的な観点**で整理します：
+
 - **既存設計** ([android-nfc-ddd.md](../ddd/android-nfc-ddd.md)) の実装時のポイント
 - **既存命名規約** ([nitro-method-conventions.md](../nitro-method-conventions.md)) の具体的適用方法
 - **ファイル構成の実践的指針**
@@ -25,12 +27,14 @@
 **決定事項**: React Native Nitro Modules の**標準的なパターン**に従います
 
 **理由**:
+
 - フレームワークの想定する使用方法に沿う
 - 将来的なNitro Modulesアップデートへの追従が容易
 - デバッグツールやドキュメントとの整合性
 - 他のNitro Modulesライブラリとの一貫性
 
 **具体的な影響**:
+
 ```
 ✅ 採用パターン: 単一エントリーポイント
 ❌ 非採用: 複数モジュールによる分散実装
@@ -41,17 +45,19 @@
 **決定事項**: 公開APIは**OS固有の概念を一切露出しない**
 
 **理由**:
+
 - iOS版実装時の設計整合性
 - ユーザーコードでのプラットフォーム分岐回避
 - テストコードの共通化
 - ドキュメントの単純化
 
 **具体的な影響**:
+
 ```typescript
 ✅ 適切: SmartCardDevice.waitForCardPresence()
 ❌ 不適切: AndroidNfcDevice.enableReaderMode()
 
-✅ 適切: DeviceInfo.apduApi = ["nfc", "androidnfc"] 
+✅ 適切: DeviceInfo.apduApi = ["nfc", "androidnfc"]
 ❌ 不適切: AndroidDeviceInfo.readerModeFlags
 ```
 
@@ -60,12 +66,14 @@
 **決定事項**: すべての例外は**SmartCardErrorコード体系**に正規化
 
 **理由**:
+
 - ユーザー側でのエラー処理コード統一
 - ログ・監視システムでの分類容易性
 - 多言語対応の基盤
 - デバッグ情報の体系化
 
 **具体的な影響**:
+
 ```kotlin
 ✅ 適切: throw SmartCardException("PLATFORM_ERROR", "NFC not supported")
 ❌ 不適切: throw IOException("NFC adapter not found")
@@ -97,6 +105,7 @@ src/
 ```
 
 **理由**:
+
 - **単一責任原則** (SRP) の遵守
 - **テスト容易性**: 各クラスの独立テスト可能
 - **保守性**: 変更影響範囲の局所化
@@ -121,12 +130,14 @@ android/src/main/java/.../
 ```
 
 **理由**:
+
 - **関心事の分離**: 各クラスが単一の責務に集中
 - **テスト戦略**: 各レイヤーの独立テスト
 - **保守性向上**: 変更時の影響範囲明確化
 - **並行開発**: 複数開発者による同時作業支援
 
 **実装ルール**:
+
 ```kotlin
 ✅ 適切: JsapduRn は純粋な委譲層
 override fun initPlatform() = Promise.async {
@@ -148,6 +159,7 @@ override fun initPlatform() = Promise.async {
 **決定事項**: 外部ライブラリ依存を**最小限**に留める
 
 **許可する依存**:
+
 ```kotlin
 ✅ Android Standard Library (android.nfc.*)
 ✅ React Native Core (com.facebook.react.*)
@@ -155,6 +167,7 @@ override fun initPlatform() = Promise.async {
 ```
 
 **禁止する依存**:
+
 ```kotlin
 ❌ サードパーティNFCライブラリ
 ❌ 追加のJSONライブラリ
@@ -172,10 +185,10 @@ override fun initPlatform() = Promise.async {
 // package.json
 {
   "dependencies": {
-    "react-native-nitro-modules": "0.31.1"  // 固定
+    "react-native-nitro-modules": "0.31.1" // 固定
   },
   "peerDependencies": {
-    "react-native": ">=0.74.0"  // 最小バージョン指定
+    "react-native": ">=0.74.0" // 最小バージョン指定
   }
 }
 ```
@@ -191,6 +204,7 @@ override fun initPlatform() = Promise.async {
 **決定事項**: NFC I/Oは**UI Thread以外で実行**を厳守
 
 **実装パターン**:
+
 ```kotlin
 ✅ 適切: Promise.async { } 内でI/O実行
 override fun transmit(apdu: ArrayBuffer): Promise<Map<String, Any?>> = Promise.async {
@@ -211,7 +225,7 @@ override fun transmitSync(apdu: ArrayBuffer): Map<String, Any?> {
 ```kotlin
 class SmartCardDeviceManager {
     private val mutex = Mutex() // 排他制御はここで完結
-    
+
     suspend fun acquire(...) = mutex.withLock {
         // 排他制御が必要な処理
     }
@@ -235,17 +249,18 @@ override fun acquireDevice(deviceId: String) = Promise.async {
 
 ```typescript
 // 対称的なライフサイクル
-await SmartCardPlatform.init()        // 取得
-await SmartCardPlatform.release()     // 解放
+await SmartCardPlatform.init(); // 取得
+await SmartCardPlatform.release(); // 解放
 
-const device = await platform.acquireDevice(id)  // 取得  
-await device.release()                           // 解放
+const device = await platform.acquireDevice(id); // 取得
+await device.release(); // 解放
 
-const card = await device.startSession()  // 取得
-await card.release()                      // 解放
+const card = await device.startSession(); // 取得
+await card.release(); // 解放
 ```
 
 **強制ルール**:
+
 - すべての `acquire` 系メソッドには対応する `release` を用意
 - `release` は冪等性を保証（複数回呼んでもエラーにならない）
 - リソースリーク防止のため、finalizer的な仕組みも併用
@@ -281,7 +296,7 @@ class SmartCardManager {
 ```
 ✅ 必須基準:
 - init(): < 1000ms
-- getDeviceInfo(): < 100ms  
+- getDeviceInfo(): < 100ms
 - acquireDevice(): < 500ms
 - transmit(): < 3000ms (APDU dependent)
 - release系: < 200ms
@@ -322,6 +337,7 @@ class SmartCardManager {
 ```
 
 **具体的比率**:
+
 - 単体テスト: 70% (各メソッドの正常系・異常系)
 - 統合テスト: 25% (クラス間連携・エラー伝播)
 - 手動テスト: 5% (実際のNFCカードでの動作確認)
@@ -333,7 +349,7 @@ class SmartCardManager {
 ```kotlin
 ✅ モック対象:
 - NfcAdapter
-- IsoDep  
+- IsoDep
 - Tag
 
 ❌ モック対象外:
@@ -354,7 +370,7 @@ class SmartCardManager {
 ✅ クラス名: PascalCase
 class SmartCardPlatformManager
 
-✅ メソッド名: camelCase  
+✅ メソッド名: camelCase
 fun initializePlatform()
 
 ✅ 定数: UPPER_SNAKE_CASE
@@ -370,7 +386,7 @@ private var isInitialized = false
 
 ```kotlin
 ✅ ユーザー向けメッセージ: 日本語、解決策提示
-throw SmartCardException("PLATFORM_ERROR", 
+throw SmartCardException("PLATFORM_ERROR",
     "NFCがサポートされていません。NFC対応端末でお試しください。")
 
 ✅ 開発者向けログ: 英語、技術詳細
@@ -388,7 +404,7 @@ Log.d(TAG, "NfcAdapter.getDefaultAdapter() returned null")
 ```typescript
 ✅ 安全な変更:
 - 新しいオプション引数の追加
-- 新しいメソッドの追加  
+- 新しいメソッドの追加
 - 内部実装の最適化
 
 ❌ 危険な変更:
@@ -406,7 +422,7 @@ Log.d(TAG, "NfcAdapter.getDefaultAdapter() returned null")
 class SmartCardPlatform {
   // 新しいメソッド
   static async initialize(): Promise<void> { ... }
-  
+
   // 古いメソッド (Deprecated)
   /** @deprecated Use initialize() instead */
   static async init(): Promise<void> {
@@ -423,21 +439,24 @@ class SmartCardPlatform {
 以下すべてが満たされた場合に**実装完了**とします：
 
 ### 必須基準
+
 - [ ] すべてのpublic APIが実装されている
 - [ ] 単体テストカバレッジ > 80%
 - [ ] 性能基準をすべてクリア
 - [ ] メモリリークテストをパス
 - [ ] 実機での基本動作確認完了
 
-### 品質基準  
+### 品質基準
+
 - [ ] ドキュメント整合性確認
 - [ ] 静的解析エラーゼロ
 - [ ] ESLint/Ktlint エラーゼロ
 - [ ] 型安全性検証完了
 
 ### 出荷基準
+
 - [ ] セキュリティレビュー完了
-- [ ] パフォーマンステスト完了  
+- [ ] パフォーマンステスト完了
 - [ ] 実機互換性テスト完了
 - [ ] ユーザビリティテスト完了
 

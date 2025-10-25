@@ -3,11 +3,11 @@ import type { DeviceInfo } from '../JsapduRn.nitro';
 
 /**
  * React Native NFC device information implementation
- * 
+ *
  * @remarks
  * This class wraps device information from the native layer
  * and provides a type-safe interface for device capabilities.
- * 
+ *
  * For Android NFC implementation:
  * - id: "integrated-nfc-0" (example, not fixed)
  * - apduApi: ["nfc", "androidnfc"] (both included)
@@ -16,12 +16,12 @@ import type { DeviceInfo } from '../JsapduRn.nitro';
  * - isRemovableDevice: false
  * - d2cProtocol: "nfc"
  * - p2dProtocol: "nfc"
- * 
+ *
  * @example
  * ```typescript
  * const devices = await platform.getDeviceInfo();
  * const device = devices[0];
- * 
+ *
  * console.log('Device ID:', device.id);
  * console.log('Supports APDU:', device.supportsApdu);
  * console.log('API:', device.apduApi.join(', '));
@@ -114,4 +114,3 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
     this.apduApi = info.apduApi;
   }
 }
-

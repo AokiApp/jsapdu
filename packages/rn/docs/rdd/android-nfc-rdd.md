@@ -1,13 +1,17 @@
 # Android NFC要件定義書 (RDD)
 
 ## 🚀 初見の実装者へ
+
 **要件定義が初めての方**：
+
 - **まず環境準備**: [guides/getting-started.md](../guides/getting-started.md)
 - **プロジェクト概要**: [my-requests.md](../my-requests.md) - 何を作るか
 - **実装チェックリスト**: [implementer-checklists.md](../implementer-checklists.md) - 具体的作業内容
 
 ## 📋 このドキュメントの位置づけ
+
 本書は**要件・制約・範囲**を定義します。詳細な実装方法は以下を参照：
+
 - 実装手順: [implementer-checklists.md](../implementer-checklists.md)
 - API契約: [api-contract.md](../tsd/api-contract.md)
 - 技術仕様: [android-nfc-tsd.md](../tsd/android-nfc-tsd.md)
@@ -117,12 +121,14 @@ APDUは、スマートカードとのコマンドおよび応答の単位であ�
 ### 互換性（追補）
 
 拡張長APDUの可否は端末差異に基づき、動的確認を前提とする。送信可能最大長も端末により異なるため、実機測定により受入基準を確立する。数値および測定条件の管理は端末差異仕様および長さ規程に従う（参照: [packages/rn/docs/tsd/compat-devices.md](packages/rn/docs/tsd/compat-devices.md)、[packages/rn/docs/tsd/length-limits.md](packages/rn/docs/tsd/length-limits.md)、[packages/rn/docs/rdd/test-plan.md](packages/rn/docs/rdd/test-plan.md)、[packages/rn/docs/rdd/performance-metrics.md](packages/rn/docs/rdd/performance-metrics.md)）。
+
 ### ReaderModeフラグ方針（確定）
 
 - 有効フラグ: NFC_A | NFC_B | NFC_F | SKIP_NDEF（NDEFは非対象）
 - 初期実装の対象: ISO-DEPのみ（FeliCaは検出対象に含めるが、処理は行わない）
 - 有効化／無効化の時機: RFは [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103) で有効化し、 [SmartCardDevice.release()](packages/interface/src/abstracts.ts:269) で無効化する。
 - カード存在検知: ReaderModeのコールバックによりイベント駆動で検出し、 [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259) の同期待ち挙動と整合するように運用する。
+
 ### ライフサイクル（画面オフ／Doze）方針（確定）
 
 - 画面オフ時、Doze移行時はReaderModeをキャンセルする。キャンセルはイベント通知のみではなく、デバイスの解放（ [SmartCardDevice.release()](packages/interface/src/abstracts.ts:269) ）を必ず伴う。

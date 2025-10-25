@@ -5,6 +5,7 @@
 ---
 
 # Android NFCオープン課題・リスク登録
+
 本書は、AndroidにおけるISO-DEPベースのAPDU通信実装に関する未確定事項および潜在的リスクを整理し、意思決定と追跡を容易にすることを目的とする。対象はReact Native Nitro Modulesによるネイティブ実装であり、関連する契約は [SmartCardPlatform.init()](../../interface/src/abstracts.ts:33)、[SmartCardPlatform.release()](../../interface/src/abstracts.ts:39)、[SmartCardPlatform.acquireDevice()](../../interface/src/abstracts.ts:103)、[SmartCardDevice.waitForCardPresence()](../../interface/src/abstracts.ts:259)、[SmartCardDevice.startSession()](../../interface/src/abstracts.ts:249)、[SmartCardDevice.release()](../../interface/src/abstracts.ts:269)、[SmartCard.getAtr()](../../interface/src/abstracts.ts:293)、[SmartCard.transmit()](../../interface/src/abstracts.ts:300)、[SmartCard.reset()](../../interface/src/abstracts.ts:306) に依拠する。
 
 ## 適用範囲

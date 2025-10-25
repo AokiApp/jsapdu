@@ -33,7 +33,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/babel.config.js", "**/metro.config.js", "**/react-native.config.js", "**/jest.config.js"],
+    files: [
+      "**/babel.config.js",
+      "**/metro.config.js",
+      "**/react-native.config.js",
+      "**/jest.config.js",
+    ],
     languageOptions: {
       sourceType: "commonjs",
       globals: {
@@ -42,21 +47,21 @@ export default tseslint.config(
         __dirname: "readonly",
         process: "readonly",
         __filename: "readonly",
-        exports: "readonly"
-      }
+        exports: "readonly",
+      },
     },
     rules: {
-      "@typescript-eslint/no-require-imports": "off"
-    }
+      "@typescript-eslint/no-require-imports": "off",
+    },
   },
   {
     files: ["**/*.{jsx,tsx}"],
     plugins: {
-      "react-hooks": reactHooks
+      "react-hooks": reactHooks,
     },
     rules: {
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn"
-    }
+      "react-hooks/exhaustive-deps": "warn",
+    },
   },
 );

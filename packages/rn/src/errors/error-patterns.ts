@@ -1,11 +1,11 @@
 /**
  * Android-specific error patterns for error code mapping
- * 
+ *
  * @remarks
  * These patterns are internal implementation details not exposed in FFI.
  * They are used to map Android exception names and messages to
  * FFI-neutral SmartCardError codes.
- * 
+ *
  * @internal
  */
 export const ANDROID_ERROR_PATTERNS = {
@@ -36,11 +36,7 @@ export const ANDROID_ERROR_PATTERNS = {
    * IllegalStateException (connection state invalid)
    * Maps to: PLATFORM_ERROR
    */
-  ILLEGAL_STATE: [
-    'IllegalStateException',
-    'not connected',
-    'connection state',
-  ],
+  ILLEGAL_STATE: ['IllegalStateException', 'not connected', 'connection state'],
 
   /**
    * IllegalArgumentException (invalid argument)
@@ -85,12 +81,12 @@ export const ANDROID_ERROR_PATTERNS = {
 
 /**
  * Check if message or error name matches any pattern in the given list
- * 
+ *
  * @param message - Lowercase error message
  * @param name - Lowercase error name
  * @param patterns - Array of patterns to match
  * @returns true if any pattern matches, false otherwise
- * 
+ *
  * @internal
  */
 export function matchesAnyPattern(
@@ -104,4 +100,3 @@ export function matchesAnyPattern(
       name.includes(pattern.toLowerCase())
   );
 }
-

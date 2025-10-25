@@ -175,7 +175,9 @@ const MynaTest: React.FC = () => {
       return false;
     }
     addLog("📁 Selecting DF: Kenhojo AP...");
-    const res: ResponseApdu = await state.currentCard.transmit(selectDf(KENHOJO_AP));
+    const res: ResponseApdu = await state.currentCard.transmit(
+      selectDf(KENHOJO_AP),
+    );
     const ok = res.sw === 0x9000;
     if (!ok) {
       const sw = res.sw;
@@ -333,7 +335,10 @@ const MynaTest: React.FC = () => {
           <Text style={styles.sectionTitle}>Platform & Device</Text>
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.button, state.initialized && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                state.initialized && styles.buttonDisabled,
+              ]}
               onPress={initPlatform}
               disabled={state.initialized}
             >
@@ -532,9 +537,7 @@ const MynaTest: React.FC = () => {
               </Text>
             ))}
             {state.logs.length === 0 && (
-              <Text style={styles.emptyLogText}>
-                No logs yet. Start demo!
-              </Text>
+              <Text style={styles.emptyLogText}>No logs yet. Start demo!</Text>
             )}
           </ScrollView>
         </View>

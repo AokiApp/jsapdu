@@ -10,22 +10,26 @@
 - 付録（端末互換性・差異）: [compat-devices.md](packages/rn/docs/tsd/compat-devices.md:1)
 
 本書はスタブとして維持し、重複する以下の内容を上記へ集約済みです。
+
 - FFI中立の命名規約、OS語非露出の原則 → [api-contract.md](packages/rn/docs/tsd/api-contract.md:10)
 - スレッド/非同期（UIスレッド禁止）、並行性・排他規程 → [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1), [android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:1)
 - ライフサイクル・キャンセル（画面オフ/Doze時はTIMEOUT返却と解放） → [android-nfc-rdd.md](packages/rn/docs/rdd/android-nfc-rdd.md:109), [api-contract.md](packages/rn/docs/tsd/api-contract.md:38)
 - APDU長・拡張長の方針 → [length-limits.md](packages/rn/docs/tsd/length-limits.md:1)
 
 読み手優先の方針:
+
 - 「何をすればよいか」は [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1) と [index.md](packages/rn/docs/index.md:1) に一本化。
 - 詳細仕様や原則は、本文重複を避けて [api-contract.md](packages/rn/docs/tsd/api-contract.md:1) と [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1) に集約。
 - 試験・互換性・長さ等の詳細は付録へ分離。
 
 今後、本スタブは必要に応じてリンク更新のみ行い、本文の重複は作りません。
+
 # Nitro Modules Method Conventions（FFI中立・実装指針）
 
 本書は、React Native Nitro Modules（JSI）に基づく公開FFIの命名・型・スレッド・エラー・メモリ・並行性の統一指針を定める。目的は、OS特有の概念をFFIに露出せず、実装者が迷わず同一の契約に従って安定実装できるようにすること。
 
 参照:
+
 - インタフェース契約: [SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17), [SmartCardDevice.class()](packages/interface/src/abstracts.ts:202), [SmartCard.class()](packages/interface/src/abstracts.ts:283)
 - RN Nitro型定義: [JsapduRn.interface()](packages/rn/src/JsapduRn.nitro.ts:3)
 - Androidエントリ: [JsapduRn.class()](packages/rn/android/src/main/java/com/margelo/nitro/aokiapp/jsapdurn/JsapduRn.kt:6)
@@ -40,6 +44,7 @@
 - DeviceInfoの apduApi は ["nfc","androidnfc"] を返却（Android）。FFI公開では両方を含める。なお、OS語の非露出原則に対する例外として apduApi に OS識別を含めるが、メソッド名・引数・戻り値には OS語を含めない（参照 [api-contract.md](packages/rn/docs/tsd/api-contract.md:14)、[implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1)）。
 
 OS中立性の定義（補足）
+
 - 目的は「移植不能なOS専用APIがFFIへ漏れてユーザ実装が if-platform まみれになる事態」を避けること。公開APIは中立語で統一し、OS差は内部で吸収する。
 - OS間の挙動を完全同一にする義務は課さない。差分は契約の例外写像（中立コード体系）と技術仕様の実装注意で扱う。
 - OS識別はメタデータ（apduApi、将来的な device.os 等）で許容し、分岐は原則「能力・方針」に基づける（例: 本仕様では拡張APDUの事前検出を行わない方針を採用）。
