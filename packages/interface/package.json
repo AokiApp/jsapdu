@@ -19,7 +19,9 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "clean": "rimraf dist .turbo node_modules"
+    "clean": "rimraf dist .turbo node_modules",
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "keywords": [
     "smartcard",

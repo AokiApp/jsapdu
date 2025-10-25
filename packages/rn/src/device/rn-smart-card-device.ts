@@ -108,7 +108,7 @@ export class RnSmartCardDevice extends SmartCardDevice {
 
     try {
       return await this.getHybrid().isDeviceAvailable(this.deviceHandle);
-    } catch (error) {
+    } catch {
       // Graceful degradation: return false on error
       return false;
     }

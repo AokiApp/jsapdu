@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -25,6 +21,18 @@ import {
 
 import { platformManager } from "@aokiapp/jsapdu-rn";
 console.log("platformManager:", platformManager);
+
+type PlatformEventPayload = {
+  deviceHandle?: string;
+  cardHandle?: string;
+  details?: string;
+};
+
+interface PlatformEventEmitter {
+  on?(evt: string, handler: (payload: PlatformEventPayload) => void): void;
+  off?(evt: string, handler: (payload: PlatformEventPayload) => void): void;
+}
+
 interface TestState {
   initialized: boolean;
   devices: SmartCardDeviceInfo[];
@@ -41,10 +49,10 @@ const eventUnsubscribers: Array<() => void> = [];
 
 function attachPlatformEvents(logger: (message: string) => void): void {
   if (!platform) return;
-  const p: any = platform as any;
+  const p = platform as unknown as PlatformEventEmitter;
 
   const add = (evt: string) => {
-    const handler = (payload: { deviceHandle?: string; cardHandle?: string; details?: string }) => {
+    const handler = (payload: PlatformEventPayload) => {
       const dev = payload?.deviceHandle ?? "";
       const card = payload?.cardHandle ?? "";
       const det = payload?.details ?? "";
@@ -429,7 +437,7 @@ const NfcTestScreen: React.FC = () => {
       // ensure platform and underlying resources are released
       releasePlatform().catch(() => {});
     };
-  }, []);
+  }, [releasePlatform]);
 
   return (
     <SafeAreaView style={styles.container}>

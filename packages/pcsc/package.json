@@ -19,8 +19,10 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "clean": "rimraf dist .turbo node_modules",
-    "test": "node --test"
+    "pretest": "npm run build",
+    "test": "node --test dist/tests/**/*.js"
   },
   "keywords": [
     "pcsc",

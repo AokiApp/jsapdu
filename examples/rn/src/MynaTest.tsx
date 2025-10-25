@@ -16,6 +16,7 @@ import {
   SmartCard,
   SmartCardDeviceInfo,
   SmartCardError,
+  ResponseApdu,
 } from "@aokiapp/jsapdu-interface";
 import { platformManager } from "@aokiapp/jsapdu-rn";
 import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
@@ -75,9 +76,6 @@ const MynaTest: React.FC = () => {
       .join(" ")
       .toUpperCase();
 
-  const toArrayBuffer = (data: Uint8Array): ArrayBuffer =>
-    data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-
   const bytesToAscii = (bytes: Uint8Array): string =>
     Array.from(bytes)
       .map((b) => String.fromCharCode(b))
@@ -125,7 +123,7 @@ const MynaTest: React.FC = () => {
       return;
     }
     try {
-      const deviceId = state.devices[0].id;
+      const deviceId = state.devices[0]!.id;
       addLog(`📡 Acquiring device: ${deviceId}...`);
       const device = await platform.acquireDevice(deviceId);
       setState((prev) => ({ ...prev, currentDevice: device }));
@@ -177,17 +175,12 @@ const MynaTest: React.FC = () => {
       return false;
     }
     addLog("📁 Selecting DF: Kenhojo AP...");
-    const res = await state.currentCard.transmit(selectDf(KENHOJO_AP));
-    const ok =
-      // support both response shapes
-      (res as any).sw === 0x9000 ||
-      ((res as any).sw1 === 0x90 && (res as any).sw2 === 0x00);
+    const res: ResponseApdu = await state.currentCard.transmit(selectDf(KENHOJO_AP));
+    const ok = res.sw === 0x9000;
     if (!ok) {
+      const sw = res.sw;
       addLog(
-        `❌ SELECT DF failed: SW=${((res as any).sw ?? (((res as any).sw1 << 8) | (res as any).sw2))
-          .toString(16)
-          .padStart(4, "0")
-          .toUpperCase()}`,
+        `❌ SELECT DF failed: SW=${sw.toString(16).padStart(4, "0").toUpperCase()}`,
       );
       throw new Error("Failed to select Kenhojo DF");
     }
@@ -205,16 +198,13 @@ const MynaTest: React.FC = () => {
       return false;
     }
     addLog("🔐 Verifying PIN...");
-    const res = await state.currentCard.transmit(
+    const res: ResponseApdu = await state.currentCard.transmit(
       verify(state.pin.trim(), { ef: KENHOJO_AP_EF.PIN }),
     );
-    const ok =
-      (res as any).sw === 0x9000 ||
-      ((res as any).sw1 === 0x90 && (res as any).sw2 === 0x00);
+    const ok = res.sw === 0x9000;
     if (!ok) {
-      const sw =
-        (res as any).sw ?? (((res as any).sw1 << 8) | (res as any).sw2);
-      const retriesLeft = typeof sw === "number" ? sw & 0x0f : 0;
+      const sw = res.sw;
+      const retriesLeft = sw & 0x0f;
       addLog(
         `❌ PIN verification failed: SW=${sw.toString(16).padStart(4, "0").toUpperCase()} (${retriesLeft} retries left)`,
       );
@@ -230,24 +220,18 @@ const MynaTest: React.FC = () => {
       if (!(await verifyPin())) return;
 
       addLog("📖 Reading BASIC_FOUR...");
-      const res = await state.currentCard!.transmit(
+      const res: ResponseApdu = await state.currentCard!.transmit(
         readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR),
       );
-      const ok =
-        (res as any).sw === 0x9000 ||
-        ((res as any).sw1 === 0x90 && (res as any).sw2 === 0x00);
+      const ok = res.sw === 0x9000;
       if (!ok) {
-        const sw =
-          (res as any).sw ?? (((res as any).sw1 << 8) | (res as any).sw2);
+        const sw = res.sw;
         addLog(
-          `❌ Read BASIC_FOUR failed: SW=${sw
-            .toString(16)
-            .padStart(4, "0")
-            .toUpperCase()}`,
+          `❌ Read BASIC_FOUR failed: SW=${sw.toString(16).padStart(4, "0").toUpperCase()}`,
         );
         return;
       }
-      const buffer = toArrayBuffer((res as any).data as Uint8Array);
+      const buffer = res.arrayBuffer();
       const parser = new SchemaParser(schemaKenhojoBasicFour);
       const parsed = parser.parse(buffer);
       setState((prev) => ({
@@ -266,24 +250,18 @@ const MynaTest: React.FC = () => {
       if (!(await verifyPin())) return;
 
       addLog("🧾 Reading MY_NUMBER...");
-      const res = await state.currentCard!.transmit(
+      const res: ResponseApdu = await state.currentCard!.transmit(
         readEfBinaryFull(KENHOJO_AP_EF.MY_NUMBER),
       );
-      const ok =
-        (res as any).sw === 0x9000 ||
-        ((res as any).sw1 === 0x90 && (res as any).sw2 === 0x00);
+      const ok = res.sw === 0x9000;
       if (!ok) {
-        const sw =
-          (res as any).sw ?? (((res as any).sw1 << 8) | (res as any).sw2);
+        const sw = res.sw;
         addLog(
-          `❌ Read MY_NUMBER failed: SW=${sw
-            .toString(16)
-            .padStart(4, "0")
-            .toUpperCase()}`,
+          `❌ Read MY_NUMBER failed: SW=${sw.toString(16).padStart(4, "0").toUpperCase()}`,
         );
         return;
       }
-      const buffer = toArrayBuffer((res as any).data as Uint8Array);
+      const buffer = res.arrayBuffer();
       const tlv = BasicTLVParser.parse(buffer);
       const valueBytes = new Uint8Array(tlv.value);
       const valueText = bytesToAscii(valueBytes);
