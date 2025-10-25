@@ -38,6 +38,7 @@ import type { EventPayload } from '../JsapduRn.nitro';
  * ```
  */
 export type PlatformEventType =
+  | 'PLATFORM_INITIALIZED'
   | 'DEVICE_ACQUIRED'
   | 'DEVICE_RELEASED'
   | 'CARD_FOUND'
@@ -48,7 +49,8 @@ export type PlatformEventType =
   | 'POWER_STATE_CHANGED'
   | 'NFC_STATE_CHANGED'
   | 'APDU_SENT'
-  | 'APDU_FAILED';
+  | 'APDU_FAILED'
+  | 'PLATFORM_RELEASED';
 
 export type PlatformEventPayload = EventPayload;
 

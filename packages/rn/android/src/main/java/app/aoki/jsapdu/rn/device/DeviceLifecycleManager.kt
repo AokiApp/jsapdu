@@ -27,7 +27,6 @@ object DeviceLifecycleManager {
 
   data class DeviceState(
     var isAcquired: Boolean = false,
-    var isCardPresent: Boolean = false,
     var activeCardHandle: String? = null
   )
 
@@ -44,7 +43,6 @@ object DeviceLifecycleManager {
       throw IllegalStateException("Device already acquired: $deviceHandle")
     }
     state.isAcquired = true
-    state.isCardPresent = false
     state.activeCardHandle = null
   }
 
@@ -80,7 +78,6 @@ object DeviceLifecycleManager {
     
     // Clear device state
     state.isAcquired = false
-    state.isCardPresent = false
     state.activeCardHandle = null
     devices.remove(deviceHandle)
   }
@@ -93,15 +90,13 @@ object DeviceLifecycleManager {
   }
 
   fun isCardPresent(deviceHandle: String): Boolean {
-    val state = devices[deviceHandle] ?: return false
-    return state.isCardPresent
+    // todo : Implement
   }
 
   // Card presence management with proper concurrency
 
   suspend fun markCardPresent(deviceHandle: String, isoDep: IsoDep) = stateMutex.withLock {
     val state = devices.getOrPut(deviceHandle) { DeviceState() }
-    state.isCardPresent = true
     isoDepByDevice[deviceHandle] = isoDep
     
     // Complete any pending wait
@@ -125,7 +120,6 @@ object DeviceLifecycleManager {
   suspend fun markTagLost(deviceHandle: String) = stateMutex.withLock {
     val state = devices[deviceHandle] ?: return@withLock
     val lastCardHandle = state.activeCardHandle
-    state.isCardPresent = false
     
     // Release active card session if exists
     state.activeCardHandle?.let { cardHandle ->
@@ -174,42 +168,8 @@ object DeviceLifecycleManager {
   suspend fun waitForCardPresence(deviceHandle: String, timeoutMs: Double) {
     // Check if card is already present (fast path)
     val state = devices[deviceHandle] ?: throw IllegalStateException("Device not acquired: $deviceHandle")
-    if (state.isCardPresent) return
     
-    // Set up waiting deferred inside mutex to prevent race conditions
-    val deferred = stateMutex.withLock {
-      val currentState = devices[deviceHandle] ?: throw IllegalStateException("Device not acquired: $deviceHandle")
-      // Double-check inside lock
-      if (currentState.isCardPresent) return@withLock null
-      
-      // If already waiting, wait for the same deferred
-      waitingDeferred[deviceHandle] ?: run {
-        val newDeferred = CompletableDeferred<Unit>()
-        waitingDeferred[deviceHandle] = newDeferred
-        newDeferred
-      }
-    } ?: return // Card became present while acquiring lock
-    
-    try {
-      withTimeout(timeoutMs.toLong()) {
-        deferred.await()
-      }
-    } catch (e: TimeoutCancellationException) {
-      // Clean up waiting state on timeout
-      stateMutex.withLock {
-        if (waitingDeferred[deviceHandle] === deferred) {
-          waitingDeferred.remove(deviceHandle)
-        }
-      }
-      throw RuntimeException("TIMEOUT: Card presence wait timed out (${timeoutMs.toLong()} ms)")
-    } finally {
-      // Ensure cleanup even if interrupted
-      stateMutex.withLock {
-        if (waitingDeferred[deviceHandle] === deferred) {
-          waitingDeferred.remove(deviceHandle)
-        }
-      }
-    }
+   // todo: Implement
   }
 
   // Internal access for other managers (thread-safe)
@@ -246,7 +206,6 @@ object DeviceLifecycleManager {
     // Clear all device states
     devices.values.forEach { state ->
       state.isAcquired = false
-      state.isCardPresent = false
       state.activeCardHandle = null
     }
     devices.clear()

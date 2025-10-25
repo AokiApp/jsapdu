@@ -55,10 +55,12 @@ function attachPlatformEvents(logger: (message: string) => void): void {
   };
 
   // Core lifecycle events
+  add("PLATFORM_INITIALIZED");
   add("DEVICE_ACQUIRED");
   add("DEVICE_RELEASED");
   add("CARD_FOUND");
   add("CARD_LOST");
+  add("PLATFORM_RELEASED");
   // Card session lifecycle
   add("CARD_SESSION_STARTED");
   add("CARD_SESSION_RESET");

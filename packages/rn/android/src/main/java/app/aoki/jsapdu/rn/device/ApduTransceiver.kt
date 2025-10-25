@@ -96,7 +96,7 @@ object ApduTransceiver {
             EventPayload(
               deviceHandle = deviceHandle,
               cardHandle = cardHandle,
-              details = "len=${commandBytes.size}"
+              details = "CommandHex=${commandBytes.joinToString("") { "%02X".format(it) }}"
             )
           )
           val responseBytes = isoDep.transceive(commandBytes)
