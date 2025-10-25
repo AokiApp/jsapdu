@@ -8,8 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import app.aoki.jsapdu.rn.StatusEventDispatcher
+import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**

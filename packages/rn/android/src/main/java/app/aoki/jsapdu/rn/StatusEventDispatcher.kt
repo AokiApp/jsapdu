@@ -1,8 +1,11 @@
-package com.margelo.nitro.aokiapp.jsapdurn
+package app.aoki.jsapdu.rn
+
 
 import android.os.Handler
 import android.os.Looper
 import java.util.concurrent.atomic.AtomicReference
+import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
+
 
 /**
  * Status event dispatcher for JsapduRN.

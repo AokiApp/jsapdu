@@ -9,8 +9,8 @@ import android.nfc.NfcAdapter
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import app.aoki.jsapdu.rn.StatusEventDispatcher
+import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**

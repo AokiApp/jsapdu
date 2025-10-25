@@ -5,6 +5,7 @@ import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.ArrayBuffer
 import app.aoki.jsapdu.rn.platform.SmartCardPlatformImpl
 import app.aoki.jsapdu.rn.device.SmartCardDeviceImpl
+import app.aoki.jsapdu.rn.StatusEventDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers

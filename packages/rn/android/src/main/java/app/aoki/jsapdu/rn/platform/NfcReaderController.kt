@@ -9,8 +9,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import app.aoki.jsapdu.rn.StatusEventDispatcher
+import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**

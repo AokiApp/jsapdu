@@ -16,8 +16,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import com.facebook.react.bridge.ReactApplicationContext
 import com.margelo.nitro.NitroModules
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import app.aoki.jsapdu.rn.StatusEventDispatcher
+import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**

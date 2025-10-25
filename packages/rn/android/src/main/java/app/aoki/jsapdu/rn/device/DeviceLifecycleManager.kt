@@ -7,8 +7,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 import java.util.concurrent.ConcurrentHashMap
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventDispatcher
-import com.margelo.nitro.aokiapp.jsapdurn.StatusEventType
+import app.aoki.jsapdu.rn.StatusEventDispatcher
+import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 
 /**
