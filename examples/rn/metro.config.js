@@ -1,6 +1,6 @@
-const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
-const path = require("path");
-const { withRnHarness } = require("react-native-harness/metro");
+const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const path = require('path');
+const { withRnHarness } = require('react-native-harness/metro');
 
 /**
  * Metro configuration
@@ -9,9 +9,9 @@ const { withRnHarness } = require("react-native-harness/metro");
  * @type {import('@react-native/metro-config').MetroConfig}
  */
 const config = {
-  watchFolders: [path.resolve(__dirname, "../..")],
+  watchFolders: [path.resolve(__dirname, '../..')],
 };
 
 module.exports = withRnHarness(
-  mergeConfig(getDefaultConfig(__dirname), config),
+  mergeConfig(getDefaultConfig(__dirname), config)
 );

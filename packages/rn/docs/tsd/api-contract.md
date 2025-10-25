@@ -21,9 +21,11 @@
 （注）本書におけるAndroid固有語の登場はFFIの内部実装注記であり、公開契約の一部ではない。
 
 補足（OS中立性の定義と範囲）
+
 - OS中立性とは、公開FFIにOS固有の関数名・クラス名・フレームワーク語（例: CoreNFC, ReaderMode, IsoDep, Intent, Activity）を持ち込まないことを指す。
 - OS間で挙動を完全同一にすることを強要するものではない。差分は契約の例外写像・方針・実装注意で吸収し、公開APIの形を共通に保つ。
 - OS識別はメタデータ（例: apduApi、将来的な device.os）として許容する。ユーザコードに if-platform 分岐を強制せず、契約・方針で統一された振る舞いにより移植容易性を担保する。
+
 ## 総則
 
 本契約における「前提条件」は呼出時点で満たすべき状態を指し、「事後条件」は正常終了後に保証される状態を指す。「終了条件」は戻り値または効果の記述であり、「例外写像」は異常系におけるコード割当てを指す。待機および送受信に関する時間制約は、試験計画および性能測定条件に基づく数値を用いて評価される（参照: [packages/rn/docs/rdd/test-plan.md](packages/rn/docs/rdd/test-plan.md)、[packages/rn/docs/rdd/performance-metrics.md](packages/rn/docs/rdd/performance-metrics.md)）。APDU長の扱いは別規程に従う（参照: [packages/rn/docs/tsd/length-limits.md](packages/rn/docs/tsd/length-limits.md)）。
@@ -74,6 +76,7 @@
 ReaderModeの有効化・無効化、セッション確立・解放、送受信は排他制御により直列化される。開始処理と解放処理の競合を防止し、複数のタグ検出イベントが同時到来した場合でも、セッション確立が完了するまで後続イベントを抑制する。規程はPC/SC参照実装のMutex運用に準ずる（例: [PcscDevice.startSession()](packages/pcsc/src/device.ts:156)、[PcscDevice.release()](packages/pcsc/src/device.ts:222)）。
 
 ### 非同期境界（推奨）
+
 - 非同期（Promise）: [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33), [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39), [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87), [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103), [SmartCardDevice.isDeviceAvailable()](packages/interface/src/abstracts.ts:231), [SmartCardDevice.isCardPresent()](packages/interface/src/abstracts.ts:240), [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259), [SmartCardDevice.startSession()](packages/interface/src/abstracts.ts:249), [SmartCard.transmit()](packages/interface/src/abstracts.ts:300), [SmartCard.reset()](packages/interface/src/abstracts.ts:306), [SmartCard.release()](packages/interface/src/abstracts.ts:312)
 - 備考: 即時値の同期APIは原則設けない。内部I/Oが不要な問い合わせでも公開契約上はPromiseを返す。
 
@@ -84,11 +87,13 @@ ReaderModeの有効化・無効化、セッション確立・解放、送受信�
 未初期化は "NOT_INITIALIZED"、二重初期化は "ALREADY_INITIALIZED"、カード非在は "CARD_NOT_PRESENT"、タイムアウトは "TIMEOUT"、重複取得は "ALREADY_CONNECTED"、パラメータ不正は "INVALID_PARAMETER"、プロトコル異常は "PROTOCOL_ERROR"、プラットフォーム障害は "PLATFORM_ERROR" とする。外部例外は [fromUnknownError()](packages/interface/src/errors.ts:115) によりラップし、原因情報を保持する。例外時の状態は整合的に復帰可能であるべきことを要件とする。
 
 拡張APDU未正規化の方針（理由）
+
 - 端末差（IsoDep実装・FSD/FSC・OEM制限）の振れ幅が大きく、事前検出の互換性コストが高い。
 - ランタイム検出はI/O前段の追加ラウンドトリップを招きUX悪化・複雑化をもたらす。
 - 分割送受信を初期版で不採用（設計簡素化）とするため、未対応端末では自然に例外が発生し、そのまま上位で処理した方が明快。
 
 Android例外→SmartCardError写像（抜粋）
+
 - java.io.IOException（I/O失敗/タグロスト含む）→ "PLATFORM_ERROR"（message: "NFC I/O通信に失敗しました"）
 - android.nfc.TagLostException → "PLATFORM_ERROR"（message: "カードが取り外されました"）
 - java.lang.IllegalStateException（接続状態不整合）→ "PLATFORM_ERROR"（message: "NFC接続状態が不正です"）
@@ -99,6 +104,7 @@ Android例外→SmartCardError写像（抜粋）
 実装注意：[SmartCardError.message](packages/interface/src/errors.ts:31) にはユーザー向けの日本語説明を設定し、[SmartCardError.getDebugInfo()](packages/interface/src/errors.ts:51) には元例外の詳細情報を保持する。
 
 Android例外→SmartCardError写像（抜粋）
+
 - java.io.IOException（I/O失敗/タグロスト含む）→ "PLATFORM_ERROR"
 - android.nfc.TagLostException → "PLATFORM_ERROR"
 - java.lang.IllegalStateException（接続状態不整合）→ "PLATFORM_ERROR"

@@ -55,7 +55,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
   private lastDeviceInfos: RnDeviceInfo[] | null = null;
-  private listeners: Map<PlatformEventType, Set<(payload: EventPayload) => void>> = new Map();
+  private listeners: Map<
+    PlatformEventType,
+    Set<(payload: EventPayload) => void>
+  > = new Map();
 
   constructor() {
     super();
@@ -63,13 +66,19 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
   }
 
   // Event subscription API (typed, thin surface)
-  public on(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+  public on(
+    event: PlatformEventType,
+    listener: (payload: EventPayload) => void
+  ): void {
     const set = this.listeners.get(event) || new Set();
     set.add(listener);
     this.listeners.set(event, set);
   }
 
-  public off(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+  public off(
+    event: PlatformEventType,
+    listener: (payload: EventPayload) => void
+  ): void {
     const set = this.listeners.get(event);
     if (!set) return;
     set.delete(listener);
@@ -78,7 +87,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     }
   }
 
-  public once(event: PlatformEventType, listener: (payload: EventPayload) => void): void {
+  public once(
+    event: PlatformEventType,
+    listener: (payload: EventPayload) => void
+  ): void {
     const onceListener = (payload: EventPayload) => {
       try {
         listener(payload);
@@ -143,10 +155,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
     }
   }
 
-  private statusUpdateHandler(
-    eventType: string,
-    payload: EventPayload
-  ): void {
+  private statusUpdateHandler(eventType: string, payload: EventPayload): void {
     const evt = eventType as PlatformEventType;
     this.emit(evt, payload);
     console.log(
@@ -180,7 +189,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform {
       return;
     }
 
-    this.hybridObject.onStatusUpdate(void 0);
+    this.hybridObject.onStatusUpdate(undefined);
 
     this.state.setReleasing(true);
 

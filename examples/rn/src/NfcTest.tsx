@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -12,7 +12,7 @@ import {
   View,
   StyleSheet,
   Alert,
-} from "react-native";
+} from 'react-native';
 
 import {
   SmartCardDevice,
@@ -21,10 +21,10 @@ import {
   CommandApdu,
   SmartCardDeviceInfo,
   SmartCardPlatform,
-} from "@aokiapp/jsapdu-interface";
+} from '@aokiapp/jsapdu-interface';
 
-import { platformManager } from "@aokiapp/jsapdu-rn";
-console.log("platformManager:", platformManager);
+import { platformManager } from '@aokiapp/jsapdu-rn';
+console.log('platformManager:', platformManager);
 interface TestState {
   initialized: boolean;
   devices: SmartCardDeviceInfo[];
@@ -36,7 +36,7 @@ interface TestState {
 }
 let platform: SmartCardPlatform;
 
- // Event subscription management for native status updates
+// Event subscription management for native status updates
 const eventUnsubscribers: Array<() => void> = [];
 
 function attachPlatformEvents(logger: (message: string) => void): void {
@@ -44,10 +44,14 @@ function attachPlatformEvents(logger: (message: string) => void): void {
   const p: any = platform as any;
 
   const add = (evt: string) => {
-    const handler = (payload: { deviceHandle?: string; cardHandle?: string; details?: string }) => {
-      const dev = payload?.deviceHandle ?? "";
-      const card = payload?.cardHandle ?? "";
-      const det = payload?.details ?? "";
+    const handler = (payload: {
+      deviceHandle?: string;
+      cardHandle?: string;
+      details?: string;
+    }) => {
+      const dev = payload?.deviceHandle ?? '';
+      const card = payload?.cardHandle ?? '';
+      const det = payload?.details ?? '';
       logger(`📡 Event ${evt}: device=${dev} card=${card} details=${det}`);
     };
     p.on?.(evt, handler);
@@ -55,20 +59,20 @@ function attachPlatformEvents(logger: (message: string) => void): void {
   };
 
   // Core lifecycle events
-  add("DEVICE_ACQUIRED");
-  add("DEVICE_RELEASED");
-  add("CARD_FOUND");
-  add("CARD_LOST");
+  add('DEVICE_ACQUIRED');
+  add('DEVICE_RELEASED');
+  add('CARD_FOUND');
+  add('CARD_LOST');
   // Card session lifecycle
-  add("CARD_SESSION_STARTED");
-  add("CARD_SESSION_RESET");
+  add('CARD_SESSION_STARTED');
+  add('CARD_SESSION_RESET');
   // Timing/power/NFC
-  add("WAIT_TIMEOUT");
-  add("POWER_STATE_CHANGED");
-  add("NFC_STATE_CHANGED");
+  add('WAIT_TIMEOUT');
+  add('POWER_STATE_CHANGED');
+  add('NFC_STATE_CHANGED');
   // APDU diagnostics
-  add("APDU_SENT");
-  add("APDU_FAILED");
+  add('APDU_SENT');
+  add('APDU_FAILED');
 }
 
 const NfcTestScreen: React.FC = () => {
@@ -78,8 +82,8 @@ const NfcTestScreen: React.FC = () => {
     currentDevice: null,
     currentCard: null,
     logs: [],
-    aidInput: "",
-    rawApduInput: "",
+    aidInput: '',
+    rawApduInput: '',
   });
 
   const addLog = (message: string) => {
@@ -98,13 +102,13 @@ const NfcTestScreen: React.FC = () => {
         : `Unknown error: ${String(error)}`;
 
     addLog(`❌ ${operation} failed: ${errorMessage}`);
-    Alert.alert("Error", `${operation} failed:\n${errorMessage}`);
+    Alert.alert('Error', `${operation} failed:\n${errorMessage}`);
   };
 
   const hexToBytes = (hex: string): Uint8Array => {
-    const clean = hex.replace(/[^0-9a-fA-F]/g, "");
+    const clean = hex.replace(/[^0-9a-fA-F]/g, '');
     if (clean.length % 2 !== 0) {
-      throw new Error("Hex must have even length");
+      throw new Error('Hex must have even length');
     }
     const bytes = new Uint8Array(clean.length / 2);
     for (let i = 0; i < clean.length; i += 2) {
@@ -115,58 +119,58 @@ const NfcTestScreen: React.FC = () => {
 
   const bytesToHex = (bytes: Uint8Array): string =>
     Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ")
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join(' ')
       .toUpperCase();
 
   // Test 1: Platform Initialization
   const testInitialization = async () => {
     try {
-      addLog("🚀 Initializing NFC platform...");
+      addLog('🚀 Initializing NFC platform...');
       platform = platformManager.getPlatform() as unknown as SmartCardPlatform;
       await platform.init();
       setState((prev) => ({ ...prev, initialized: true }));
-      addLog("✅ Platform initialized successfully");
+      addLog('✅ Platform initialized successfully');
       attachPlatformEvents(addLog);
     } catch (error) {
-      handleError(error, "Platform initialization");
+      handleError(error, 'Platform initialization');
     }
   };
 
   // Test 2: Device Detection
   const testDeviceDetection = async () => {
     if (!state.initialized) {
-      Alert.alert("Error", "Platform not initialized");
+      Alert.alert('Error', 'Platform not initialized');
       return;
     }
 
     try {
-      addLog("🔍 Getting device information...");
+      addLog('🔍 Getting device information...');
       const devices = await platform.getDeviceInfo();
       setState((prev) => ({ ...prev, devices }));
 
       if (devices.length === 0) {
-        addLog("⚠️ No NFC devices found (this is expected on non-NFC devices)");
+        addLog('⚠️ No NFC devices found (this is expected on non-NFC devices)');
       } else {
         addLog(`✅ Found ${devices.length} NFC device(s):`);
         devices.forEach((device, index) => {
           addLog(
-            `  Device ${index + 1}: ${device.id} (${device.friendlyName || "Unknown"})`,
+            `  Device ${index + 1}: ${device.id} (${device.friendlyName || 'Unknown'})`
           );
           addLog(`    - Supports APDU: ${device.supportsApdu}`);
-          addLog(`    - API: ${device.apduApi.join(", ")}`);
+          addLog(`    - API: ${device.apduApi.join(', ')}`);
           addLog(`    - Integrated: ${device.isIntegratedDevice}`);
         });
       }
     } catch (error) {
-      handleError(error, "Device detection");
+      handleError(error, 'Device detection');
     }
   };
 
   // Test 3: Device Acquisition
   const testDeviceAcquisition = async () => {
     if (state.devices.length === 0) {
-      Alert.alert("Error", "No devices available to acquire");
+      Alert.alert('Error', 'No devices available to acquire');
       return;
     }
 
@@ -176,50 +180,50 @@ const NfcTestScreen: React.FC = () => {
 
       const device = await platform.acquireDevice(deviceId);
       setState((prev) => ({ ...prev, currentDevice: device }));
-      addLog("✅ Device acquired successfully (RF enabled)");
+      addLog('✅ Device acquired successfully (RF enabled)');
 
       // Test device availability
       const isAvailable = await device.isDeviceAvailable();
       addLog(`📊 Device available: ${isAvailable}`);
     } catch (error) {
-      handleError(error, "Device acquisition");
+      handleError(error, 'Device acquisition');
     }
   };
 
   // Test 4: Card Presence Check
   const testCardPresence = async () => {
     if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
+      Alert.alert('Error', 'No device acquired');
       return;
     }
 
     try {
-      addLog("🔍 Checking card presence...");
+      addLog('🔍 Checking card presence...');
       const isPresent = await state.currentDevice.isCardPresent();
       addLog(`📋 Card present: ${isPresent}`);
     } catch (error) {
-      handleError(error, "Card presence check");
+      handleError(error, 'Card presence check');
     }
   };
 
   // Test 5: Wait for Card (with timeout)
   const testWaitForCard = async () => {
     if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
+      Alert.alert('Error', 'No device acquired');
       return;
     }
 
     try {
-      addLog("⏳ Waiting for card (10 seconds timeout)...");
-      addLog("💡 Please place an NFC card on the device");
+      addLog('⏳ Waiting for card (10 seconds timeout)...');
+      addLog('💡 Please place an NFC card on the device');
 
       await state.currentDevice.waitForCardPresence(10000);
-      addLog("✅ Card detected!");
+      addLog('✅ Card detected!');
     } catch (error) {
-      if (error instanceof SmartCardError && error.code === "TIMEOUT") {
-        addLog("⏰ Card wait timed out");
+      if (error instanceof SmartCardError && error.code === 'TIMEOUT') {
+        addLog('⏰ Card wait timed out');
       } else {
-        handleError(error, "Card wait");
+        handleError(error, 'Card wait');
       }
     }
   };
@@ -227,91 +231,97 @@ const NfcTestScreen: React.FC = () => {
   // Test 6: Start Session and Get ATR
   const testSessionAndAtr = async () => {
     if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
+      Alert.alert('Error', 'No device acquired');
       return;
     }
 
     try {
-      addLog("🔗 Starting card session...");
+      addLog('🔗 Starting card session...');
       const card = await state.currentDevice.startSession();
       setState((prev) => ({ ...prev, currentCard: card }));
-      addLog("✅ Session started successfully");
+      addLog('✅ Session started successfully');
 
-      addLog("📜 Getting ATR...");
+      addLog('📜 Getting ATR...');
       const atr = await card.getAtr();
       const atrHex = Array.from(atr)
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join(" ")
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join(' ')
         .toUpperCase();
       addLog(`✅ ATR: ${atrHex}`);
     } catch (error) {
-      handleError(error, "Session start / ATR retrieval");
+      handleError(error, 'Session start / ATR retrieval');
     }
   };
 
   // Test 7: APDU Transmission
   const testApduTransmission = async () => {
     if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
+      Alert.alert('Error', 'No active card session');
       return;
     }
 
     try {
-      addLog("📤 Sending test APDU (SELECT command with no data)...");
+      addLog('📤 Sending test APDU (SELECT command with no data)...');
       const selectCmd = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 256);
       addLog(`📝 Command: ${selectCmd.toHexString()}`);
 
       const response = await state.currentCard.transmit(selectCmd);
       addLog(`📥 Response: ${response.arrayBuffer().byteLength}`);
       addLog(
-        `📊 Status: SW=${response.sw.toString(16).padStart(4, "0").toUpperCase()} `,
+        `📊 Status: SW=${response.sw.toString(16).padStart(4, '0').toUpperCase()} `
       );
     } catch (error) {
-      handleError(error, "APDU transmission");
+      handleError(error, 'APDU transmission');
     }
   };
 
   // Send SELECT by AID (from input)
   const sendSelectByAid = async () => {
     if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
+      Alert.alert('Error', 'No active card session');
       return;
     }
     try {
       if (!state.aidInput.trim()) {
-        Alert.alert("Input Required", "Enter AID hex to send SELECT by AID.");
+        Alert.alert('Input Required', 'Enter AID hex to send SELECT by AID.');
         return;
       }
       const aid = hexToBytes(state.aidInput.trim());
       addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
-      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x0c, aid as unknown as Uint8Array<ArrayBuffer>);
+      const cmd = new CommandApdu(
+        0x00,
+        0xa4,
+        0x04,
+        0x0c,
+        aid as unknown as Uint8Array<ArrayBuffer>
+      );
       addLog(`📝 Command: ${cmd.toHexString()}`);
       const res = await state.currentCard.transmit(cmd);
       addLog(`📥 Response: ${bytesToHex(res.data)}`);
       addLog(
-        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
+        `📊 Status: SW=${res.sw.toString(16).padStart(4, '0').toUpperCase()}`
       );
     } catch (error) {
-      handleError(error, "SELECT by AID");
+      handleError(error, 'SELECT by AID');
     }
   };
 
   // Send raw APDU (from input)
   const sendRawApdu = async () => {
     if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
+      Alert.alert('Error', 'No active card session');
       return;
     }
     try {
       if (!state.rawApduInput.trim()) {
-        Alert.alert("Input Required", "Enter raw APDU hex (e.g. 00A40400...)");
+        Alert.alert('Input Required', 'Enter raw APDU hex (e.g. 00A40400...)');
         return;
       }
       const apduBytes = hexToBytes(state.rawApduInput.trim());
       if (apduBytes.length < 4) {
         Alert.alert(
-          "Invalid APDU",
-          "APDU must be at least 4 bytes (CLA INS P1 P2).",
+          'Invalid APDU',
+          'APDU must be at least 4 bytes (CLA INS P1 P2).'
         );
         return;
       }
@@ -329,7 +339,7 @@ const NfcTestScreen: React.FC = () => {
       } else if (apduBytes.length >= 5) {
         const lc = apduBytes[4]!;
         if (apduBytes.length < 5 + lc) {
-          throw new Error("APDU length inconsistent with Lc");
+          throw new Error('APDU length inconsistent with Lc');
         }
         data = lc > 0 ? apduBytes.slice(5, 5 + lc) : null;
         const remaining = apduBytes.length - (5 + lc);
@@ -338,32 +348,34 @@ const NfcTestScreen: React.FC = () => {
           le = leByte === 0 ? 256 : leByte;
         } else if (remaining > 1) {
           throw new Error(
-            "Unsupported APDU format (only short-length supported)",
+            'Unsupported APDU format (only short-length supported)'
           );
         }
       }
 
       addLog(
-        `📤 Sending raw APDU: CLA=${cla.toString(16).padStart(2, "0").toUpperCase()} INS=${ins
+        `📤 Sending raw APDU: CLA=${cla.toString(16).padStart(2, '0').toUpperCase()} INS=${ins
           .toString(16)
-          .padStart(2, "0")
-          .toUpperCase()} P1=${p1.toString(16).padStart(2, "0").toUpperCase()} P2=${p2
+          .padStart(2, '0')
+          .toUpperCase()} P1=${p1.toString(16).padStart(2, '0').toUpperCase()} P2=${p2
           .toString(16)
-          .padStart(2, "0")
-          .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`,
+          .padStart(2, '0')
+          .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`
       );
 
-      const typedData: Uint8Array<ArrayBuffer> | null = data ? (data as unknown as Uint8Array<ArrayBuffer>) : null;
+      const typedData: Uint8Array<ArrayBuffer> | null = data
+        ? (data as unknown as Uint8Array<ArrayBuffer>)
+        : null;
       const cmd = new CommandApdu(cla, ins, p1, p2, typedData ?? null, le);
       addLog(`📝 Command: ${cmd.toHexString()}`);
 
       const res = await state.currentCard.transmit(cmd);
       addLog(`📥 Response: ${bytesToHex(res.data)}`);
       addLog(
-        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
+        `📊 Status: SW=${res.sw.toString(16).padStart(4, '0').toUpperCase()}`
       );
     } catch (error) {
-      handleError(error, "Raw APDU transmission");
+      handleError(error, 'Raw APDU transmission');
     }
   };
 
@@ -372,12 +384,12 @@ const NfcTestScreen: React.FC = () => {
     if (!state.currentCard) return;
 
     try {
-      addLog("🔓 Releasing card...");
+      addLog('🔓 Releasing card...');
       await state.currentCard.release();
       setState((prev) => ({ ...prev, currentCard: null }));
-      addLog("✅ Card released");
+      addLog('✅ Card released');
     } catch (error) {
-      handleError(error, "Card release");
+      handleError(error, 'Card release');
     }
   };
 
@@ -387,12 +399,12 @@ const NfcTestScreen: React.FC = () => {
     try {
       await releaseCard(); // Release card first
 
-      addLog("📡 Releasing device...");
+      addLog('📡 Releasing device...');
       await state.currentDevice.release();
       setState((prev) => ({ ...prev, currentDevice: null }));
-      addLog("✅ Device released (RF disabled)");
+      addLog('✅ Device released (RF disabled)');
     } catch (error) {
-      handleError(error, "Device release");
+      handleError(error, 'Device release');
     }
   };
 
@@ -400,7 +412,7 @@ const NfcTestScreen: React.FC = () => {
     try {
       await releaseDevice(); // Release device first
 
-      addLog("🛑 Releasing platform...");
+      addLog('🛑 Releasing platform...');
       if (platform) {
         await platform.release();
       }
@@ -414,9 +426,9 @@ const NfcTestScreen: React.FC = () => {
       }
       eventUnsubscribers.length = 0;
       setState((prev) => ({ ...prev, initialized: false, devices: [] }));
-      addLog("✅ Platform released");
+      addLog('✅ Platform released');
     } catch (error) {
-      handleError(error, "Platform release");
+      handleError(error, 'Platform release');
     }
   };
 
@@ -429,6 +441,7 @@ const NfcTestScreen: React.FC = () => {
       // ensure platform and underlying resources are released
       releasePlatform().catch(() => {});
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -649,7 +662,7 @@ const NfcTestScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
   },
   scrollView: {
     flex: 1,
@@ -657,17 +670,17 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
-    color: "#333",
+    color: '#333',
   },
   section: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 16,
     marginBottom: 16,
     borderRadius: 8,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -675,81 +688,81 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 12,
-    color: "#333",
+    color: '#333',
   },
   buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     padding: 12,
     borderRadius: 6,
     flex: 1,
     marginHorizontal: 4,
-    alignItems: "center",
+    alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: '#ccc',
   },
   buttonText: {
-    color: "white",
+    color: 'white',
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginBottom: 8,
   },
   releaseButton: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: '#FF3B30',
   },
   releaseButtonText: {
-    color: "white",
+    color: 'white',
   },
   logHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   clearButton: {
-    backgroundColor: "#FF9500",
+    backgroundColor: '#FF9500',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
   },
   clearButtonText: {
-    color: "white",
+    color: 'white',
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   logContainer: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: '#f8f8f8',
     borderRadius: 4,
     padding: 8,
     maxHeight: 300,
   },
   logText: {
     fontSize: 12,
-    fontFamily: "monospace",
+    fontFamily: 'monospace',
     marginBottom: 2,
-    color: "#333",
+    color: '#333',
   },
   emptyLogText: {
     fontSize: 14,
-    fontStyle: "italic",
-    color: "#666",
-    textAlign: "center",
+    fontStyle: 'italic',
+    color: '#666',
+    textAlign: 'center',
     paddingVertical: 20,
   },
 });

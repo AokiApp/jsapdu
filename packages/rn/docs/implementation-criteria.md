@@ -6,46 +6,56 @@
 
 ### ベストプラクティス例
 
-- **RnSmartCardPlatformの実装例**  
+- **RnSmartCardPlatformの実装例**
+
   ```typescript
   export class RnSmartCardPlatform extends SmartCardPlatform {
-    async init(): Promise<void> { /* ... */ }
-    async getDeviceInfo(): Promise<SmartCardDeviceInfo[]> { /* ... */ }
-    async acquireDevice(id: string): Promise<SmartCardDevice> { /* ... */ }
-    async release(): Promise<void> { /* ... */ }
+    async init(): Promise<void> {
+      /* ... */
+    }
+    async getDeviceInfo(): Promise<SmartCardDeviceInfo[]> {
+      /* ... */
+    }
+    async acquireDevice(id: string): Promise<SmartCardDevice> {
+      /* ... */
+    }
+    async release(): Promise<void> {
+      /* ... */
+    }
   }
   ```
-  - **やってはいけない例**  
+
+  - **やってはいけない例**
     - `init()`で内部的にデバイスやカードの状態を直接管理する（→SRP違反）
     - NitroModuleのインスタンスをコンストラクタで受け取り、フィールドで保持する
-    - SmartCard*関連abstractクラスを継承せずに実装する（→型安全性違反）
+    - SmartCard\*関連abstractクラスを継承せずに実装する（→型安全性違反）
 
-- **RnSmartCardDeviceの実装例**  
+- **RnSmartCardDeviceの実装例**
   - `waitForCardPresence()`は「カードが来るまで待つ」だけ。カードのAPDU送受信やATR取得はSmartCardに委譲する。
-  - **アンチパターン**  
+  - **アンチパターン**
     - `waitForCardPresence()`内でAPDU送信やATR取得を行う（→責務混在）
 
-- **RnSmartCardの実装例**  
+- **RnSmartCardの実装例**
   - `transmit()`は必ずCommandApdu型を受け取り、ResponseApdu型で返す。ArrayBufferやUint8Arrayの直接操作は禁止。
 
 ---
 
 ## 2. エラー処理・例外設計（実装例・テスト例）
 
-- **SmartCardErrorの使い方例**  
+- **SmartCardErrorの使い方例**
   ```typescript
   try {
     await device.waitForCardPresence(10000);
   } catch (e) {
-    if (e instanceof SmartCardError && e.code === "TIMEOUT") {
+    if (e instanceof SmartCardError && e.code === 'TIMEOUT') {
       // タイムアウト時の処理
     }
   }
   ```
-- **Android例外→FFIエラーのマッピング例**  
+- **Android例外→FFIエラーのマッピング例**
   - TagLostException → SmartCardError("PLATFORM_ERROR", "カードが取り外されました")
   - IOException → SmartCardError("PLATFORM_ERROR", "NFC I/O通信に失敗しました")
-- **アンチパターン**  
+- **アンチパターン**
   - 例外をcatchせずにそのままthrowする
   - catch時にエラーコードやデバッグ情報を付与しない
 
@@ -68,8 +78,8 @@
     index.tsx
   ```
 
-packages/pcsc/* を参考にするといいだろう。
-  
+packages/pcsc/\* を参考にするといいだろう。
+
 - **命名例**
   - クラス名：`SmartCardPlatformImpl`
   - メソッド名：`waitForCardPresence`
@@ -89,7 +99,7 @@ packages/pcsc/* を参考にするといいだろう。
 fun testAcquireDevice_Success() = runBlocking {
     val platform = SmartCardPlatformImpl(nitroModule)
     platform.init()
-    val device = platform.acquireDevice("NFC_READER_1") 
+    val device = platform.acquireDevice("NFC_READER_1")
     assertNotNull(device)
 } // あくまでこれは例。実際にはより詳細かつ意味のあるテストケースを多数用意。
 ```
@@ -107,7 +117,7 @@ fun testAcquireDevice_Success() = runBlocking {
 
 ### カバレッジ・品質基準
 
-- テストカバレッジ80%以上をCIで自動判定。  
+- テストカバレッジ80%以上をCIで自動判定。
 - テストコードも責務分離・命名規約・行数制限を遵守。
 
 ---

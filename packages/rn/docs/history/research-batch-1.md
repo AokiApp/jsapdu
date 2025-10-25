@@ -88,6 +88,7 @@ flowchart TD
 
 - 本サマリの方針が [android-nfc-rdd.md](packages/rn/docs/rdd/android-nfc-rdd.md:1)、[android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:1)、[android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1) に整合していること
 - 次バッチの調査事項が明確に列挙されていること
+
 ## FFI中立性の原則（第1バッチ反映）
 
 - 公開API／FFIはOS特有の概念を露出しない。ReaderMode、IsoDep、Intent、Activity等のAndroid特有語は、FFIのメソッド名・引数・戻り値に含めない。契約は [SmartCardPlatform.class()](packages/interface/src/abstracts.ts:17)、[SmartCardDevice.class()](packages/interface/src/abstracts.ts:202)、[SmartCard.class()](packages/interface/src/abstracts.ts:283) の中立用語（RF有効化、カード存在イベント、APDU往復）で定義する。
