@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+import "@bacons/text-decoder/install";
 
 import {
   SmartCardPlatform,

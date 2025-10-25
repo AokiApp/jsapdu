@@ -13,12 +13,13 @@
     "test": "jest --ci --passWithNoTests"
   },
   "dependencies": {
+    "@aokiapp/jsapdu-interface": "*",
     "@babel/runtime": "^7.28.4",
+    "@bacons/text-decoder": "^0.0.0",
     "react": "19.1.0",
     "react-native": "0.81.1",
     "react-native-harness": "^1.0.0-alpha.17",
-    "react-native-nitro-modules": "^0.31.1",
-    "@aokiapp/jsapdu-interface": "*"
+    "react-native-nitro-modules": "^0.31.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
