@@ -41,5 +41,7 @@
   "bugs": {
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "nanoevents": "^9.1.0"
+  }
 }
