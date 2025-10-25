@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -44,7 +44,7 @@ interface TestState {
 }
 let platform: SmartCardPlatform;
 
- // Event subscription management for native status updates
+// Event subscription management for native status updates
 const eventUnsubscribers: Array<() => void> = [];
 
 function attachPlatformEvents(logger: (message: string) => void): void {
@@ -292,7 +292,13 @@ const NfcTestScreen: React.FC = () => {
       }
       const aid = hexToBytes(state.aidInput.trim());
       addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
-      const cmd = new CommandApdu(0x00, 0xa4, 0x04, 0x0c, aid as unknown as Uint8Array<ArrayBuffer>);
+      const cmd = new CommandApdu(
+        0x00,
+        0xa4,
+        0x04,
+        0x0c,
+        aid as unknown as Uint8Array<ArrayBuffer>,
+      );
       addLog(`📝 Command: ${cmd.toHexString()}`);
       const res = await state.currentCard.transmit(cmd);
       addLog(`📥 Response: ${bytesToHex(res.data)}`);
@@ -361,7 +367,9 @@ const NfcTestScreen: React.FC = () => {
           .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`,
       );
 
-      const typedData: Uint8Array<ArrayBuffer> | null = data ? (data as unknown as Uint8Array<ArrayBuffer>) : null;
+      const typedData: Uint8Array<ArrayBuffer> | null = data
+        ? (data as unknown as Uint8Array<ArrayBuffer>)
+        : null;
       const cmd = new CommandApdu(cla, ins, p1, p2, typedData ?? null, le);
       addLog(`📝 Command: ${cmd.toHexString()}`);
 
@@ -404,7 +412,7 @@ const NfcTestScreen: React.FC = () => {
     }
   };
 
-  const releasePlatform = async () => {
+  const releasePlatform = useCallback(async () => {
     try {
       await releaseDevice(); // Release device first
 
@@ -418,7 +426,7 @@ const NfcTestScreen: React.FC = () => {
           unsub();
         }
       } catch (e) {
-        console.warn('[NFC Test] detach listeners failed', e);
+        console.warn("[NFC Test] detach listeners failed", e);
       }
       eventUnsubscribers.length = 0;
       setState((prev) => ({ ...prev, initialized: false, devices: [] }));
@@ -426,7 +434,7 @@ const NfcTestScreen: React.FC = () => {
     } catch (error) {
       handleError(error, "Platform release");
     }
-  };
+  }, []);
 
   const clearLogs = () => {
     setState((prev) => ({ ...prev, logs: [] }));
