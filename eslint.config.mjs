@@ -18,10 +18,13 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      "**/lib/**",
       "eslint.config.mjs",
       "vitest.config.js",
       "packages/pcsc/tests/*.js",
       "examples/mynacard-e2e/debug-pcsc.cjs",
+      "packages/rn/**",
+      "examples/rn/**",
     ],
   },
   {
