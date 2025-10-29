@@ -28,7 +28,12 @@ class JsapduRn : HybridJsapduRnSpec() {
 
   override fun getAtr(deviceHandle: String, cardHandle: String): Promise<ArrayBuffer> = Promise.async { FfiImpl.getAtr(deviceHandle, cardHandle) }
 
-  override fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> = Promise.async { FfiImpl.transmit(deviceHandle, cardHandle, apdu) }
+  override fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> {
+    val apduCopied = ArrayBuffer.copy(apdu)
+    return Promise.async {
+      FfiImpl.transmit(deviceHandle, cardHandle, apduCopied)
+    }
+  }
 
   override fun reset(deviceHandle: String, cardHandle: String): Promise<Unit> = Promise.async { FfiImpl.reset(deviceHandle, cardHandle) }
 

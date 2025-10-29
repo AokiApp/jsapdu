@@ -12,6 +12,7 @@ import app.aoki.jsapdu.rn.StatusEventType
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
 
 /**
  * Android NFC device that controls RF (ReaderMode) and tracks card presence.
@@ -28,10 +29,10 @@ class SmartCardDevice(
 
     private var controller: NfcReaderController? = null
     private val cardPresent = AtomicBoolean(false)
-    @Volatile private var lastIsoDep: IsoDep? = null
+    @Volatile private var awaitingIsoDep: IsoDep? = null
     private val enabled = AtomicBoolean(false)
 
-    private val cards = ConcurrentHashMap<String, SmartCardSession>()
+    private val cards = ConcurrentHashMap<String, SmartCard>()
 
     /** Unique handle for this device instance */
     val handle: String = "handle-$id-${System.currentTimeMillis()}"
@@ -66,8 +67,7 @@ class SmartCardDevice(
         enabled.set(true)
         val ctrl = NfcReaderController(adapter) { isoDep ->
             if (!enabled.get()) return@NfcReaderController
-            setTimeoutOrIgnore(isoDep, 5000)
-            lastIsoDep = isoDep
+            awaitingIsoDep = isoDep
             cardPresent.set(true)
             safeEmit(StatusEventType.CARD_FOUND, "ISO-DEP tag discovered")
         }
@@ -95,7 +95,7 @@ class SmartCardDevice(
             safeEmit(StatusEventType.CARD_LOST, "ReaderMode disabled")
         }
         cardPresent.set(false)
-        lastIsoDep = null
+        awaitingIsoDep = null
 
         // Cleanup all card sessions
         val existingCards = cards.values.toList()
@@ -115,10 +115,10 @@ class SmartCardDevice(
     fun isAvailable(): Boolean = adapter.isEnabled
 
     /** Whether an ISO-DEP card is detected in RF field */
-    fun isCardPresent(): Boolean = cardPresent.get() && (lastIsoDep?.isConnected == true)
+    fun isCardPresent(): Boolean = cardPresent.get()
 
     /** Returns latest IsoDep when present, otherwise null */
-    fun getIsoDep(): IsoDep? = lastIsoDep
+    fun getAwaitingIsoDep(): IsoDep? = awaitingIsoDep
 
     /** Internal: mark tag lost, release card(s), and clear state */
     internal fun onTagLost() {
@@ -126,8 +126,8 @@ class SmartCardDevice(
         cardPresent.set(false)
 
         // Close and clear the last IsoDep reference (best-effort)
-        val iso = lastIsoDep
-        lastIsoDep = null
+        val iso = awaitingIsoDep
+        awaitingIsoDep = null
         closeIfConnected(iso)
 
         // Release all active card sessions to avoid stale handles
@@ -143,21 +143,22 @@ class SmartCardDevice(
 
     /** Start a card session and return a card handle */
     fun startSession(): String {
-        val isoDep = lastIsoDep ?: throw IllegalStateException("CARD_NOT_PRESENT: No ISO-DEP card detected")
+        val isoDep = awaitingIsoDep ?: throw IllegalStateException("CARD_NOT_PRESENT: No ISO-DEP card detected")
         try {
-            // IsoDep MUST NOT already be connected at session start
-            if (isoDep.isConnected) {
-                throw IllegalStateException("SESSION_STATE_ERROR: IsoDep already connected before start")
-            }
-            // Connect and verify link state
-            isoDep.connect()
-            setTimeoutOrIgnore(isoDep, 5000)
-            if (!isoDep.isConnected) {
+            val card = SmartCard(this, isoDep)
+            awaitingIsoDep = null
+
+            cards[card.handle] = card
+            safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session started", cardHandle = card.handle)
+
+            
+            if (!card.isCardPresent()) {
                 // Link did not come up — treat as loss
                 onTagLost()
                 safeEmit(StatusEventType.CARD_LOST, "isConnected=false after connect")
                 throw IllegalStateException("PLATFORM_ERROR: IsoDep connection not established at session start")
             }
+            return card.handle
         } catch (e: TagLostException) {
             // Card physically removed before session start
             onTagLost()
@@ -168,14 +169,10 @@ class SmartCardDevice(
             safeEmit(StatusEventType.CARD_LOST, "IO during startSession: ${e.message}")
             throw IllegalStateException("PLATFORM_ERROR: Failed to start session: ${e.message}")
         }
-        val card = SmartCardSession(this, isoDep)
-        cards[card.handle] = card
-        safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session started", cardHandle = card.handle)
-        return card.handle
     }
 
     /** Get a card by handle */
-    fun getTarget(cardHandle: String): SmartCardSession? = cards[cardHandle]
+    fun getTarget(cardHandle: String): SmartCard? = cards[cardHandle]
 
     /** Release a card session by handle */
     fun releaseCard(cardHandle: String) {
@@ -201,5 +198,4 @@ class SmartCardDevice(
         safeEmit(StatusEventType.WAIT_TIMEOUT, "timeout=${timeout}s")
         throw IllegalStateException("WAIT_TIMEOUT: Card not present within $timeout seconds")
     }
-
 }

@@ -11,6 +11,10 @@ object ArrayBufferUtils {
         return bytes
     }
     fun fromByteArray(data: ByteArray): ArrayBuffer {
-        return ArrayBuffer.wrap(ByteBuffer.wrap(data))
+
+        val byteBuffer = ByteBuffer.allocateDirect(data.size)
+        byteBuffer.put(data)
+        byteBuffer.flip()
+        return ArrayBuffer.wrap(byteBuffer)
     }
 }

@@ -16,6 +16,21 @@ class SmartCard(
     private val parent: SmartCardDevice,
     private val isoDep: IsoDep
 ) {
+    init {
+        // IsoDep MUST NOT already be connected at session start
+        if (isoDep.isConnected) {
+            throw IllegalStateException("SESSION_STATE_ERROR: IsoDep already connected before start")
+        }
+        // Connect and verify link state
+        isoDep.connect()
+        try {
+            isoDep.timeout = 5000
+        } catch (e: Exception) {
+            onTagLost("Error setting timeout: ${e.message}")
+            throw IllegalStateException("PLATFORM_ERROR: Failed to set IsoDep timeout: ${e.message}")
+        }
+    }
+
     val handle: String = "card-${System.currentTimeMillis()}"
 
     private val apduLock = Any()
@@ -56,7 +71,7 @@ class SmartCard(
         lostDetails: String,
         apduFailDetails: String? = null
     ) {
-        if (!isoDep.isConnected) {
+        if (!isCardPresent()) {
             onTagLost(lostDetails)
             if (orFailApdu && apduFailDetails != null) {
                 safeEmit(StatusEventType.APDU_FAILED, apduFailDetails)
@@ -125,7 +140,7 @@ class SmartCard(
     fun reset() {
         synchronized(apduLock) {
             try {
-                if (isoDep.isConnected) {
+                if (isCardPresent()) {
                     isoDep.close()
                 }
             } catch (_: Exception) {
@@ -139,7 +154,7 @@ class SmartCard(
     internal fun cleanup() {
         synchronized(apduLock) {
             try {
-                if (isoDep.isConnected) {
+                if (isCardPresent()) {
                     isoDep.close()
                 }
             } catch (_: Exception) {
@@ -147,6 +162,14 @@ class SmartCard(
             }
         }
     }
+    
+    fun isCardPresent(): Boolean {
+        try {
+            val connected = isoDep.isConnected
+            return connected
+        } catch (_: Exception) {
+            onTagLost("Connection lost: Card lost after connection")
+            return false
+        }
+    }
 }
-
-typealias SmartCardSession = SmartCard
