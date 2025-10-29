@@ -1,13 +1,16 @@
 package app.aoki.jsapdu.rn.utils
 
+import com.margelo.nitro.core.ArrayBuffer
+import java.nio.ByteBuffer
+
 object ArrayBufferUtils {
     fun copyToByteArray(buffer: ArrayBuffer): ByteArray {
-        val byteBuffer = buffer.toByteBuffer()
-        val byteArray = ByteArray(byteBuffer.remaining())
-        byteBuffer.get(byteArray)
-        return byteArray
+        val byteBuffer: ByteBuffer = buffer.getBuffer(copyIfNeeded = true)
+        val bytes = ByteArray(byteBuffer.remaining())
+        byteBuffer.get(bytes)
+        return bytes
     }
     fun fromByteArray(data: ByteArray): ArrayBuffer {
-        return ArrayBuffer.fromByteArray(data)
+        return ArrayBuffer.wrap(ByteBuffer.wrap(data))
     }
 }
