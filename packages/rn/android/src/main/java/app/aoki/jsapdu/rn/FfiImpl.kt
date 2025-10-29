@@ -5,16 +5,33 @@ import com.margelo.nitro.core.ArrayBuffer
 object FfiImpl {
     private var smartCardPlatform: SmartCardPlatform? = null
 
+    private inline fun requirePlatformUninitialized() {
+        if (smartCardPlatform != null && smartCardPlatform!!.isInitialized()) {
+            throw IllegalStateException("FfiImpl: Platform already initialized")
+        }
+    }
+
+    private inline fun requirePlatformInitialized() {
+        if (smartCardPlatform == null || !smartCardPlatform!!.isInitialized()) {
+            throw IllegalStateException("FfiImpl: Platform not initialized")
+        }
+    }
+
     fun initPlatform(): Unit {
+        requirePlatformUninitialized()
         smartCardPlatform = SmartCardPlatform()
+        smartCardPlatform?.initialize()
     }
 
     fun releasePlatform(): Unit {
-        throw NotImplementedError("FfiImpl.releasePlatform not implemented")
+        requirePlatformInitialized()
+        smartCardPlatform?.release()
+        smartCardPlatform = null
     }
 
     fun getDeviceInfo(): Array<DeviceInfo> {
-        throw NotImplementedError("FfiImpl.getDeviceInfo not implemented")
+        requirePlatformInitialized()
+        return smartCardPlatform!!.getDeviceInfo()
     }
 
     fun acquireDevice(): String {
