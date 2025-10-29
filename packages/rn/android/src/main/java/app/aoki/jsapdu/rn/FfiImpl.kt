@@ -3,6 +3,7 @@ package app.aoki.jsapdu.rn
 import com.margelo.nitro.core.ArrayBuffer
 import com.margelo.nitro.aokiapp.jsapdurn.DeviceInfo
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
+import app.aoki.jsapdu.rn.utils.ArrayBufferUtils
 
 object FfiImpl {
     private var smartCardPlatform: SmartCardPlatform? = null
@@ -63,7 +64,7 @@ object FfiImpl {
         requirePlatformInitialized()
         val device = smartCardPlatform!!.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        throw NotImplementedError("FfiImpl.startSession routed but not implemented")
+        return device.startSession()
     }
 
     fun releaseDevice(deviceHandle: String): Unit {
@@ -77,28 +78,39 @@ object FfiImpl {
         requirePlatformInitialized()
         val device = smartCardPlatform!!.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        throw NotImplementedError("FfiImpl.getAtr routed but not implemented")
+        val card = device.getTarget(cardHandle)
+            ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
+        val atr = card.getAtr()
+        return ArrayBufferUtils.fromByteArray(atr)
     }
 
     fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): ArrayBuffer {
         requirePlatformInitialized()
         val device = smartCardPlatform!!.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        throw NotImplementedError("FfiImpl.transmit routed but not implemented")
+        val card = device.getTarget(cardHandle)
+            ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
+        val apduBytes = ArrayBufferUtils.copyToByteArray(apdu)
+        val response = card.transmit(apduBytes)
+        return ArrayBufferUtils.fromByteArray(response)
     }
 
     fun reset(deviceHandle: String, cardHandle: String): Unit {
         requirePlatformInitialized()
         val device = smartCardPlatform!!.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        throw NotImplementedError("FfiImpl.reset routed but not implemented")
+        val card = device.getTarget(cardHandle)
+            ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
+        card.reset()
     }
 
     fun releaseCard(deviceHandle: String, cardHandle: String): Unit {
         requirePlatformInitialized()
         val device = smartCardPlatform!!.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        throw NotImplementedError("FfiImpl.releaseCard routed but not implemented")
+        val card = device.getTarget(cardHandle)
+            ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
+        device.releaseCard(cardHandle)
     }
 
     fun onStatusUpdate(callback: ((eventType: String, payload: EventPayload) -> Unit)?): Unit {
