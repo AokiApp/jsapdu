@@ -57,7 +57,10 @@ object FfiImpl {
     }
 
     fun waitForCardPresence(deviceHandle: String, timeout: Double): Unit {
-        throw NotImplementedError("FfiImpl.waitForCardPresence not implemented")
+        requirePlatformInitialized()
+        val device = smartCardPlatform!!.getTarget(deviceHandle)
+            ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
+        device.waitForCardPresence(timeout)
     }
 
     fun startSession(deviceHandle: String): String {
@@ -80,7 +83,7 @@ object FfiImpl {
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
-        val atr = card.getAtr()
+        val atr: ByteArray = card.getAtr()
         return ArrayBufferUtils.fromByteArray(atr)
     }
 
@@ -90,8 +93,8 @@ object FfiImpl {
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
-        val apduBytes = ArrayBufferUtils.copyToByteArray(apdu)
-        val response = card.transmit(apduBytes)
+        val apduBytes: ByteArray = ArrayBufferUtils.copyToByteArray(apdu)
+        val response: ByteArray = card.transmit(apduBytes)
         return ArrayBufferUtils.fromByteArray(response)
     }
 
