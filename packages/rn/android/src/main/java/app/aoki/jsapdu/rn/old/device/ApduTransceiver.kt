@@ -1,4 +1,4 @@
-package app.aoki.jsapdu.rn.device
+package app.aoki.jsapdu.rn.old.device
 
 import com.margelo.nitro.core.ArrayBuffer
 import android.nfc.tech.IsoDep
