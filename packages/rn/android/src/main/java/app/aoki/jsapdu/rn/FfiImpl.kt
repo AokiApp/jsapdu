@@ -6,80 +6,85 @@ import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 import app.aoki.jsapdu.rn.utils.ArrayBufferUtils
 
 object FfiImpl {
-    private var smartCardPlatform: SmartCardPlatform? = null
+    @Volatile private var smartCardPlatform: SmartCardPlatform? = null
+    private val platformLock = Any()
 
-    private inline fun requirePlatformUninitialized() {
-        if (smartCardPlatform != null && smartCardPlatform!!.isInitialized()) {
-            throw IllegalStateException("FfiImpl: Platform already initialized")
-        }
-    }
-
-    private inline fun requirePlatformInitialized() {
-        if (smartCardPlatform == null || !smartCardPlatform!!.isInitialized()) {
+    private inline fun ensureInitialized(): SmartCardPlatform {
+        val platform = smartCardPlatform ?: throw IllegalStateException("FfiImpl: Platform not initialized")
+        if (!platform.isInitialized()) {
             throw IllegalStateException("FfiImpl: Platform not initialized")
         }
+        return platform
     }
 
     fun initPlatform(): Unit {
-        requirePlatformUninitialized()
-        smartCardPlatform = SmartCardPlatform()
-        smartCardPlatform!!.initialize()
+        synchronized(platformLock) {
+            if (smartCardPlatform?.isInitialized() == true) {
+                throw IllegalStateException("FfiImpl: Platform already initialized")
+            }
+            val platform = SmartCardPlatform()
+            platform.initialize()
+            smartCardPlatform = platform
+        }
     }
 
     fun releasePlatform(): Unit {
-        requirePlatformInitialized()
-        smartCardPlatform!!.release()
-        smartCardPlatform = null
+        val platformToRelease: SmartCardPlatform = synchronized(platformLock) {
+            val platform = smartCardPlatform ?: throw IllegalStateException("FfiImpl: Platform not initialized")
+            smartCardPlatform = null
+            platform
+        }
+        platformToRelease.release()
     }
 
     fun getDeviceInfo(): Array<DeviceInfo> {
-        requirePlatformInitialized()
-        return smartCardPlatform!!.getDeviceInfo()
+        val platform = ensureInitialized()
+        return platform.getDeviceInfo()
     }
 
     fun acquireDevice(deviceId: String): String {
-        requirePlatformInitialized()
-        return smartCardPlatform!!.acquireDevice(deviceId)
+        val platform = ensureInitialized()
+        return platform.acquireDevice(deviceId)
     }
 
     fun isDeviceAvailable(deviceHandle: String): Boolean {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.isAvailable()
     }
 
     fun isCardPresent(deviceHandle: String): Boolean {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.isCardPresent()
     }
 
     fun waitForCardPresence(deviceHandle: String, timeout: Double): Unit {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         device.waitForCardPresence(timeout)
     }
 
     fun startSession(deviceHandle: String): String {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.startSession()
     }
 
     fun releaseDevice(deviceHandle: String): Unit {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         device.release()
     }
 
     fun getAtr(deviceHandle: String, cardHandle: String): ArrayBuffer {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
@@ -88,8 +93,8 @@ object FfiImpl {
     }
 
     fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): ArrayBuffer {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
@@ -99,8 +104,8 @@ object FfiImpl {
     }
 
     fun reset(deviceHandle: String, cardHandle: String): Unit {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
@@ -108,8 +113,8 @@ object FfiImpl {
     }
 
     fun releaseCard(deviceHandle: String, cardHandle: String): Unit {
-        requirePlatformInitialized()
-        val device = smartCardPlatform!!.getTarget(deviceHandle)
+        val platform = ensureInitialized()
+        val device = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
@@ -117,6 +122,10 @@ object FfiImpl {
     }
 
     fun onStatusUpdate(callback: ((eventType: String, payload: EventPayload) -> Unit)?): Unit {
-        throw NotImplementedError("FfiImpl.onStatusUpdate not implemented")
+        if (callback == null) {
+            StatusEventDispatcher.clear()
+        } else {
+            StatusEventDispatcher.setCallback(callback)
+        }
     }
 }
