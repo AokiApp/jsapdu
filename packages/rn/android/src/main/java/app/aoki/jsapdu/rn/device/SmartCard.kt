@@ -2,6 +2,7 @@ package app.aoki.jsapdu.rn.device
 
 import android.nfc.tech.IsoDep
 import android.nfc.TagLostException
+import java.io.IOException
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 import app.aoki.jsapdu.rn.StatusEventDispatcher
 import app.aoki.jsapdu.rn.StatusEventType
@@ -9,6 +10,7 @@ import app.aoki.jsapdu.rn.StatusEventType
 /**
  * Card session bound to a discovered IsoDep.
  * Top-level class extracted from SmartCardDevice for clearer structure.
+ * Simplified with centralized error/event handling for readability.
  */
 class SmartCard(
     private val parent: SmartCardDevice,
@@ -16,63 +18,106 @@ class SmartCard(
 ) {
     val handle: String = "card-${System.currentTimeMillis()}"
 
-    fun getAtr(): ByteArray {
-        val hist = isoDep.getHistoricalBytes()
-        val hi = isoDep.getHiLayerResponse()
-        return when {
-            hist != null -> hist
-            hi != null -> hi
-            else -> ByteArray(0)
+    private val apduLock = Any()
+
+    // ---- Small helpers to reduce repetition ---------------------------------------------------
+
+    private fun safeEmit(type: StatusEventType, details: String) {
+        try {
+            StatusEventDispatcher.emit(
+                type,
+                EventPayload(
+                    deviceHandle = parent.handle,
+                    cardHandle = handle,
+                    details = details
+                )
+            )
+        } catch (_: Exception) { /* suppress */ }
+    }
+
+    private fun onTagLost(details: String) {
+        try {
+            parent.onTagLost()
+        } catch (_: Exception) { /* suppress */ }
+        safeEmit(StatusEventType.CARD_LOST, details)
+    }
+
+    private fun platformError(message: String): Nothing =
+        throw IllegalStateException("PLATFORM_ERROR: $message")
+
+    private fun apduError(message: String?): Nothing =
+        throw IllegalStateException("APDU_ERROR: $message")
+
+    private fun ByteArray.toHex(): String =
+        joinToString("") { "%02X".format(it) }
+
+    private fun ensureConnected(
+        orFailApdu: Boolean,
+        lostDetails: String,
+        apduFailDetails: String? = null
+    ) {
+        if (!isoDep.isConnected) {
+            onTagLost(lostDetails)
+            if (orFailApdu && apduFailDetails != null) {
+                safeEmit(StatusEventType.APDU_FAILED, apduFailDetails)
+            }
+            platformError("Card not connected")
         }
     }
 
-    private val apduLock = Any()
+    // ---- Public API ---------------------------------------------------------------------------
+
+    fun getAtr(): ByteArray {
+        synchronized(apduLock) {
+            // Do NOT attempt to reconnect outside session start
+            ensureConnected(
+                orFailApdu = false,
+                lostDetails = "Disconnected before ATR/ATS"
+            )
+            try {
+                val hist = isoDep.historicalBytes
+                val hi = isoDep.hiLayerResponse
+                return when {
+                    hist != null -> hist
+                    hi != null -> hi
+                    else -> ByteArray(0)
+                }
+            } catch (e: TagLostException) {
+                onTagLost("TagLost during ATR/ATS")
+                platformError("Card removed during ATR/ATS retrieval")
+            } catch (e: IOException) {
+                onTagLost("IO during ATR/ATS: ${e.message}")
+                platformError("NFC I/O error during ATR/ATS: ${e.message}")
+            }
+        }
+    }
 
     fun transmit(apdu: ByteArray): ByteArray {
         synchronized(apduLock) {
+            // Do NOT attempt to reconnect outside session start
+            ensureConnected(
+                orFailApdu = true,
+                lostDetails = "Disconnected before transceive",
+                apduFailDetails = "Not connected"
+            )
             try {
-                if (!isoDep.isConnected) {
-                    isoDep.connect()
-                    isoDep.timeout = 5000
-                }
                 // Emit APDU_SENT prior to transmission
-                try {
-                    StatusEventDispatcher.emit(
-                        StatusEventType.APDU_SENT,
-                        EventPayload(
-                            deviceHandle = parent.handle,
-                            cardHandle = handle,
-                            details = "CommandHex=${apdu.joinToString("") { "%02X".format(it) }}"
-                        )
-                    )
-                } catch (_: Exception) { /* suppress */ }
-                return isoDep.transceive(apdu)
+                safeEmit(
+                    StatusEventType.APDU_SENT,
+                    "CommandHex=${apdu.toHex()}"
+                )
+                val response = isoDep.transceive(apdu)
+                return response
             } catch (e: TagLostException) {
-                // Card physically removed
-                try {
-                    parent.onTagLost()
-                    StatusEventDispatcher.emit(
-                        StatusEventType.CARD_LOST,
-                        EventPayload(
-                            deviceHandle = parent.handle,
-                            cardHandle = handle,
-                            details = "TagLost"
-                        )
-                    )
-                } catch (_: Exception) { /* suppress */ }
-                throw IllegalStateException("PLATFORM_ERROR: Card removed during APDU transmission")
+                onTagLost("TagLost")
+                platformError("Card removed during APDU transmission")
+            } catch (e: IOException) {
+                onTagLost("IO during transceive: ${e.message}")
+                safeEmit(StatusEventType.APDU_FAILED, "IO: ${e.message}")
+                platformError("NFC communication failed: ${e.message}")
             } catch (e: Exception) {
-                try {
-                    StatusEventDispatcher.emit(
-                        StatusEventType.APDU_FAILED,
-                        EventPayload(
-                            deviceHandle = parent.handle,
-                            cardHandle = handle,
-                            details = e.message ?: "APDU error"
-                        )
-                    )
-                } catch (_: Exception) { /* suppress */ }
-                throw IllegalStateException("APDU_ERROR: ${e.message}")
+                safeEmit(StatusEventType.APDU_FAILED, e.message ?: "APDU error")
+                apduError(e.message)
             }
         }
     }
@@ -83,20 +128,11 @@ class SmartCard(
                 if (isoDep.isConnected) {
                     isoDep.close()
                 }
-                // Emit CARD_SESSION_RESET after closing
-                try {
-                    StatusEventDispatcher.emit(
-                        StatusEventType.CARD_SESSION_RESET,
-                        EventPayload(
-                            deviceHandle = parent.handle,
-                            cardHandle = handle,
-                            details = "Session reset"
-                        )
-                    )
-                } catch (_: Exception) { /* suppress */ }
             } catch (_: Exception) {
-                // ignore reset errors
+                // ignore reset close errors
             }
+            // Emit CARD_SESSION_RESET after closing
+            safeEmit(StatusEventType.CARD_SESSION_RESET, "Session reset")
         }
     }
 

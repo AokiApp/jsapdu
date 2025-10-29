@@ -3,6 +3,8 @@ package app.aoki.jsapdu.rn.device
 import android.app.Activity
 import android.nfc.NfcAdapter
 import android.nfc.tech.IsoDep
+import android.nfc.TagLostException
+import java.io.IOException
 import app.aoki.jsapdu.rn.platform.NfcReaderController
 import app.aoki.jsapdu.rn.SmartCardPlatform
 import app.aoki.jsapdu.rn.StatusEventDispatcher
@@ -16,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Low-level controls are segregated here; SmartCardPlatform orchestrates instances of this class.
  *
  * Constructor receives parent SmartCardPlatform to establish mutual relationship.
+ * Centralized event emission and cleanup helpers for readability.
  */
 class SmartCardDevice(
     private val parentPlatform: SmartCardPlatform,
@@ -33,6 +36,29 @@ class SmartCardDevice(
     /** Unique handle for this device instance */
     val handle: String = "handle-$id-${System.currentTimeMillis()}"
 
+    // ---- Helpers ---------------------------------------------------------------------------
+
+    private fun safeEmit(type: StatusEventType, details: String, cardHandle: String? = null) {
+        try {
+            StatusEventDispatcher.emit(
+                type,
+                EventPayload(deviceHandle = handle, cardHandle = cardHandle, details = details)
+            )
+        } catch (_: Exception) { /* suppress */ }
+    }
+
+    private fun setTimeoutOrIgnore(isoDep: IsoDep, millis: Int) {
+        try { isoDep.timeout = millis } catch (_: Exception) { /* ignore */ }
+    }
+
+    private fun closeIfConnected(isoDep: IsoDep?) {
+        try {
+            if (isoDep != null && isoDep.isConnected) {
+                isoDep.close()
+            }
+        } catch (_: Exception) { /* ignore close errors */ }
+    }
+
     /** Acquire the underlying NFC device: enable ReaderMode using current Activity */
     fun acquire() {
         val activity = parentPlatform.currentActivity()
@@ -40,25 +66,14 @@ class SmartCardDevice(
         enabled.set(true)
         val ctrl = NfcReaderController(adapter) { isoDep ->
             if (!enabled.get()) return@NfcReaderController
+            setTimeoutOrIgnore(isoDep, 5000)
             lastIsoDep = isoDep
             cardPresent.set(true)
-            // Emit CARD_FOUND when an ISO-DEP tag is discovered
-            try {
-                StatusEventDispatcher.emit(
-                    StatusEventType.CARD_FOUND,
-                    EventPayload(deviceHandle = handle, cardHandle = null, details = "ISO-DEP tag discovered")
-                )
-            } catch (_: Exception) { /* suppress */ }
+            safeEmit(StatusEventType.CARD_FOUND, "ISO-DEP tag discovered")
         }
         ctrl.enable(activity)
         controller = ctrl
-        // Emit ReaderMode enabled
-        try {
-            StatusEventDispatcher.emit(
-                StatusEventType.READER_MODE_ENABLED,
-                EventPayload(deviceHandle = handle, cardHandle = null, details = "ReaderMode enabled")
-            )
-        } catch (_: Exception) { /* suppress */ }
+        safeEmit(StatusEventType.READER_MODE_ENABLED, "ReaderMode enabled")
     }
 
     /** Release the underlying NFC device: disable ReaderMode using current Activity (best-effort) */
@@ -77,34 +92,21 @@ class SmartCardDevice(
         controller = null
         // If a card was present, emit CARD_LOST
         if (cardPresent.get()) {
-            try {
-                StatusEventDispatcher.emit(
-                    StatusEventType.CARD_LOST,
-                    EventPayload(deviceHandle = handle, cardHandle = null, details = "ReaderMode disabled")
-                )
-            } catch (_: Exception) { /* suppress */ }
+            safeEmit(StatusEventType.CARD_LOST, "ReaderMode disabled")
         }
         cardPresent.set(false)
         lastIsoDep = null
 
-        // Cleanup all card sessions without coarse device lock
+        // Cleanup all card sessions
         val existingCards = cards.values.toList()
         cards.clear()
         existingCards.forEach {
-            try { it.cleanup() } catch (_: Exception) {}
+            try { it.cleanup() } catch (_: Exception) { /* suppress */ }
         }
 
         // Emit ReaderMode disabled and Device released
-        try {
-            StatusEventDispatcher.emit(
-                StatusEventType.READER_MODE_DISABLED,
-                EventPayload(deviceHandle = handle, cardHandle = null, details = "ReaderMode disabled")
-            )
-            StatusEventDispatcher.emit(
-                StatusEventType.DEVICE_RELEASED,
-                EventPayload(deviceHandle = handle, cardHandle = null, details = "Device released")
-            )
-        } catch (_: Exception) { /* suppress */ }
+        safeEmit(StatusEventType.READER_MODE_DISABLED, "ReaderMode disabled")
+        safeEmit(StatusEventType.DEVICE_RELEASED, "Device released")
 
         parentPlatform.unregisterDevice(handle)
     }
@@ -113,28 +115,62 @@ class SmartCardDevice(
     fun isAvailable(): Boolean = adapter.isEnabled
 
     /** Whether an ISO-DEP card is detected in RF field */
-    fun isCardPresent(): Boolean = cardPresent.get()
+    fun isCardPresent(): Boolean = cardPresent.get() && (lastIsoDep?.isConnected == true)
 
     /** Returns latest IsoDep when present, otherwise null */
     fun getIsoDep(): IsoDep? = lastIsoDep
 
-    /** Internal: mark tag lost and clear state */
+    /** Internal: mark tag lost, release card(s), and clear state */
     internal fun onTagLost() {
+        // Mark no card present
         cardPresent.set(false)
+
+        // Close and clear the last IsoDep reference (best-effort)
+        val iso = lastIsoDep
         lastIsoDep = null
+        closeIfConnected(iso)
+
+        // Release all active card sessions to avoid stale handles
+        val handles = cards.keys.toList()
+        handles.forEach { h ->
+            try {
+                releaseCard(h)
+            } catch (_: Exception) {
+                // suppress cleanup errors
+            }
+        }
     }
 
     /** Start a card session and return a card handle */
     fun startSession(): String {
         val isoDep = lastIsoDep ?: throw IllegalStateException("CARD_NOT_PRESENT: No ISO-DEP card detected")
+        try {
+            // IsoDep MUST NOT already be connected at session start
+            if (isoDep.isConnected) {
+                throw IllegalStateException("SESSION_STATE_ERROR: IsoDep already connected before start")
+            }
+            // Connect and verify link state
+            isoDep.connect()
+            setTimeoutOrIgnore(isoDep, 5000)
+            if (!isoDep.isConnected) {
+                // Link did not come up — treat as loss
+                onTagLost()
+                safeEmit(StatusEventType.CARD_LOST, "isConnected=false after connect")
+                throw IllegalStateException("PLATFORM_ERROR: IsoDep connection not established at session start")
+            }
+        } catch (e: TagLostException) {
+            // Card physically removed before session start
+            onTagLost()
+            safeEmit(StatusEventType.CARD_LOST, "TagLost during startSession")
+            throw IllegalStateException("PLATFORM_ERROR: Card removed during session start")
+        } catch (e: IOException) {
+            onTagLost()
+            safeEmit(StatusEventType.CARD_LOST, "IO during startSession: ${e.message}")
+            throw IllegalStateException("PLATFORM_ERROR: Failed to start session: ${e.message}")
+        }
         val card = SmartCardSession(this, isoDep)
         cards[card.handle] = card
-        try {
-            StatusEventDispatcher.emit(
-                StatusEventType.CARD_SESSION_STARTED,
-                EventPayload(deviceHandle = handle, cardHandle = card.handle, details = "Session started")
-            )
-        } catch (_: Exception) { /* suppress */ }
+        safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session started", cardHandle = card.handle)
         return card.handle
     }
 
@@ -162,12 +198,7 @@ class SmartCardDevice(
                 break
             }
         }
-        try {
-            StatusEventDispatcher.emit(
-                StatusEventType.WAIT_TIMEOUT,
-                EventPayload(deviceHandle = handle, cardHandle = null, details = "timeout=${timeout}s")
-            )
-        } catch (_: Exception) { /* suppress */ }
+        safeEmit(StatusEventType.WAIT_TIMEOUT, "timeout=${timeout}s")
         throw IllegalStateException("WAIT_TIMEOUT: Card not present within $timeout seconds")
     }
 
