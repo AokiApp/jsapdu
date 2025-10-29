@@ -47,10 +47,12 @@ import type { RnSmartCardDevice } from '../device/rn-smart-card-device';
  */
 export class RnSmartCard extends SmartCard {
   private cardHandle: string;
+  private deviceHandle: string;
   private isReleased = false;
 
-  constructor(parentDevice: RnSmartCardDevice, cardHandle: string) {
+  constructor(parentDevice: RnSmartCardDevice, deviceHandle: string, cardHandle: string) {
     super(parentDevice);
+    this.deviceHandle = deviceHandle;
     this.cardHandle = cardHandle;
   }
 
@@ -103,7 +105,7 @@ export class RnSmartCard extends SmartCard {
     this.assertNotReleased();
 
     try {
-      const atrBuffer = await this.getHybrid().getAtr(this.cardHandle);
+      const atrBuffer = await this.getHybrid().getAtr(this.deviceHandle, this.cardHandle);
       const atr = new Uint8Array(atrBuffer);
 
       // Validate ATR length
@@ -158,6 +160,7 @@ export class RnSmartCard extends SmartCard {
     try {
       const apduBytes = apdu.toUint8Array();
       const response = await this.getHybrid().transmit(
+        this.deviceHandle,
         this.cardHandle,
         apduBytes.buffer
       );
@@ -195,7 +198,7 @@ export class RnSmartCard extends SmartCard {
     this.assertNotReleased();
 
     try {
-      await this.getHybrid().reset(this.cardHandle);
+      await this.getHybrid().reset(this.deviceHandle, this.cardHandle);
     } catch (error) {
       throw mapNitroError(error);
     }
@@ -226,7 +229,7 @@ export class RnSmartCard extends SmartCard {
     }
 
     try {
-      await this.getHybrid().releaseCard(this.cardHandle);
+      await this.getHybrid().releaseCard(this.deviceHandle, this.cardHandle);
       this.isReleased = true;
     } catch (error) {
       throw mapNitroError(error);

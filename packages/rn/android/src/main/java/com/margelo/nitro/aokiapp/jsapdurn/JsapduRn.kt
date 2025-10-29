@@ -3,269 +3,38 @@ package com.margelo.nitro.aokiapp.jsapdurn
 import com.facebook.proguard.annotations.DoNotStrip
 import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.ArrayBuffer
-import app.aoki.jsapdu.rn.platform.SmartCardPlatformImpl
-import app.aoki.jsapdu.rn.device.SmartCardDeviceImpl
-import app.aoki.jsapdu.rn.StatusEventDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.Dispatchers
+import app.aoki.jsapdu.rn.FfiImpl
 
-/**
- * React Native Nitro Modules delegator for Android NFC with Coroutine support.
- *
- * Key improvements:
- * - Full integration with coroutine-enabled managers
- * - Proper exception handling and FFI-neutral error mapping
- * - CoroutineScope management for structured concurrency
- * - Enhanced resource lifecycle coordination
- * - Thread-safe operations with proper context switching
- *
- * FFI-neutral design:
- * - Public methods use generic terms (no ReaderMode, IsoDep, etc.)
- * - Internal managers handle Android-specific operations
- * - Error codes mapped to standard SmartCard error taxonomy
- * - All async operations properly managed through Promise.async
- *
- * Max: 350 lines per updated coding standards.
- */
 @DoNotStrip
 class JsapduRn : HybridJsapduRnSpec() {
 
-  // CoroutineScope for structured concurrency management
-  private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+  override fun initPlatform(): Promise<Unit> = Promise.async { FfiImpl.initPlatform() }
 
-  // ============================================================================
-  // Platform Management
-  // ============================================================================
+  override fun releasePlatform(): Promise<Unit> = Promise.async { FfiImpl.releasePlatform() }
 
-  /**
-   * Initialize NFC platform with proper context management.
-   *
-   * @return Promise that completes when platform is initialized
-   * @throws IllegalStateException with FFI-neutral error codes
-   */
-  override fun initPlatform(): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.initialize()
-    } catch (e: IllegalStateException) {
-      throw e // Re-throw mapped errors as-is
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Platform initialization failed: ${e.message}")
-    }
-  }
+  override fun getDeviceInfo(): Promise<Array<DeviceInfo>> = Promise.async { FfiImpl.getDeviceInfo() }
 
-  /**
-   * Release platform resources with proper cleanup coordination.
-   *
-   * @return Promise that completes when platform is released
-   */
-  override fun releasePlatform(): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.release()
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Platform release failed: ${e.message}")
-    }
-  }
+  override fun acquireDevice(): Promise<String> = Promise.async { FfiImpl.acquireDevice() }
 
-  /**
-   * Get available device information.
-   *
-   * @return Promise with array of DeviceInfo (0 or 1 element for integrated NFC)
-   */
-  override fun getDeviceInfo(): Promise<Array<DeviceInfo>> = Promise.async {
-    try {
-      SmartCardPlatformImpl.getDeviceInfo()
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to get device info: ${e.message}")
-    }
-  }
+  override fun isDeviceAvailable(deviceHandle: String): Promise<Boolean> = Promise.async { FfiImpl.isDeviceAvailable(deviceHandle) }
 
-  /**
-   * Acquire device and activate RF field.
-   *
-   * @param deviceId Device identifier from getDeviceInfo()
-   * @return Promise with device handle for subsequent operations
-   */
-  override fun acquireDevice(deviceId: String): Promise<String> = Promise.async {
-    try {
-      SmartCardPlatformImpl.acquireDevice(deviceId)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to acquire device: ${e.message}")
-    }
-  }
+  override fun isCardPresent(deviceHandle: String): Promise<Boolean> = Promise.async { FfiImpl.isCardPresent(deviceHandle) }
 
-  // ============================================================================
-  // Device Management
-  // ============================================================================
+  override fun waitForCardPresence(deviceHandle: String, timeout: Double): Promise<Unit> = Promise.async { FfiImpl.waitForCardPresence(deviceHandle, timeout) }
 
-  /**
-   * Check device availability (non-blocking).
-   *
-   * @param deviceHandle Device handle from acquireDevice()
-   * @return Promise with availability status
-   */
-  override fun isDeviceAvailable(deviceHandle: String): Promise<Boolean> = Promise.async {
-    try {
-      SmartCardPlatformImpl.isDeviceAvailable(deviceHandle)
-    } catch (e: Exception) {
-      false // Return false on any error for availability check
-    }
-  }
+  override fun startSession(deviceHandle: String): Promise<String> = Promise.async { FfiImpl.startSession(deviceHandle) }
 
-  /**
-   * Check card presence (non-blocking).
-   *
-   * @param deviceHandle Device handle from acquireDevice()
-   * @return Promise with card presence status
-   */
-  override fun isCardPresent(deviceHandle: String): Promise<Boolean> = Promise.async {
-    try {
-      SmartCardPlatformImpl.isCardPresent(deviceHandle)
-    } catch (e: Exception) {
-      false // Return false on any error for presence check
-    }
-  }
+  override fun releaseDevice(deviceHandle: String): Promise<Unit> = Promise.async { FfiImpl.releaseDevice(deviceHandle) }
 
-  /**
-   * Wait for card presence with timeout.
-   *
-   * @param deviceHandle Device handle from acquireDevice()
-   * @param timeout Timeout in milliseconds
-   * @return Promise that completes when card is detected or timeout occurs
-   */
-  override fun waitForCardPresence(deviceHandle: String, timeout: Double): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.waitForCardPresence(deviceHandle, timeout)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Card presence wait failed: ${e.message}")
-    }
-  }
+  override fun getAtr(deviceHandle: String, cardHandle: String): Promise<ArrayBuffer> = Promise.async { FfiImpl.getAtr(deviceHandle, cardHandle) }
 
-  /**
-   * Start communication session with detected card.
-   *
-   * @param deviceHandle Device handle from acquireDevice()
-   * @return Promise with card handle for APDU operations
-   */
-  override fun startSession(deviceHandle: String): Promise<String> = Promise.async {
-    try {
-      SmartCardPlatformImpl.startSession(deviceHandle)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to start card session: ${e.message}")
-    }
-  }
+  override fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> = Promise.async { FfiImpl.transmit(deviceHandle, cardHandle, apdu) }
 
-  /**
-   * Release device and deactivate RF field.
-   *
-   * @param deviceHandle Device handle from acquireDevice()
-   * @return Promise that completes when device is released
-   */
-  override fun releaseDevice(deviceHandle: String): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.releaseDevice(deviceHandle)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to release device: ${e.message}")
-    }
-  }
+  override fun reset(deviceHandle: String, cardHandle: String): Promise<Unit> = Promise.async { FfiImpl.reset(deviceHandle, cardHandle) }
 
-  // ============================================================================
-  // Card Communication
-  // ============================================================================
+  override fun releaseCard(deviceHandle: String, cardHandle: String): Promise<Unit> = Promise.async { FfiImpl.releaseCard(deviceHandle, cardHandle) }
 
-  /**
-   * Get ATR (Answer To Reset) or ATS (Answer To Select) from card.
-   *
-   * @param cardHandle Card handle from startSession()
-   * @return Promise with ATR/ATS bytes as ArrayBuffer
-   */
-  override fun getAtr(cardHandle: String): Promise<ArrayBuffer> = Promise.async {
-    try {
-      SmartCardPlatformImpl.getAtr(cardHandle)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to get ATR: ${e.message}")
-    }
-  }
-
-  /**
-   * Transmit APDU command to card.
-   *
-   * @param cardHandle Card handle from startSession()
-   * @param apdu APDU command as ArrayBuffer
-   * @return Promise with response APDU (data + SW1/SW2) as ArrayBuffer
-   */
-  override fun transmit(cardHandle: String, apdu: ArrayBuffer): Promise<ArrayBuffer> {
-    try {
-      val a = ArrayBuffer.copy(apdu)
-      return Promise.async { SmartCardPlatformImpl.transmit(cardHandle, a) } 
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: APDU transmission failed: ${e.message}")
-    }
-  }
-
-  /**
-   * Reset card session (re-establish ISO-DEP connection).
-   *
-   * @param cardHandle Card handle from startSession()
-   * @return Promise that completes when card is reset
-   */
-  override fun reset(cardHandle: String): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.reset(cardHandle)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Card reset failed: ${e.message}")
-    }
-  }
-
-  /**
-   * Release card session.
-   *
-   * @param cardHandle Card handle from startSession()
-   * @return Promise that completes when card session is released
-   */
-  override fun releaseCard(cardHandle: String): Promise<Unit> = Promise.async {
-    try {
-      SmartCardPlatformImpl.releaseCard(cardHandle)
-    } catch (e: IllegalStateException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("PLATFORM_ERROR: Failed to release card: ${e.message}")
-    }
-  }
-
-  /**
-   * Set status update callback.
-   * @param callback Possible values: "DEVICE_ACQUIRED", "DEVICE_RELEASED", "CARD_FOUND", "CARD_LOST"
-   */
   override fun onStatusUpdate(callback: ((eventType: String, payload: EventPayload) -> Unit)?): Unit {
-    if (callback == null) {
-      StatusEventDispatcher.clear()
-      return
-    }
-    StatusEventDispatcher.setCallback { eventType, payload ->
-      try {
-        callback.invoke(eventType, payload)
-      } catch (_: Throwable) {
-        // Suppress exceptions from JS callback to avoid native crash
-      }
-    }
+    FfiImpl.onStatusUpdate(callback)
   }
 }

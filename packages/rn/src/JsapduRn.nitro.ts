@@ -137,36 +137,40 @@ export interface JsapduRn
   /**
    * Get ATR (Answer To Reset) or ATS (Answer To Select)
    * Preference order: Historical Bytes -> HiLayerResponse(ATS) -> PROTOCOL_ERROR
+   * @param deviceHandle Device handle from acquireDevice()
    * @param cardHandle Card handle from startSession()
    * @returns ATR/ATS bytes
    * @throws SmartCardError with code "PROTOCOL_ERROR" | "PLATFORM_ERROR"
    */
-  getAtr(cardHandle: string): Promise<ArrayBuffer>;
+  getAtr(deviceHandle: string, cardHandle: string): Promise<ArrayBuffer>;
 
   /**
    * Transmit APDU command to card
    * Precondition: Active session
+   * @param deviceHandle Device handle from acquireDevice()
    * @param cardHandle Card handle from startSession()
    * @param apdu APDU command bytes
    * @returns Response with data and status words (SW1, SW2)
    * @throws SmartCardError with code "INVALID_PARAMETER" | "PLATFORM_ERROR" | "PROTOCOL_ERROR"
    */
-  transmit(cardHandle: string, apdu: ArrayBuffer): Promise<ArrayBuffer>;
+  transmit(deviceHandle: string, cardHandle: string, apdu: ArrayBuffer): Promise<ArrayBuffer>;
 
   /**
    * Reset card (re-establish ISO-DEP session)
+   * @param deviceHandle Device handle from acquireDevice()
    * @param cardHandle Card handle from startSession()
    * @throws SmartCardError with code "CARD_NOT_PRESENT" | "PLATFORM_ERROR"
    */
-  reset(cardHandle: string): Promise<void>;
+  reset(deviceHandle: string, cardHandle: string): Promise<void>;
 
   /**
    * Release card session
    * Postcondition: Card session inactive
+   * @param deviceHandle Device handle from acquireDevice()
    * @param cardHandle Card handle from startSession()
    * @throws SmartCardError with code "PLATFORM_ERROR"
    */
-  releaseCard(cardHandle: string): Promise<void>;
+  releaseCard(deviceHandle: string, cardHandle: string): Promise<void>;
 
   /**
    * Event callback for status updates (e.g., card removed)

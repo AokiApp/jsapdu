@@ -214,7 +214,7 @@ export class RnSmartCardDevice extends SmartCardDevice {
 
     try {
       const cardHandle = await this.getHybrid().startSession(this.deviceHandle);
-      const card = new RnSmartCard(this, cardHandle);
+      const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
       this.card = card;
       this.activeCard = card;
       return card;
