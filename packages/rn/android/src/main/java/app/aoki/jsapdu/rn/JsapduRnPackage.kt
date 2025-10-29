@@ -4,7 +4,6 @@ import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfoProvider
-import app.aoki.jsapdu.rn.platform.SmartCardPlatformImpl
 import com.margelo.nitro.aokiapp.jsapdurn.aokiapp_jsapdurnOnLoad
 import android.util.Log
 

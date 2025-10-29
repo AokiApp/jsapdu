@@ -14,7 +14,7 @@ class JsapduRn : HybridJsapduRnSpec() {
 
   override fun getDeviceInfo(): Promise<Array<DeviceInfo>> = Promise.async { FfiImpl.getDeviceInfo() }
 
-  override fun acquireDevice(): Promise<String> = Promise.async { FfiImpl.acquireDevice() }
+  override fun acquireDevice(deviceId: String): Promise<String> = Promise.async { FfiImpl.acquireDevice(deviceId) }
 
   override fun isDeviceAvailable(deviceHandle: String): Promise<Boolean> = Promise.async { FfiImpl.isDeviceAvailable(deviceHandle) }
 
