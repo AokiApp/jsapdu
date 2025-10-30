@@ -50,6 +50,9 @@ export type PlatformEventType =
   | 'NFC_STATE_CHANGED'
   | 'APDU_SENT'
   | 'APDU_FAILED'
+  | 'READER_MODE_ENABLED'
+  | 'READER_MODE_DISABLED'
+  | 'DEBUG_INFO'
   | 'PLATFORM_RELEASED';
 
 export type PlatformEventPayload = EventPayload;
@@ -100,10 +103,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
     this.assertNotInitialized();
 
     try {
+      // Register status callback before initialization to capture early events
+      this.hybridObject.onStatusUpdate(this.statusUpdateHandler.bind(this));
       await this.hybridObject.initPlatform();
       this.initialized = true;
-
-      this.hybridObject.onStatusUpdate(this.statusUpdateHandler.bind(this));
     } catch (error) {
       throw mapNitroError(error);
     }

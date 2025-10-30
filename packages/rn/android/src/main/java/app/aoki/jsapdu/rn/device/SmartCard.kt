@@ -6,6 +6,8 @@ import java.io.IOException
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 import app.aoki.jsapdu.rn.StatusEventDispatcher
 import app.aoki.jsapdu.rn.StatusEventType
+import kotlin.concurrent.timer
+import java.util.Timer
 
 /**
  * Card session bound to a discovered IsoDep.
@@ -29,6 +31,7 @@ class SmartCard(
             onTagLost("Error setting timeout: ${e.message}")
             throw IllegalStateException("PLATFORM_ERROR: Failed to set IsoDep timeout: ${e.message}")
         }
+        watchCardPresenceStatus()
     }
 
     val handle: String = "card-${System.currentTimeMillis()}"
@@ -138,21 +141,14 @@ class SmartCard(
     }
 
     fun reset() {
-        synchronized(apduLock) {
-            try {
-                if (isCardPresent()) {
-                    isoDep.close()
-                }
-            } catch (_: Exception) {
-                // ignore reset close errors
-            }
-            // Emit CARD_SESSION_RESET after closing
-            safeEmit(StatusEventType.CARD_SESSION_RESET, "Session reset")
-        }
+        throw NotImplementedError("SmartCard.reset not implemented")
     }
 
-    internal fun cleanup() {
+    fun release() {
         synchronized(apduLock) {
+            parent.unregisterCard(handle)
+            watchTimer?.cancel()
+            watchTimer = null
             try {
                 if (isCardPresent()) {
                     isoDep.close()
@@ -160,6 +156,7 @@ class SmartCard(
             } catch (_: Exception) {
                 // ignore cleanup errors
             }
+            safeEmit(StatusEventType.CARD_SESSION_RESET, "Session reset")
         }
     }
     
@@ -170,6 +167,13 @@ class SmartCard(
         } catch (_: Exception) {
             onTagLost("Connection lost: Card lost after connection")
             return false
+        }
+    }
+
+    private var watchTimer: Timer? = null
+    private fun watchCardPresenceStatus() {
+        watchTimer = timer(initialDelay = 0, period = 1000) {
+            isCardPresent()
         }
     }
 }

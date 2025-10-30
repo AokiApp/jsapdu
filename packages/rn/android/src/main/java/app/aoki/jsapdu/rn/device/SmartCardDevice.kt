@@ -99,9 +99,8 @@ class SmartCardDevice(
 
         // Cleanup all card sessions
         val existingCards = cards.values.toList()
-        cards.clear()
         existingCards.forEach {
-            try { it.cleanup() } catch (_: Exception) { /* suppress */ }
+            try { it.release() } catch (_: Exception) { /* suppress */ }
         }
 
         // Emit ReaderMode disabled and Device released
@@ -134,7 +133,7 @@ class SmartCardDevice(
         val handles = cards.keys.toList()
         handles.forEach { h ->
             try {
-                releaseCard(h)
+                cards[h]?.release()
             } catch (_: Exception) {
                 // suppress cleanup errors
             }
@@ -174,14 +173,9 @@ class SmartCardDevice(
     /** Get a card by handle */
     fun getTarget(cardHandle: String): SmartCard? = cards[cardHandle]
 
-    /** Release a card session by handle */
-    fun releaseCard(cardHandle: String) {
-        val card = cards.remove(cardHandle) ?: return
-        try {
-            card.cleanup()
-        } catch (_: Exception) {
-            // ignore cleanup errors
-        }
+    /*+ unregister card on release +*/
+    internal fun unregisterCard(cardHandle: String) {
+        cards.remove(cardHandle)
     }
 
     /** Wait for card presence with a timeout in seconds */

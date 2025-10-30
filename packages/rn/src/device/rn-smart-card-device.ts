@@ -174,7 +174,9 @@ export class RnSmartCardDevice extends SmartCardDevice {
     this.state.setWaiting(true);
 
     try {
-      await this.getHybrid().waitForCardPresence(this.deviceHandle, timeout);
+      // Native expects seconds (Double). Convert milliseconds to seconds if needed.
+      const seconds = timeout >= 1000 ? timeout / 1000 : timeout;
+      await this.getHybrid().waitForCardPresence(this.deviceHandle, seconds);
     } catch (error) {
       throw mapNitroError(error);
     } finally {

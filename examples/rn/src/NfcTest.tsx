@@ -1,768 +1,641 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  StyleSheet,
-  Alert,
-} from "react-native";
+/**
+ * NFC Test Screen
+ *
+ * This screen demonstrates NFC functionality using the jsapdu library.
+ * It allows low-level NFC operations and displays relevant information.
+ * Button status is controlled by events. You need to watch events
+ * For usage of jsapdu library, see the codebase
+ * It only has control buttons or Hex input field.
+ * For hex input field, it must not be os-native keyboard input, but a original hex input keyboard. You should need to implement it by yourself (with new file, not a same file)
+ */
 
-import {
-  SmartCardDevice,
-  SmartCard,
-  SmartCardError,
-  CommandApdu,
-  SmartCardDeviceInfo,
-} from "@aokiapp/jsapdu-interface";
-
-import {
-  platformManager,
-  type PlatformEventType,
-  type PlatformEventPayload,
-  RnSmartCardPlatform,
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
+import type {
+  PlatformEventType,
+  PlatformEventPayload,
 } from "@aokiapp/jsapdu-rn";
-console.log("platformManager:", platformManager);
+import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
+import HexTextInput from "./components/HexTextInput";
 
-interface TestState {
-  initialized: boolean;
-  devices: SmartCardDeviceInfo[];
-  currentDevice: SmartCardDevice | null;
-  currentCard: SmartCard | null;
-  logs: string[];
-  aidInput: string;
-  rawApduInput: string;
-}
-let platform: RnSmartCardPlatform;
-
-// Event subscription management for native status updates
-const eventUnsubscribers: Array<() => void> = [];
-
-function attachPlatformEvents(logger: (message: string) => void): void {
-  if (!platform) return;
-
-  const add = (evt: PlatformEventType) => {
-    const handler = (payload: PlatformEventPayload) => {
-      const dev = payload.deviceHandle ?? "";
-      const card = payload.cardHandle ?? "";
-      const det = payload.details ?? "";
-      logger(`📡 Event ${evt}: device=${dev} card=${card} details=${det}`);
-    };
-    const off = platform.on(evt, handler);
-    eventUnsubscribers.push(() => off());
-  };
-
-  // Core lifecycle events
-  add("PLATFORM_INITIALIZED");
-  add("DEVICE_ACQUIRED");
-  add("DEVICE_RELEASED");
-  add("CARD_FOUND");
-  add("CARD_LOST");
-  add("PLATFORM_RELEASED");
-  // Card session lifecycle
-  add("CARD_SESSION_STARTED");
-  add("CARD_SESSION_RESET");
-  // Timing/power/NFC
-  add("WAIT_TIMEOUT");
-  add("POWER_STATE_CHANGED");
-  add("NFC_STATE_CHANGED");
-  // APDU diagnostics
-  add("APDU_SENT");
-  add("APDU_FAILED");
+/**
+ * Utilities
+ */
+function stringifyError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
 }
 
-const NfcTestScreen: React.FC = () => {
-  const [state, setState] = useState<TestState>({
-    initialized: false,
-    devices: [],
-    currentDevice: null,
-    currentCard: null,
-    logs: [],
-    aidInput: "",
-    rawApduInput: "",
+function sanitizeHex(src: string): string {
+  return src.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
+}
+
+// splitHexPairs removed — preview UI deleted
+
+function buildBytesFromHex(hex: string): Uint8Array<ArrayBuffer> {
+  const clean = sanitizeHex(hex);
+  if (clean.length % 2 !== 0) {
+    throw new Error("Hex length must be even");
+  }
+  const ab = new ArrayBuffer(clean.length / 2);
+  const out: Uint8Array<ArrayBuffer> = new Uint8Array(ab);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(clean.substring(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+/**
+ * Minimal event-driven state derived only from platform events.
+ * We do not flip enable flags directly in command handlers; we rely on events.
+ */
+type UiState = {
+  platformInitialized: boolean;
+  deviceAcquired: boolean;
+  cardPresent: boolean;
+  sessionActive: boolean;
+};
+
+export default function NfcTestScreen() {
+  const platformRef = useRef<RnSmartCardPlatform | null>(null);
+  const unsubsRef = useRef<Array<() => void>>([]);
+  const deviceRef = useRef<SmartCardDevice | null>(null);
+  const cardRef = useRef<SmartCard | null>(null);
+
+  const [ui, setUi] = useState<UiState>({
+    platformInitialized: false,
+    deviceAcquired: false,
+    cardPresent: false,
+    sessionActive: false,
   });
 
-  const addLog = (message: string) => {
+  const [apduHex, setApduHex] = useState<string>("");
+  const [status, setStatus] = useState<string>("Idle");
+  // kbVisible removed; HexTextInput manages visibility internally
+  const [logs, setLogs] = useState<string[]>([]);
+  const [waitingCard, setWaitingCard] = useState<boolean>(false);
+
+  const appendLog = useCallback((msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setState((prev) => ({
-      ...prev,
-      logs: [...prev.logs, `[${timestamp}] ${message}`],
-    }));
-    console.log(`[NFC Test] ${message}`);
-  };
-
-  const handleError = (error: unknown, operation: string) => {
-    const errorMessage =
-      error instanceof SmartCardError
-        ? `${error.code}: ${error.message}`
-        : `Unknown error: ${String(error)}`;
-
-    addLog(`❌ ${operation} failed: ${errorMessage}`);
-    Alert.alert("Error", `${operation} failed:\n${errorMessage}`);
-  };
-
-  const hexToBytes = (hex: string): Uint8Array => {
-    const clean = hex.replace(/[^0-9a-fA-F]/g, "");
-    if (clean.length % 2 !== 0) {
-      throw new Error("Hex must have even length");
-    }
-    const bytes = new Uint8Array(clean.length / 2);
-    for (let i = 0; i < clean.length; i += 2) {
-      bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
-    }
-    return bytes;
-  };
-
-  const bytesToHex = (bytes: Uint8Array): string =>
-    Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ")
-      .toUpperCase();
-
-  // Test 1: Platform Initialization
-  const testInitialization = async () => {
-    try {
-      addLog("🚀 Initializing NFC platform...");
-      platform = platformManager.getPlatform();
-      await platform.init();
-      setState((prev) => ({ ...prev, initialized: true }));
-      addLog("✅ Platform initialized successfully");
-      attachPlatformEvents(addLog);
-    } catch (error) {
-      handleError(error, "Platform initialization");
-    }
-  };
-
-  // Test 2: Device Detection
-  const testDeviceDetection = async () => {
-    if (!state.initialized) {
-      Alert.alert("Error", "Platform not initialized");
-      return;
-    }
-
-    try {
-      addLog("🔍 Getting device information...");
-      const devices = await platform.getDeviceInfo();
-      setState((prev) => ({ ...prev, devices }));
-
-      if (devices.length === 0) {
-        addLog("⚠️ No NFC devices found (this is expected on non-NFC devices)");
-      } else {
-        addLog(`✅ Found ${devices.length} NFC device(s):`);
-        devices.forEach((device, index) => {
-          addLog(
-            `  Device ${index + 1}: ${device.id} (${device.friendlyName || "Unknown"})`,
-          );
-          addLog(`    - Supports APDU: ${device.supportsApdu}`);
-          addLog(`    - API: ${device.apduApi.join(", ")}`);
-          addLog(`    - Integrated: ${device.isIntegratedDevice}`);
-        });
-      }
-    } catch (error) {
-      handleError(error, "Device detection");
-    }
-  };
-
-  // Test 3: Device Acquisition
-  const testDeviceAcquisition = async () => {
-    if (state.devices.length === 0) {
-      Alert.alert("Error", "No devices available to acquire");
-      return;
-    }
-
-    try {
-      const deviceId = state.devices[0]!.id;
-      addLog(`📡 Acquiring device: ${deviceId}...`);
-
-      const device = await platform.acquireDevice(deviceId);
-      setState((prev) => ({ ...prev, currentDevice: device }));
-      addLog("✅ Device acquired successfully (RF enabled)");
-
-      // Test device availability
-      const isAvailable = await device.isDeviceAvailable();
-      addLog(`📊 Device available: ${isAvailable}`);
-    } catch (error) {
-      handleError(error, "Device acquisition");
-    }
-  };
-
-  // Test 4: Card Presence Check
-  const testCardPresence = async () => {
-    if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
-      return;
-    }
-
-    try {
-      addLog("🔍 Checking card presence...");
-      const isPresent = await state.currentDevice.isCardPresent();
-      addLog(`📋 Card present: ${isPresent}`);
-    } catch (error) {
-      handleError(error, "Card presence check");
-    }
-  };
-
-  // Test 5: Wait for Card (with timeout)
-  const testWaitForCard = async () => {
-    if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
-      return;
-    }
-
-    try {
-      addLog("⏳ Waiting for card (10 seconds timeout)...");
-      addLog("💡 Please place an NFC card on the device");
-
-      await state.currentDevice.waitForCardPresence(10000);
-      addLog("✅ Card detected!");
-    } catch (error) {
-      if (error instanceof SmartCardError && error.code === "TIMEOUT") {
-        addLog("⏰ Card wait timed out");
-      } else {
-        handleError(error, "Card wait");
-      }
-    }
-  };
-
-  // Test 6: Start Session and Get ATR
-  const testSessionAndAtr = async () => {
-    if (!state.currentDevice) {
-      Alert.alert("Error", "No device acquired");
-      return;
-    }
-
-    try {
-      addLog("🔗 Starting card session...");
-      const card = await state.currentDevice.startSession();
-      setState((prev) => ({ ...prev, currentCard: card }));
-      addLog("✅ Session started successfully");
-
-      addLog("📜 Getting ATR...");
-      const atr = await card.getAtr();
-      const atrHex = Array.from(atr)
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join(" ")
-        .toUpperCase();
-      addLog(`✅ ATR: ${atrHex}`);
-    } catch (error) {
-      handleError(error, "Session start / ATR retrieval");
-    }
-  };
-
-  // Test 7: APDU Transmission
-  const testApduTransmission = async () => {
-    if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
-      return;
-    }
-
-    try {
-      addLog("📤 Sending test APDU (SELECT command with no data)...");
-      const selectCmd = new CommandApdu(0x00, 0xa4, 0x04, 0x00, null, 256);
-      addLog(`📝 Command: ${selectCmd.toHexString()}`);
-
-      const response = await state.currentCard.transmit(selectCmd);
-      addLog(`📥 Response: ${response.arrayBuffer().byteLength}`);
-      addLog(
-        `📊 Status: SW=${response.sw.toString(16).padStart(4, "0").toUpperCase()} `,
-      );
-    } catch (error) {
-      handleError(error, "APDU transmission");
-    }
-  };
-
-  // Send SELECT by AID (from input)
-  const sendSelectByAid = async () => {
-    if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
-      return;
-    }
-    try {
-      if (!state.aidInput.trim()) {
-        Alert.alert("Input Required", "Enter AID hex to send SELECT by AID.");
-        return;
-      }
-      const aid = hexToBytes(state.aidInput.trim());
-      addLog(`📤 Sending SELECT by AID (${bytesToHex(aid)})...`);
-      const cmd = new CommandApdu(
-        0x00,
-        0xa4,
-        0x04,
-        0x0c,
-        aid as unknown as Uint8Array<ArrayBuffer>,
-      );
-      addLog(`📝 Command: ${cmd.toHexString()}`);
-      const res = await state.currentCard.transmit(cmd);
-      addLog(`📥 Response: ${bytesToHex(res.data)}`);
-      addLog(
-        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
-      );
-    } catch (error) {
-      handleError(error, "SELECT by AID");
-    }
-  };
-
-  // Send raw APDU (from input)
-  const sendRawApdu = async () => {
-    if (!state.currentCard) {
-      Alert.alert("Error", "No active card session");
-      return;
-    }
-    try {
-      if (!state.rawApduInput.trim()) {
-        Alert.alert("Input Required", "Enter raw APDU hex (e.g. 00A40400...)");
-        return;
-      }
-      const apduBytes = hexToBytes(state.rawApduInput.trim());
-      if (apduBytes.length < 4) {
-        Alert.alert(
-          "Invalid APDU",
-          "APDU must be at least 4 bytes (CLA INS P1 P2).",
-        );
-        return;
-      }
-      const cla = apduBytes[0]!;
-      const ins = apduBytes[1]!;
-      const p1 = apduBytes[2]!;
-      const p2 = apduBytes[3]!;
-
-      let data: Uint8Array | null = null;
-      let le: number = 256;
-
-      if (apduBytes.length === 5) {
-        const leByte = apduBytes[4]!;
-        le = leByte === 0 ? 256 : leByte;
-      } else if (apduBytes.length >= 5) {
-        const lc = apduBytes[4]!;
-        if (apduBytes.length < 5 + lc) {
-          throw new Error("APDU length inconsistent with Lc");
-        }
-        data = lc > 0 ? apduBytes.slice(5, 5 + lc) : null;
-        const remaining = apduBytes.length - (5 + lc);
-        if (remaining === 1) {
-          const leByte = apduBytes[5 + lc]!;
-          le = leByte === 0 ? 256 : leByte;
-        } else if (remaining > 1) {
-          throw new Error(
-            "Unsupported APDU format (only short-length supported)",
-          );
-        }
-      }
-
-      addLog(
-        `📤 Sending raw APDU: CLA=${cla.toString(16).padStart(2, "0").toUpperCase()} INS=${ins
-          .toString(16)
-          .padStart(2, "0")
-          .toUpperCase()} P1=${p1.toString(16).padStart(2, "0").toUpperCase()} P2=${p2
-          .toString(16)
-          .padStart(2, "0")
-          .toUpperCase()} Lc=${data ? data.length : 0} Le=${le}`,
-      );
-
-      const typedData: Uint8Array<ArrayBuffer> | null = data
-        ? (data as unknown as Uint8Array<ArrayBuffer>)
-        : null;
-      const cmd = new CommandApdu(cla, ins, p1, p2, typedData ?? null, le);
-      addLog(`📝 Command: ${cmd.toHexString()}`);
-
-      const res = await state.currentCard.transmit(cmd);
-      addLog(`📥 Response: ${bytesToHex(res.data)}`);
-      addLog(
-        `📊 Status: SW=${res.sw.toString(16).padStart(4, "0").toUpperCase()}`,
-      );
-    } catch (error) {
-      handleError(error, "Raw APDU transmission");
-    }
-  };
-
-  // Cleanup functions
-  const releaseCard = async () => {
-    if (!state.currentCard) return;
-
-    try {
-      addLog("🔓 Releasing card...");
-      await state.currentCard.release();
-      setState((prev) => ({ ...prev, currentCard: null }));
-      addLog("✅ Card released");
-    } catch (error) {
-      handleError(error, "Card release");
-    }
-  };
-
-  const releaseDevice = async () => {
-    if (!state.currentDevice) return;
-
-    try {
-      await releaseCard(); // Release card first
-
-      addLog("📡 Releasing device...");
-      await state.currentDevice.release();
-      setState((prev) => ({ ...prev, currentDevice: null }));
-      addLog("✅ Device released (RF disabled)");
-    } catch (error) {
-      handleError(error, "Device release");
-    }
-  };
-
-  const releasePlatform = useCallback(async () => {
-    try {
-      await releaseDevice(); // Release device first
-
-      addLog("🛑 Releasing platform...");
-      if (platform) {
-        await platform.release();
-      }
-      // Detach platform event listeners
-      try {
-        for (const unsub of eventUnsubscribers) {
-          unsub();
-        }
-      } catch (e) {
-        console.warn("[NFC Test] detach listeners failed", e);
-      }
-      eventUnsubscribers.length = 0;
-      setState((prev) => ({ ...prev, initialized: false, devices: [] }));
-      addLog("✅ Platform released");
-    } catch (error) {
-      handleError(error, "Platform release");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const line = `${timestamp} ${msg}`;
+    setLogs((prev) => [line, ...prev].slice(0, 200));
+    setStatus(msg);
+    console.log(line);
   }, []);
 
-  const clearLogs = () => {
-    setState((prev) => ({ ...prev, logs: [] }));
-  };
+  const setUiByEvent = useCallback(
+    (evt: PlatformEventType, details?: string) => {
+      setUi((prev) => {
+        switch (evt) {
+          case "PLATFORM_INITIALIZED":
+            return {
+              platformInitialized: true,
+              deviceAcquired: false,
+              cardPresent: false,
+              sessionActive: false,
+            };
+          case "PLATFORM_RELEASED":
+            return {
+              platformInitialized: false,
+              deviceAcquired: false,
+              cardPresent: false,
+              sessionActive: false,
+            };
+          case "DEVICE_ACQUIRED":
+            return { ...prev, deviceAcquired: true };
+          case "DEVICE_RELEASED":
+            return {
+              platformInitialized: prev.platformInitialized,
+              deviceAcquired: false,
+              cardPresent: false,
+              sessionActive: false,
+            };
+          case "CARD_FOUND":
+            return { ...prev, cardPresent: true };
+          case "CARD_LOST":
+            return { ...prev, cardPresent: false, sessionActive: false };
+          case "CARD_SESSION_STARTED":
+            return { ...prev, sessionActive: true };
+          case "CARD_SESSION_RESET":
+            return { ...prev, sessionActive: false };
+          case "WAIT_TIMEOUT":
+            // timeout doesn't flip flags; only log it
+            return prev;
+          default:
+            return prev;
+        }
+      });
+      const msg = details ? `${evt}: ${details}` : evt;
+      appendLog(msg);
+    },
+    [appendLog],
+  );
+
+  const attachEventHandlers = useCallback(() => {
+    const platform = platformRef.current;
+    if (!platform) {
+      console.log("[NFC] attachEventHandlers: no platformRef.current");
+      return [];
+    }
+    console.log(
+      "[NFC] attachEventHandlers: platformRef.current is set, subscribing...",
+    );
+    const unsubs: Array<() => void> = [];
+
+    const onEvt =
+      (evt: PlatformEventType) => (payload: PlatformEventPayload) => {
+        const details = payload?.details;
+        setUiByEvent(evt, details);
+        const dh = payload?.deviceHandle ? `dev=${payload.deviceHandle}` : "";
+        const ch = payload?.cardHandle ? `card=${payload.cardHandle}` : "";
+        appendLog(
+          `${evt}${details ? `: ${details}` : ""}${dh || ch ? ` (${[dh, ch].filter(Boolean).join(", ")})` : ""}`,
+        );
+      };
+
+    const events: PlatformEventType[] = [
+      "PLATFORM_INITIALIZED",
+      "PLATFORM_RELEASED",
+      "DEVICE_ACQUIRED",
+      "DEVICE_RELEASED",
+      "CARD_FOUND",
+      "CARD_LOST",
+      "CARD_SESSION_STARTED",
+      "CARD_SESSION_RESET",
+      "WAIT_TIMEOUT",
+      "POWER_STATE_CHANGED",
+      "NFC_STATE_CHANGED",
+      "APDU_SENT",
+      "APDU_FAILED",
+      "READER_MODE_ENABLED" as PlatformEventType,
+      "READER_MODE_DISABLED" as PlatformEventType,
+      "DEBUG_INFO" as PlatformEventType,
+    ];
+    events.forEach((evt) => {
+      appendLog(`subscribe: ${evt}`);
+      unsubs.push(platform.on(evt, onEvt(evt)));
+    });
+    console.log("[NFC] attachEventHandlers: subscriptions complete", {
+      count: unsubs.length,
+    });
+    appendLog(`attachEventHandlers: ${unsubs.length} subscriptions`);
+    return unsubs;
+  }, [setUiByEvent, appendLog]);
 
   useEffect(() => {
     return () => {
-      // ensure platform and underlying resources are released
-      releasePlatform().catch(() => {});
+      const platform = platformRef.current;
+      if (platform && platform.isInitialized()) {
+        platform.release().catch(() => {});
+      }
+      platformRef.current = null;
+      deviceRef.current = null;
+      cardRef.current = null;
+      const unsubs = unsubsRef.current;
+      unsubs.forEach((u) => u());
+      unsubsRef.current = [];
     };
-  }, [releasePlatform]);
+  }, []);
+
+  // keyboard visibility effect removed; managed by HexTextInput
+
+  const canInit = !ui.platformInitialized;
+  const canReleasePlatform = ui.platformInitialized;
+  const canAcquireDevice = ui.platformInitialized && !ui.deviceAcquired;
+  const canReleaseDevice = ui.deviceAcquired;
+  const canWaitCard = ui.deviceAcquired;
+  const canStartSession =
+    ui.deviceAcquired && ui.cardPresent && !ui.sessionActive;
+  const canCardOps = ui.sessionActive;
+
+  const handleInit = useCallback(async () => {
+    if (platformRef.current) {
+      console.log(
+        "[NFC] init: platformRef.current already set, skipping new init",
+      );
+      appendLog("init: platform already created, skipping");
+      return;
+    }
+    console.log("[NFC] init: creating platform");
+    const platform = new RnSmartCardPlatform();
+    platformRef.current = platform;
+    const unsubs = attachEventHandlers();
+    try {
+      console.log("[NFC] init: calling platform.init()");
+      await platform.init();
+      const isInit =
+        typeof platform.isInitialized === "function"
+          ? platform.isInitialized()
+          : undefined;
+      console.log(
+        "[NFC] init: platform.init() resolved, isInitialized=",
+        isInit,
+      );
+      appendLog("initPlatform(): requested");
+      if (isInit === true) {
+        // manual fallback in case event emission is delayed or missing
+        setUiByEvent("PLATFORM_INITIALIZED", "post-init fallback");
+      }
+    } catch (e: unknown) {
+      console.log("[NFC] init: error", e);
+      const msg = `initPlatform() error: ${stringifyError(e)}`;
+      appendLog(msg);
+    }
+    unsubsRef.current = unsubs;
+  }, [attachEventHandlers, setUiByEvent, appendLog]);
+
+  const handleReleasePlatform = useCallback(async () => {
+    const platform = platformRef.current;
+    if (!platform) return;
+    try {
+      await platform.release();
+      appendLog("releasePlatform(): requested");
+      setUiByEvent("PLATFORM_RELEASED", "post-release fallback");
+    } catch (e: unknown) {
+      appendLog(`releasePlatform() error: ${stringifyError(e)}`);
+    } finally {
+      const unsubs = unsubsRef.current;
+      unsubs.forEach((u) => u());
+      unsubsRef.current = [];
+      deviceRef.current = null;
+      cardRef.current = null;
+      platformRef.current = null;
+    }
+  }, []);
+
+  const handleGetDeviceInfo = useCallback(async () => {
+    const platform = platformRef.current;
+    if (!platform) return;
+    try {
+      const infos = await platform.getDeviceInfo();
+      appendLog(`getDeviceInfo(): ${infos.length} device(s)`);
+    } catch (e: unknown) {
+      appendLog(`getDeviceInfo() error: ${stringifyError(e)}`);
+    }
+  }, []);
+
+  const handleAcquireDevice = useCallback(async () => {
+    const platform = platformRef.current;
+    if (!platform) return;
+    try {
+      const infos = await platform.getDeviceInfo();
+      if (infos.length === 0) {
+        appendLog("No NFC device available");
+        return;
+      }
+      const first = infos[0]!;
+      const dev = await platform.acquireDevice(first.id);
+      deviceRef.current = dev;
+      appendLog(`acquireDevice(): ${first.id}`);
+      // Fallback in case native doesn't emit DEVICE_ACQUIRED
+      setUiByEvent("DEVICE_ACQUIRED", `fallback: ${first.id}`);
+    } catch (e: unknown) {
+      appendLog(`acquireDevice() error: ${stringifyError(e)}`);
+    }
+  }, []);
+
+  const handleReleaseDevice = useCallback(async () => {
+    const dev = deviceRef.current;
+    if (!dev) return;
+    try {
+      await dev.release();
+      appendLog("releaseDevice(): requested");
+      // Fallback in case native doesn't emit DEVICE_RELEASED
+      setUiByEvent("DEVICE_RELEASED", "post-release fallback");
+    } catch (e: unknown) {
+      appendLog(`releaseDevice() error: ${stringifyError(e)}`);
+    } finally {
+      deviceRef.current = null;
+      cardRef.current = null;
+    }
+  }, []);
+
+  const handleWaitCard = useCallback(async () => {
+    const dev = deviceRef.current;
+    if (!dev) return;
+    setWaitingCard(true);
+    try {
+      await dev.waitForCardPresence(15);
+      appendLog("waitForCardPresence(15): resolved");
+      // Fallback in case native doesn't emit CARD_FOUND
+      setUiByEvent("CARD_FOUND", "post-wait fallback");
+    } catch (e: unknown) {
+      const msg = stringifyError(e);
+      appendLog(`waitForCardPresence() error: ${msg}`);
+      setUiByEvent("WAIT_TIMEOUT", msg);
+    } finally {
+      setWaitingCard(false);
+    }
+  }, []);
+
+  const handleStartSession = useCallback(async () => {
+    const dev = deviceRef.current;
+    if (!dev) return;
+    try {
+      const card = await dev.startSession();
+      cardRef.current = card;
+      appendLog("startSession(): requested");
+      // Fallback in case native doesn't emit CARD_SESSION_STARTED
+      setUiByEvent("CARD_SESSION_STARTED", "post-start fallback");
+    } catch (e: unknown) {
+      appendLog(`startSession() error: ${stringifyError(e)}`);
+    }
+  }, []);
+
+  const handleGetAtr = useCallback(async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    try {
+      const atr = await card.getAtr();
+      const hex = Array.from(atr)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ")
+        .toUpperCase();
+      appendLog(`ATR: ${hex}`);
+    } catch (e: unknown) {
+      appendLog(`getAtr() error: ${stringifyError(e)}`);
+    }
+  }, []);
+
+  const handleTransmit = useCallback(async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    try {
+      const bytes = buildBytesFromHex(apduHex);
+      const cmd = CommandApdu.fromUint8Array(bytes);
+      appendLog(`APDU_SENT: ${cmd.toHexString()}`);
+      setUiByEvent("APDU_SENT", `len=${bytes.length}`);
+      const resp = await card.transmit(cmd);
+      const respHex = Array.from(resp.toUint8Array())
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ")
+        .toUpperCase();
+      appendLog(
+        `APDU Resp: ${respHex} (SW=${resp.sw1.toString(16).toUpperCase()}/${resp.sw2.toString(16).toUpperCase()})`,
+      );
+    } catch (e: unknown) {
+      const err = stringifyError(e);
+      appendLog(`APDU_FAILED: ${err}`);
+      setUiByEvent("APDU_FAILED", err);
+    }
+  }, [apduHex]);
+
+  const handleReset = useCallback(async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    try {
+      await card.reset();
+      appendLog("reset(): requested");
+      // Fallback in case native doesn't emit CARD_SESSION_RESET
+      setUiByEvent("CARD_SESSION_RESET", "post-reset fallback");
+    } catch (e: unknown) {
+      appendLog(`reset() error: ${stringifyError(e)}`);
+    }
+  }, []);
+
+  const handleReleaseCard = useCallback(async () => {
+    const card = cardRef.current;
+    if (!card) return;
+    try {
+      await card.release();
+      appendLog("releaseCard(): requested");
+      // Fallback state update for UI controls
+      setUiByEvent("CARD_SESSION_RESET", "post-release fallback");
+    } catch (e: unknown) {
+      appendLog(`releaseCard() error: ${stringifyError(e)}`);
+    } finally {
+      cardRef.current = null;
+    }
+  }, []);
+
+  // onKeyboardPress removed; nibble editing handled by HexTextInput sheet.
+
+  // preview removed
+  const apduReady = useMemo(() => {
+    const clean = sanitizeHex(apduHex);
+    return clean.length > 0 && clean.length % 2 === 0;
+  }, [apduHex]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <Text style={styles.title}>NFC APDU Library Test</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>NFC Test</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Platform Management</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                state.initialized && styles.buttonDisabled,
-              ]}
-              onPress={testInitialization}
-              disabled={state.initialized}
-            >
-              <Text style={styles.buttonText}>1. Initialize</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                !state.initialized && styles.buttonDisabled,
-              ]}
-              onPress={testDeviceDetection}
-              disabled={!state.initialized}
-            >
-              <Text style={styles.buttonText}>2. Get Devices</Text>
-            </TouchableOpacity>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Platform</Text>
+        <View style={styles.row}>
+          <Button
+            label="Initialize"
+            onPress={() => {
+              void handleInit();
+            }}
+            disabled={!canInit}
+          />
+          <Button
+            label="Release"
+            onPress={() => {
+              void handleReleasePlatform();
+            }}
+            disabled={!canReleasePlatform}
+          />
+          <Button
+            label="Get Device Info"
+            onPress={() => {
+              void handleGetDeviceInfo();
+            }}
+            disabled={!canReleasePlatform}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Device</Text>
+        <View style={styles.row}>
+          <Button
+            label="Acquire"
+            onPress={() => {
+              void handleAcquireDevice();
+            }}
+            disabled={!canAcquireDevice}
+          />
+          <Button
+            label="Wait Card"
+            onPress={() => {
+              void handleWaitCard();
+            }}
+            disabled={!canWaitCard || waitingCard}
+          />
+          <Button
+            label="Release Device"
+            onPress={() => {
+              void handleReleaseDevice();
+            }}
+            disabled={!canReleaseDevice}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Session</Text>
+        <View style={styles.row}>
+          <Button
+            label="Start Session"
+            onPress={() => {
+              void handleStartSession();
+            }}
+            disabled={!canStartSession}
+          />
+          <Button
+            label="Get ATR"
+            onPress={() => {
+              void handleGetAtr();
+            }}
+            disabled={!canCardOps}
+          />
+          <Button
+            label="Reset"
+            onPress={() => {
+              void handleReset();
+            }}
+            disabled={!canCardOps}
+          />
+          <Button
+            label="Release Card"
+            onPress={() => {
+              void handleReleaseCard();
+            }}
+            disabled={!canCardOps}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>APDU</Text>
+        <HexTextInput
+          value={apduHex}
+          onChangeText={setApduHex}
+          placeholder="Command (HEX)"
+        />
+        {/* preview removed */}
+        <View style={styles.row}>
+          <Button
+            label="Transmit"
+            onPress={() => {
+              void handleTransmit();
+            }}
+            disabled={!canCardOps || !apduReady}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Status</Text>
+        <View style={styles.statusBox}>
+          <Text style={styles.statusText}>{status}</Text>
+          <View style={styles.flags}>
+            <Flag label="Platform" active={ui.platformInitialized} />
+            <Flag label="Device" active={ui.deviceAcquired} />
+            <Flag label="Card" active={ui.cardPresent} />
+            <Flag label="Session" active={ui.sessionActive} />
           </View>
         </View>
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Device Management</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                (state.devices.length === 0 || state.currentDevice) &&
-                  styles.buttonDisabled,
-              ]}
-              onPress={testDeviceAcquisition}
-              disabled={state.devices.length === 0 || !!state.currentDevice}
-            >
-              <Text style={styles.buttonText}>3. Acquire Device</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                !state.currentDevice && styles.buttonDisabled,
-              ]}
-              onPress={testCardPresence}
-              disabled={!state.currentDevice}
-            >
-              <Text style={styles.buttonText}>4. Check Presence</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              !state.currentDevice && styles.buttonDisabled,
-            ]}
-            onPress={testWaitForCard}
-            disabled={!state.currentDevice}
-          >
-            <Text style={styles.buttonText}>5. Wait for Card</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Card Communication</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                (!state.currentDevice || state.currentCard) &&
-                  styles.buttonDisabled,
-              ]}
-              onPress={testSessionAndAtr}
-              disabled={!state.currentDevice || !!state.currentCard}
-            >
-              <Text style={styles.buttonText}>6. Session & ATR</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                !state.currentCard && styles.buttonDisabled,
-              ]}
-              onPress={testApduTransmission}
-              disabled={!state.currentCard}
-            >
-              <Text style={styles.buttonText}>7. Send APDU</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View>
-            <TextInput
-              style={styles.input}
-              placeholder="AID hex (e.g. A000000003000000)"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={state.aidInput}
-              onChangeText={(text) =>
-                setState((prev) => ({ ...prev, aidInput: text }))
-              }
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Event Log</Text>
+        <View style={styles.statusBox}>
+          <View style={styles.row}>
+            <Button
+              label="Clear Log"
+              onPress={() => {
+                setLogs([]);
+              }}
             />
-            <TouchableOpacity
-              style={[
-                styles.button,
-                (!state.currentCard || !state.aidInput.trim()) &&
-                  styles.buttonDisabled,
-              ]}
-              onPress={sendSelectByAid}
-              disabled={!state.currentCard || !state.aidInput.trim()}
-            >
-              <Text style={styles.buttonText}>Send SELECT by AID</Text>
-            </TouchableOpacity>
           </View>
-
-          <View style={{ marginTop: 8 }}>
-            <TextInput
-              style={styles.input}
-              placeholder="Raw APDU hex (e.g. 00A40400...)"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={state.rawApduInput}
-              onChangeText={(text) =>
-                setState((prev) => ({ ...prev, rawApduInput: text }))
-              }
-            />
-            <TouchableOpacity
-              style={[
-                styles.button,
-                (!state.currentCard || state.rawApduInput.trim().length < 8) &&
-                  styles.buttonDisabled,
-              ]}
-              onPress={sendRawApdu}
-              disabled={
-                !state.currentCard || state.rawApduInput.trim().length < 8
-              }
-            >
-              <Text style={styles.buttonText}>Send Raw APDU</Text>
-            </TouchableOpacity>
-          </View>
+          {logs.length === 0 ? (
+            <Text style={styles.statusText}>No events</Text>
+          ) : (
+            logs.slice(0, 50).map((line, i) => (
+              <Text key={i} style={styles.statusText}>
+                {line}
+              </Text>
+            ))
+          )}
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cleanup</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.releaseButton,
-                !state.currentCard && styles.buttonDisabled,
-              ]}
-              onPress={releaseCard}
-              disabled={!state.currentCard}
-            >
-              <Text style={[styles.buttonText, styles.releaseButtonText]}>
-                Release Card
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.releaseButton,
-                !state.currentDevice && styles.buttonDisabled,
-              ]}
-              onPress={releaseDevice}
-              disabled={!state.currentDevice}
-            >
-              <Text style={[styles.buttonText, styles.releaseButtonText]}>
-                Release Device
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.releaseButton,
-              !state.initialized && styles.buttonDisabled,
-            ]}
-            onPress={releasePlatform}
-            disabled={!state.initialized}
-          >
-            <Text style={[styles.buttonText, styles.releaseButtonText]}>
-              Release Platform
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.logHeader}>
-            <Text style={styles.sectionTitle}>Logs</Text>
-            <TouchableOpacity style={styles.clearButton} onPress={clearLogs}>
-              <Text style={styles.clearButtonText}>Clear</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.logContainer} nestedScrollEnabled>
-            {state.logs.map((log, index) => (
-              <Text key={index} style={styles.logText}>
-                {log}
-              </Text>
-            ))}
-            {state.logs.length === 0 && (
-              <Text style={styles.emptyLogText}>
-                No logs yet. Start testing!
-              </Text>
-            )}
-          </ScrollView>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
-};
+}
+
+function Button({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      style={[styles.btn, disabled && styles.btnDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      <Text style={styles.btnText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Flag({ label, active }: { label: string; active: boolean }) {
+  return (
+    <View style={[styles.flag, active ? styles.flagOn : styles.flagOff]}>
+      <Text style={styles.flagText}>
+        {label}: {active ? "ON" : "OFF"}
+      </Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#333",
-  },
-  section: {
-    backgroundColor: "white",
-    padding: 16,
-    marginBottom: 16,
+  container: { padding: 16, gap: 16 },
+  title: { fontSize: 20, fontWeight: "700" },
+  section: { gap: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: "600" },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  btn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "#4a90e2",
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#333",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 12,
-    borderRadius: 6,
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  input: {
+  btnDisabled: { backgroundColor: "#9bbfe9" },
+  btnText: { color: "#fff", fontWeight: "700" },
+  statusBox: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    backgroundColor: "#fff",
-    marginBottom: 8,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
   },
-  releaseButton: {
-    backgroundColor: "#FF3B30",
+  statusText: { fontFamily: "monospace" },
+  flags: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  flag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  flagOn: {
+    backgroundColor: "#e1f5e9",
+    borderWidth: 1,
+    borderColor: "#62c788",
   },
-  releaseButtonText: {
-    color: "white",
+  flagOff: {
+    backgroundColor: "#fdeaea",
+    borderWidth: 1,
+    borderColor: "#d9534f",
   },
-  logHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  clearButton: {
-    backgroundColor: "#FF9500",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  clearButtonText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  logContainer: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 4,
-    padding: 8,
-    maxHeight: 300,
-  },
-  logText: {
-    fontSize: 12,
-    fontFamily: "monospace",
-    marginBottom: 2,
-    color: "#333",
-  },
-  emptyLogText: {
-    fontSize: 14,
-    fontStyle: "italic",
-    color: "#666",
-    textAlign: "center",
-    paddingVertical: 20,
-  },
+  flagText: { fontSize: 12, fontWeight: "600" },
 });
-
-export default NfcTestScreen;

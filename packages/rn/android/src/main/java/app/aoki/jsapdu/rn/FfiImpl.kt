@@ -118,7 +118,7 @@ object FfiImpl {
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         val card = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
-        device.releaseCard(cardHandle)
+        card.release()
     }
 
     fun onStatusUpdate(callback: ((eventType: String, payload: EventPayload) -> Unit)?): Unit {
