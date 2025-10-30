@@ -31,7 +31,6 @@ import type {
 import type {
   SmartCardDevice,
   SmartCard,
-  ResponseApdu,
 } from "@aokiapp/jsapdu-interface";
 import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
@@ -47,15 +46,15 @@ const useGlowAnimation = (visible: boolean) => {
         Animated.sequence([
           Animated.timing(glow, {
             toValue: 1,
-            duration: 700,
+            duration: GLOW_DURATION_MS,
             easing: Easing.bezier(0.4, 0.0, 0.2, 1),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
           Animated.timing(glow, {
             toValue: 0,
-            duration: 700,
+            duration: GLOW_DURATION_MS,
             easing: Easing.bezier(0.4, 0.0, 0.2, 1),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ]),
       );
@@ -80,6 +79,19 @@ type UiState = {
   cardPresent: boolean;
   sessionActive: boolean;
 };
+
+type Phase =
+  | "IDLE"
+  | "INITIALIZING"
+  | "ACQUIRING_DEVICE"
+  | "WAITING_FOR_CARD"
+  | "STARTING_SESSION"
+  | "READING"
+  | "COMPLETED";
+
+// Flow constants (no UI style changes)
+const WAIT_CARD_SECONDS = 20;
+const GLOW_DURATION_MS = 700;
 
 const stringifyError = (e: unknown): string => {
   if (e instanceof Error) return e.message;
@@ -123,11 +135,11 @@ const releasePlatform = async (
   platformRef: React.MutableRefObject<RnSmartCardPlatform | null>,
 ) => {
   const platform = platformRef.current;
-  if (platform && platform.isInitialized()) {
+  if (platform) {
     try {
       await platform.release();
     } catch {
-      // ignore
+      // ignore NOT_INITIALIZED and other release errors
     }
   }
   platformRef.current = null;
@@ -140,9 +152,7 @@ const MynaReadScreen: React.FC = () => {
   const { pin } = route.params;
 
   const [statusText, setStatusText] = useState("Idle");
-  const [reading, setReading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [sequenceDone, setSequenceDone] = useState(false);
   const [basicInfo, setBasicInfo] = useState<BasicFourInfo | null>(null);
   const rawBasicRef = useRef<number[] | null>(null);
   // Guards to prevent duplicate finalize/navigation when CARD_LOST fires multiple times
@@ -161,8 +171,13 @@ const MynaReadScreen: React.FC = () => {
     cardPresent: false,
     sessionActive: false,
   });
-  const [deviceAcquiring, setDeviceAcquiring] = useState(false);
-  const [cardReading, setCardReading] = useState(false);
+
+  const [phase, setPhase] = useState<Phase>("IDLE");
+  const phaseRef = useRef<Phase>("IDLE");
+  const setPhaseSafe = useCallback((next: Phase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: "読取ステップ" });
@@ -221,10 +236,15 @@ const MynaReadScreen: React.FC = () => {
       });
       const msg = details ? `${evt}: ${details}` : evt;
       setStatusText(msg);
-      if (evt === "DEVICE_ACQUIRED") setDeviceAcquiring(false);
-      if (evt === "CARD_FOUND") setCardReading(true);
+      // Merge finalize handling into event path to reduce useEffect count
       if (evt === "CARD_LOST") {
-        setCardReading(false);
+        if (
+          phaseRef.current === "COMPLETED" &&
+          !finalizingRef.current &&
+          !navigationCommittedRef.current
+        ) {
+          void finalizeAfterCardRemoval();
+        }
       }
     },
     [],
@@ -241,16 +261,15 @@ const MynaReadScreen: React.FC = () => {
       sessionActive: false,
     });
     setStatusText(`PLATFORM_RELEASED: ${reason}`);
+    setPhase("IDLE");
   }
   function safeAbortFlow() {
     // Fire-and-forget release, don't block UI/navigation
     void releaseAll("abort");
     setDrawerVisible(false);
-    setDeviceAcquiring(false);
-    setCardReading(false);
-    setSequenceDone(false);
     setBasicInfo(null);
     rawBasicRef.current = null;
+    setPhase("IDLE");
   }
 
   async function finalizeAfterCardRemoval() {
@@ -266,7 +285,6 @@ const MynaReadScreen: React.FC = () => {
       console.log("[READ] finalizeAfterCardRemoval", {
         hasRaw: Array.isArray(rawBasicRef.current) ? rawBasicRef.current.length : 0,
         hasInfo: !!basicInfo,
-        sequenceDone,
       });
       let params: RootStackParamList["MynaShow"] = {};
       if (Array.isArray(rawBasicRef.current) && rawBasicRef.current.length > 0) {
@@ -280,12 +298,9 @@ const MynaReadScreen: React.FC = () => {
       console.log("[READ] navigating to MynaShow with params:", params);
       navigation.replace("MynaShow", params);
     } finally {
-      setDeviceAcquiring(false);
-      setCardReading(false);
-      setSequenceDone(false);
-      setBasicInfo(null);
       rawBasicRef.current = null;
       finalizingRef.current = false;
+      setPhase("IDLE");
     }
   }
   const attachEventHandlers = useCallback(() => {
@@ -316,120 +331,222 @@ const MynaReadScreen: React.FC = () => {
   // Clean up on blur/unmount
   useFocusEffect(
     useCallback(() => {
+      // Register back/pop intercept while screen is focused
+      const beforeRemoveSub = navigation.addListener("beforeRemove", (e) => {
+        const action = (e as unknown as { data?: { action?: Parameters<typeof navigation.dispatch>[0] } }).data?.action;
+        if (abortingRef.current) {
+          // Already aborting, allow default behavior
+          return;
+        }
+        // Only intercept back/pop gestures, let programmatic navigations (e.g., replace) proceed
+        const type = (action as { type?: string } | undefined)?.type;
+        if (type !== "GO_BACK" && type !== "POP") {
+          return;
+        }
+        e.preventDefault();
+        abortingRef.current = true;
+        // Abort and then proceed with the original back action to avoid recursion
+        safeAbortFlow();
+        if (action) {
+          navigation.dispatch(action);
+        }
+      });
+  
+      // Cleanup on blur/unmount
       return () => {
+        // remove listener
+        beforeRemoveSub();
+        // detach platform listeners and abort flow
         const unsubs = unsubsRef.current;
         unsubs.forEach((u) => u());
         unsubsRef.current = [];
         void safeAbortFlow();
       };
-    }, []),
+    }, [navigation]),
   );
 
-  useEffect(() => {
-    return () => {
-      const unsubs = unsubsRef.current;
-      unsubs.forEach((u) => u());
-      unsubsRef.current = [];
-      void safeAbortFlow();
-    };
-  }, []);
 
-  useEffect(() => {
-    const sub = navigation.addListener("beforeRemove", (e) => {
-      const action = (e as unknown as { data?: { action?: Parameters<typeof navigation.dispatch>[0] } }).data?.action;
-      if (abortingRef.current) {
-        // Already aborting, allow default behavior
-        return;
-      }
-      // Only intercept back/pop gestures, let programmatic navigations (e.g., replace) proceed
-      const type = (action as { type?: string } | undefined)?.type;
-      if (type !== "GO_BACK" && type !== "POP") {
-        return;
-      }
-      e.preventDefault();
-      abortingRef.current = true;
-      // Abort and then proceed with the original back action to avoid recursion
-      safeAbortFlow();
-      if (action) {
-        navigation.dispatch(action);
-      }
-    });
-    return sub;
-  }, [navigation]);
-
-  const checkSwOk = (rapdu: ResponseApdu): Uint8Array => {
-    if (rapdu.sw1 !== 0x90 || rapdu.sw2 !== 0x00) {
-      throw new Error(
-        `Unexpected SW: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`,
-      );
-    }
-    return rapdu.data;
+   // Decode "63Cx" PIN retry status words into retry count
+  const parsePinRetriesFromSw = (sw1: number, sw2: number): number | null => {
+    const sw = (sw1 << 8) | sw2;
+    // 0x63Cx => retries left in low nibble of SW2
+    return (sw & 0xfff0) === 0x63c0 ? (sw2 & 0x0f) : null;
   };
 
   const runSequencelet = async (card: SmartCard, pinValue: string) => {
-    checkSwOk(await card.transmit(selectDf(KENHOJO_AP)));
-    checkSwOk(await card.transmit(verify(pinValue, { ef: KENHOJO_AP_EF.PIN })));
-    const basicFourData = checkSwOk(
-      await card.transmit(readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR)),
-    );
-    return basicFourData;
+    // 1) Select Kenhojo AP
+    {
+      const sel = await card.transmit(selectDf(KENHOJO_AP));
+      if (sel.sw1 !== 0x90 || sel.sw2 !== 0x00) {
+        throw new Error(
+          `SELECT AP failed: ${sel.sw1.toString(16)}/${sel.sw2.toString(16)}`
+        );
+      }
+    }
+  
+    // 2) Verify PIN (show retries left if applicable)
+    {
+      const rapdu = await card.transmit(verify(pinValue, { ef: KENHOJO_AP_EF.PIN }));
+      if (rapdu.sw1 !== 0x90 || rapdu.sw2 !== 0x00) {
+        const retries = parsePinRetriesFromSw(rapdu.sw1, rapdu.sw2);
+        if (retries !== null) {
+          throw new Error(`PIN verification failed. 残り${retries}回`);
+        }
+        throw new Error(
+          `PIN verification failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`
+        );
+      }
+    }
+  
+    // 3) Read BASIC_FOUR
+    {
+      const rapdu = await card.transmit(readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR));
+      if (rapdu.sw1 !== 0x90 || rapdu.sw2 !== 0x00) {
+        throw new Error(
+          `Read BASIC_FOUR failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`
+        );
+      }
+      return rapdu.data;
+    }
   };
 
-  // When card present and device acquired, start session and verify PIN
-  // When card present and device acquired, start session and verify PIN
+  // Orchestrate the full flow via a single state-driven effect
   useEffect(() => {
     let cancelled = false;
-    const process = async () => {
-      if (!ui.deviceAcquired || !ui.cardPresent || sequenceDone) return;
-      const dev = deviceRef.current;
-      if (!dev) return;
-
-      if (!ui.sessionActive) {
-        try {
-          const card = await dev.startSession();
-          if (cancelled) return;
-          cardRef.current = card;
-          setUiByEvent("CARD_SESSION_STARTED", "post-start fallback");
-        } catch (e) {
-          setStatusText(`startSession() error: ${stringifyError(e)}`);
-          return;
-        }
-      }
-
-      const card = cardRef.current;
-      if (!card) return;
-
+    const run = async () => {
       try {
-        const basicFourData = await runSequencelet(card, pin);
-        console.log("[READ] runSequencelet basicFourData:", basicFourData);
-        rawBasicRef.current = Array.from(basicFourData);
-        setSequenceDone(true);
-        setCardReading(false);
-      } catch (e) {
-        setStatusText(`verify/read error: ${stringifyError(e)}`);
+        switch (phase) {
+          case "INITIALIZING": {
+            try {
+              const platform = new RnSmartCardPlatform();
+              platformRef.current = platform;
+              const unsubs = attachEventHandlers();
+              unsubsRef.current = unsubs;
+
+              try {
+                await platform.init();
+              } catch (e) {
+                const msg = stringifyError(e).toLowerCase();
+                if (msg.includes("already initialized")) {
+                  try { await platform.release(); } catch { /* ignore */ }
+                  await platform.init();
+                } else {
+                  throw e;
+                }
+              }
+              setUiByEvent("PLATFORM_INITIALIZED");
+              setDrawerVisible(true);
+              if (cancelled) return;
+              setPhase("ACQUIRING_DEVICE");
+            } catch (e) {
+              setStatusText(`init error: ${stringifyError(e)}`);
+              setPhase("IDLE");
+            }
+            break;
+          }
+          case "ACQUIRING_DEVICE": {
+            const platform = platformRef.current;
+            if (!platform) {
+              setPhase("IDLE");
+              return;
+            }
+            try {
+              const infos = await platform.getDeviceInfo();
+              if (cancelled) return;
+              if (infos.length === 0) {
+                setStatusText("No NFC device available");
+                setPhase("IDLE");
+                return;
+              }
+              const dev = await platform.acquireDevice(infos[0]!.id);
+              deviceRef.current = dev;
+              setUiByEvent("DEVICE_ACQUIRED");
+              if (cancelled) return;
+              setPhase("WAITING_FOR_CARD");
+            } catch (e) {
+              setStatusText(`acquire error: ${stringifyError(e)}`);
+              setPhase("IDLE");
+            }
+            break;
+          }
+          case "WAITING_FOR_CARD": {
+            const dev = deviceRef.current;
+            if (!dev) {
+              setPhase("IDLE");
+              return;
+            }
+            try {
+              await dev.waitForCardPresence(WAIT_CARD_SECONDS);
+              if (cancelled) return;
+              setUiByEvent("CARD_FOUND");
+              setPhase("STARTING_SESSION");
+            } catch (e) {
+              setUiByEvent("WAIT_TIMEOUT", stringifyError(e));
+              setPhase("IDLE");
+            }
+            break;
+          }
+          case "STARTING_SESSION": {
+            const dev = deviceRef.current;
+            if (!dev) {
+              setPhase("IDLE");
+              return;
+            }
+            if (!ui.sessionActive && !cardRef.current) {
+              try {
+                const card = await dev.startSession();
+                if (cancelled) return;
+                cardRef.current = card;
+                setUiByEvent("CARD_SESSION_STARTED");
+              } catch (e) {
+                setStatusText(`startSession() error: ${stringifyError(e)}`);
+                setPhase("IDLE");
+                return;
+              }
+            }
+            setPhase("READING");
+            break;
+          }
+          case "READING": {
+            const card = cardRef.current;
+            if (!card) {
+              setPhase("IDLE");
+              return;
+            }
+            try {
+              const basicFourData = await runSequencelet(card, pin);
+              console.log("[READ] runSequencelet basicFourData:", basicFourData);
+              if (cancelled) return;
+              rawBasicRef.current = Array.from(basicFourData);
+              setPhaseSafe("COMPLETED");
+            } catch (e) {
+              setStatusText(`verify/read error: ${stringifyError(e)}`);
+              setPhase("IDLE");
+            }
+            break;
+          }
+          default:
+            break;
+        }
+      } catch {
+        // swallow to keep flow resilient
       }
     };
-    void process();
+    void run();
     return () => {
       cancelled = true;
     };
-  }, [ui.deviceAcquired, ui.cardPresent, ui.sessionActive, sequenceDone, pin]);
+  }, [phase, ui.sessionActive, pin, attachEventHandlers, setUiByEvent]);
 
   // Navigate after removal strictly when card is lost and the sequence finished.
   // This avoids calling navigation directly inside the event handler and prevents
   // duplicate transitions due to multiple CARD_LOST emissions.
-  useEffect(() => {
-    if (!ui.cardPresent && sequenceDone && !finalizingRef.current && !navigationCommittedRef.current) {
-      void finalizeAfterCardRemoval();
-    }
-  }, [ui.cardPresent, sequenceDone]);
 
   // Navigation waits for CARD_LOST; auto-fallback removed (reverted to original behavior).
   const handleReadStart = useCallback(async () => {
     console.log("[READ] handleReadStart invoked", {
-      reading,
+      phase,
       drawerVisible,
-      deviceAcquiring,
     });
     // Ensure previous session (if any) is fully released and listeners removed
     const prevUnsubs = unsubsRef.current;
@@ -439,45 +556,21 @@ const MynaReadScreen: React.FC = () => {
     await releaseDevice(deviceRef);
     await releasePlatform(platformRef);
 
-    setDrawerVisible(false);
-    setDeviceAcquiring(false);
-    setSequenceDone(false);
-    setReading(true);
+    setDrawerVisible(true);
+    setBasicInfo(null);
+    rawBasicRef.current = null;
+    navigationCommittedRef.current = false;
+    finalizingRef.current = false;
+    abortingRef.current = false;
 
-    try {
-      const platform = new RnSmartCardPlatform();
-      platformRef.current = platform;
-      const unsubs = attachEventHandlers();
-      unsubsRef.current = unsubs;
+    setPhase("INITIALIZING");
+  }, [phase, drawerVisible]);
 
-      await platform.init();
-      setUiByEvent("PLATFORM_INITIALIZED", "post-init fallback");
-
-      setDrawerVisible(true);
-
-      setDeviceAcquiring(true);
-      const infos = await platform.getDeviceInfo();
-      if (infos.length === 0) {
-        setStatusText("No NFC device available");
-        setDeviceAcquiring(false);
-        return;
-      }
-      const dev = await platform.acquireDevice(infos[0]!.id);
-      deviceRef.current = dev;
-      setUiByEvent("DEVICE_ACQUIRED", `fallback: ${infos[0]!.id}`);
-
-      try {
-        await dev.waitForCardPresence(20);
-        setUiByEvent("CARD_FOUND", "post-wait fallback");
-      } catch (e) {
-        setUiByEvent("WAIT_TIMEOUT", stringifyError(e));
-      }
-    } catch (e) {
-      setStatusText(`init/acquire error: ${stringifyError(e)}`);
-    } finally {
-      setReading(false);
-    }
-  }, [attachEventHandlers, setUiByEvent]);
+  // Derived UI flags (preserve screen behavior without changing styles)
+  const reading = phase === "INITIALIZING" || phase === "ACQUIRING_DEVICE" || phase === "WAITING_FOR_CARD";
+  const deviceAcquiring = phase === "INITIALIZING" || phase === "ACQUIRING_DEVICE";
+  const cardReading = phase === "STARTING_SESSION" || phase === "READING";
+  const sequenceDone = phase === "COMPLETED";
 
   return (
     <SafeAreaView style={styles.container}>
