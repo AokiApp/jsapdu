@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import React from "react";
+/* React 19 automatic JSX runtime: default import not required */
 import {
   SafeAreaView,
   ScrollView,
@@ -22,12 +22,14 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "./App";
 
+type MenuRoute = "NfcTest" | "MynaPin";
+
 type MenuItem = {
   key: string;
   title: string;
   subtitle?: string;
   emoji?: string;
-  route: keyof RootStackParamList;
+  route: MenuRoute;
 };
 
 const ITEMS: MenuItem[] = [
@@ -37,6 +39,13 @@ const ITEMS: MenuItem[] = [
     subtitle: "Read and write NFC tags",
     emoji: "📳",
     route: "NfcTest",
+  },
+  {
+    key: "myna",
+    title: "Myna Test",
+    subtitle: "My Number Card flow",
+    emoji: "💳",
+    route: "MynaPin",
   },
 ];
 
