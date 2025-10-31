@@ -11,6 +11,8 @@ import { RnDeviceInfo } from '../device/rn-device-info';
 import { RnSmartCardDevice } from '../device/rn-smart-card-device';
 import { PlatformState } from './platform-state';
 import type { EventPayload } from '../JsapduRn.nitro';
+import type { DeviceEventType } from '../device/rn-smart-card-device';
+import type { CardEventType } from '../card/rn-smart-card';
 
 /**
  * React Native NFC SmartCard platform implementation
@@ -133,9 +135,92 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
   private statusUpdateHandler(eventType: string, payload: EventPayload): void {
     const evt = eventType as PlatformEventType;
-    this.eventEmitter.emit(evt, payload);
-    console.log(
-      `RnSmartCardPlatform Status Update: ${eventType} - Device: ${payload.deviceHandle}, Card: ${payload.cardHandle}, Details: ${payload.details}`
+
+    // Define event routing policy:
+    // - Platform-only: Emit only on platform
+    // - Device-level: Emit only on the target device
+    // - Card-level: Emit only on the target card
+    const platformOnly = new Set<PlatformEventType>([
+      'PLATFORM_INITIALIZED',
+      'PLATFORM_RELEASED',
+      'NFC_STATE_CHANGED',
+    ]);
+
+    // Include DEVICE_ACQUIRED so device can observe acquisition lifecycle
+    const deviceEvents = new Set<PlatformEventType>([
+      'DEVICE_ACQUIRED',
+      'DEVICE_RELEASED',
+      'CARD_FOUND',
+      'CARD_LOST',
+      'CARD_SESSION_STARTED',
+      'CARD_SESSION_RESET',
+      'WAIT_TIMEOUT',
+      'READER_MODE_ENABLED',
+      'READER_MODE_DISABLED',
+      'DEBUG_INFO',
+    ]);
+
+    // Card-specific events (do not bubble to device/platform)
+    const cardEvents = new Set<PlatformEventType>([
+      'CARD_SESSION_RESET',
+      'CARD_LOST',
+      'APDU_SENT',
+      'APDU_FAILED',
+      'DEBUG_INFO',
+    ]);
+
+    // Platform-only events
+    if (platformOnly.has(evt)) {
+      this.eventEmitter.emit(evt, payload);
+      return;
+    }
+
+    const { deviceHandle, cardHandle } = payload;
+
+    // Card-level events take precedence when both handles are present
+    if (cardEvents.has(evt)) {
+      if (deviceHandle && cardHandle) {
+        const device = this.getTarget(deviceHandle);
+        const card = device?.getTarget(cardHandle);
+        if (card) {
+          card.getEventEmitter().emit(evt as unknown as CardEventType, payload);
+          return;
+        } else {
+          console.warn(
+            `[RnSmartCardPlatform] Card target not found for ${eventType}. device=${deviceHandle}, card=${cardHandle}, details=${payload.details}`
+          );
+          return;
+        }
+      } else {
+        console.warn(
+          `[RnSmartCardPlatform] Missing handles for card event ${eventType}. device=${deviceHandle}, card=${cardHandle}`
+        );
+        return;
+      }
+    }
+
+    // Device-level events
+    if (deviceEvents.has(evt)) {
+      if (deviceHandle) {
+        const device = this.getTarget(deviceHandle);
+        if (device) {
+          device.getEventEmitter().emit(evt as unknown as DeviceEventType, payload);
+          return;
+        } else {
+          console.warn(
+            `[RnSmartCardPlatform] Device target not found for ${eventType}. device=${deviceHandle}, details=${payload.details}`
+          );
+          return;
+        }
+      } else {
+        console.warn(`[RnSmartCardPlatform] Missing deviceHandle for device event ${eventType}.`);
+        return;
+      }
+    }
+
+    // Unknown or future events: keep non-fatal
+    console.debug(
+      `[RnSmartCardPlatform] Unhandled event ${eventType}. payload=${JSON.stringify(payload)}`
     );
   }
 

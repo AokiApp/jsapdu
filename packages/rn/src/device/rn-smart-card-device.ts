@@ -16,6 +16,7 @@ import type { EventPayload } from '../JsapduRn.nitro';
  * Device-level event types (aligned with native StatusEventType subset)
  */
 export type DeviceEventType =
+  | 'DEVICE_ACQUIRED'
   | 'DEVICE_RELEASED'
   | 'CARD_FOUND'
   | 'CARD_LOST'
