@@ -63,7 +63,6 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
-  private lastDeviceInfos: RnDeviceInfo[] | null = null;
 
   constructor() {
     super();
@@ -81,6 +80,26 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
     return this.hybridObject;
   }
 
+  /**
+   * Internal EventEmitter accessor
+   * @internal
+   */
+  public getEventEmitter() {
+    return this.eventEmitter;
+  }
+
+  /**
+   * Two-hop device lookup by deviceHandle
+   * @internal
+   */
+  public getTarget(deviceHandle: string): RnSmartCardDevice | undefined {
+    for (const device of this.acquiredDevices.values()) {
+      if (device.getDeviceHandle() === deviceHandle) {
+        return device;
+      }
+    }
+    return undefined;
+  }
   /**
    * Initialize the NFC platform
    *
@@ -156,7 +175,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
         (device) => device.release()
       );
 
-      await Promise.all(releasePromises);
+      await Promise.allSettled(releasePromises);
       this.acquiredDevices.clear();
 
       // Release platform
@@ -194,9 +213,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
     try {
       const deviceInfos = await this.hybridObject.getDeviceInfo();
-      const list = deviceInfos.map((info) => new RnDeviceInfo(info));
-      this.lastDeviceInfos = list;
-      return list;
+      return deviceInfos.map((info) => new RnDeviceInfo(info));
     } catch (error) {
       throw mapNitroError(error);
     }
@@ -242,14 +259,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       // Acquire device handle from native side
       const deviceHandle = await this.hybridObject.acquireDevice(id);
 
-      // Find device info from cache or refresh once
-      let deviceInfoObj: RnDeviceInfo | undefined = this.lastDeviceInfos?.find(
-        (info) => info.id === id
-      );
-      if (!deviceInfoObj) {
-        const infos = await this.getDeviceInfo();
-        deviceInfoObj = infos.find((info) => info.id === id);
-      }
+      // Derive device info on demand (no persistent cache)
+      const infos = await this.getDeviceInfo();
+      const deviceInfoObj = infos.find((info) => info.id === id);
 
       if (!deviceInfoObj) {
         throw new SmartCardError(
@@ -259,7 +271,11 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       }
 
       // Create device instance
-      const device = new RnSmartCardDevice(this, deviceHandle, deviceInfoObj);
+      const device = new RnSmartCardDevice(
+        this,
+        deviceHandle,
+        deviceInfoObj as RnDeviceInfo
+      );
 
       // Track acquired device
       this.acquiredDevices.set(id, device);

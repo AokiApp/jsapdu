@@ -6,6 +6,19 @@ import {
 } from '@aokiapp/jsapdu-interface';
 import { mapNitroError } from '../errors/error-mapper';
 import type { RnSmartCardDevice } from '../device/rn-smart-card-device';
+import type { EventPayload } from '../JsapduRn.nitro';
+
+/**
+ * Card-level event types (aligned with native StatusEventType subset)
+ */
+export type CardEventType =
+  | 'CARD_SESSION_RESET'
+  | 'CARD_LOST'
+  | 'APDU_SENT'
+  | 'APDU_FAILED'
+  | 'DEBUG_INFO';
+
+export type CardEventPayload = EventPayload;
 
 /**
  * React Native NFC SmartCard implementation
@@ -45,12 +58,18 @@ import type { RnSmartCardDevice } from '../device/rn-smart-card-device';
  * await card.release();
  * ```
  */
-export class RnSmartCard extends SmartCard {
+export class RnSmartCard extends SmartCard<{
+  [K in CardEventType]: (payload: CardEventPayload) => void;
+}> {
   private cardHandle: string;
   private deviceHandle: string;
   private isReleased = false;
 
-  constructor(parentDevice: RnSmartCardDevice, deviceHandle: string, cardHandle: string) {
+  constructor(
+    parentDevice: RnSmartCardDevice,
+    deviceHandle: string,
+    cardHandle: string
+  ) {
     super(parentDevice);
     this.deviceHandle = deviceHandle;
     this.cardHandle = cardHandle;
@@ -63,6 +82,22 @@ export class RnSmartCard extends SmartCard {
   private getHybrid() {
     const device = this.parentDevice as RnSmartCardDevice;
     return device.getPlatform().getHybridObject();
+  }
+
+  /**
+   * Internal EventEmitter accessor
+   * @internal
+   */
+  public getEventEmitter() {
+    return this.eventEmitter;
+  }
+
+  /**
+   * Internal: card handle accessor for two-hop device lookups
+   * @internal
+   */
+  public getCardHandle(): string {
+    return this.cardHandle;
   }
 
   /**
@@ -105,7 +140,10 @@ export class RnSmartCard extends SmartCard {
     this.assertNotReleased();
 
     try {
-      const atrBuffer = await this.getHybrid().getAtr(this.deviceHandle, this.cardHandle);
+      const atrBuffer = await this.getHybrid().getAtr(
+        this.deviceHandle,
+        this.cardHandle
+      );
       const atr = new Uint8Array(atrBuffer);
 
       // Validate ATR length

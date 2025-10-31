@@ -10,6 +10,23 @@ import { RnSmartCard } from '../card/rn-smart-card';
 import { RnDeviceInfo } from './rn-device-info';
 import { DeviceState, DEFAULT_CARD_PRESENCE_TIMEOUT } from './device-state';
 import type { RnSmartCardPlatform } from '../platform/rn-smart-card-platform';
+import type { EventPayload } from '../JsapduRn.nitro';
+
+/**
+ * Device-level event types (aligned with native StatusEventType subset)
+ */
+export type DeviceEventType =
+  | 'DEVICE_RELEASED'
+  | 'CARD_FOUND'
+  | 'CARD_LOST'
+  | 'CARD_SESSION_STARTED'
+  | 'CARD_SESSION_RESET'
+  | 'WAIT_TIMEOUT'
+  | 'READER_MODE_ENABLED'
+  | 'READER_MODE_DISABLED'
+  | 'DEBUG_INFO';
+
+export type DeviceEventPayload = EventPayload;
 
 /**
  * React Native NFC SmartCard device implementation
@@ -41,7 +58,9 @@ import type { RnSmartCardPlatform } from '../platform/rn-smart-card-platform';
  * await device.release();
  * ```
  */
-export class RnSmartCardDevice extends SmartCardDevice {
+export class RnSmartCardDevice extends SmartCardDevice<{
+  [K in DeviceEventType]: (payload: DeviceEventPayload) => void;
+}> {
   private deviceHandle: string;
   private deviceInfo: RnDeviceInfo;
   private activeCard: RnSmartCard | null = null;
@@ -71,6 +90,35 @@ export class RnSmartCardDevice extends SmartCardDevice {
    */
   public getPlatform(): RnSmartCardPlatform {
     return this.parentPlatform as RnSmartCardPlatform;
+  }
+
+  /**
+   * Internal EventEmitter accessor
+   * @internal
+   */
+  public getEventEmitter() {
+    return this.eventEmitter;
+  }
+
+  /**
+   * Internal: device handle accessor for two-hop platform lookups
+   * @internal
+   */
+  public getDeviceHandle(): string {
+    return this.deviceHandle;
+  }
+
+  /**
+   * Internal: resolve active card by cardHandle (no caches)
+   * @internal
+   */
+  public getTarget(cardHandle: string): RnSmartCard | undefined {
+    const c = this.activeCard;
+    // Delegate release state checking to card methods; return if handle matches
+    if (c && c.getCardHandle() === cardHandle) {
+      return c;
+    }
+    return undefined;
   }
 
   /**
