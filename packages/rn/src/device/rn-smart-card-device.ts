@@ -123,6 +123,37 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   }
 
   /**
+   * Internal: notification from card when card.release() completes.
+   * Detach references if it matches the active card.
+   * @internal
+   */
+  public onCardReleased(cardHandle: string): void {
+    const c = this.activeCard;
+    if (c && c.getCardHandle() === cardHandle) {
+      this.deleteActiveCard();
+    }
+  }
+
+  /**
+   * Internal: fully remove active card reference from this device instance.
+   * Ensures GC eligibility by clearing and deleting properties.
+   * @internal
+   */
+  private deleteActiveCard(): void {
+    // Clear strong references
+    this.activeCard = null;
+    this.card = null;
+
+    // Best-effort hard removal for GC friendliness (non-fatal if restricted)
+    try {
+      delete (this as any).activeCard;
+      delete (this as any).card;
+    } catch {
+      // ignore environment-specific restrictions
+    }
+  }
+
+  /**
    * Get device information
    * @returns Device information object
    */
@@ -319,8 +350,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
         } catch (error) {
           throw mapNitroError(error);
         }
-        this.activeCard = null;
-        this.card = null;
+        this.deleteActiveCard();
       }
 
       // Release device (deactivates ReaderMode / RF)
@@ -331,6 +361,16 @@ export class RnSmartCardDevice extends SmartCardDevice<{
 
       // Untrack from platform
       this.getPlatform().untrackDevice(this.deviceInfo.id);
+
+      // Sever own references to become inert and GC-eligible (mirrors Kotlin-side cleanup intent)
+      try {
+        (this as any).eventEmitter?.removeAllListeners?.();
+      } catch {
+        // ignore if emitter API differs
+      }
+      delete (this as any).deviceHandle;
+      delete (this as any).deviceInfo;
+      (this as any).parentPlatform = null;
     } catch (error) {
       throw mapNitroError(error);
     }

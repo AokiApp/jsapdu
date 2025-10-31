@@ -63,7 +63,6 @@ export class RnSmartCard extends SmartCard<{
 }> {
   private cardHandle: string;
   private deviceHandle: string;
-  private isReleased = false;
 
   constructor(
     parentDevice: RnSmartCardDevice,
@@ -106,13 +105,18 @@ export class RnSmartCard extends SmartCard<{
    * @throws {SmartCardError} with code "PLATFORM_ERROR" if card is released
    */
   private assertNotReleased(): void {
-    if (this.isReleased) {
+    // Treat missing/empty handles as disposed object
+    if (!this.cardHandle || !this.deviceHandle) {
       throw new SmartCardError(
         'PLATFORM_ERROR',
         'Card session has been released and cannot be used'
       );
     }
   }
+  /**
+   * No explicit isReleased()/isCardReleased() accessors.
+   * Disposed state is derived from cleared handles (see release()).
+   */
 
   /**
    * Get ATR (Answer To Reset) or ATS (Answer To Select)
@@ -262,13 +266,28 @@ export class RnSmartCard extends SmartCard<{
    * - New session can be started with device.startSession()
    */
   public async release(): Promise<void> {
-    if (this.isReleased) {
+    // If handles are already cleared/missing, treat as disposed (idempotent)
+    if (!this.cardHandle || !this.deviceHandle) {
       return; // Idempotent: already released
     }
 
     try {
       await this.getHybrid().releaseCard(this.deviceHandle, this.cardHandle);
-      this.isReleased = true;
+
+      // Inform parent device to detach references to this card
+      const device = this.parentDevice as RnSmartCardDevice;
+      device.onCardReleased(this.cardHandle);
+
+      // Sever internal references so this object becomes GC-eligible and inert
+      try {
+        (this as any).eventEmitter?.removeAllListeners?.();
+      } catch {
+        // ignore if emitter doesn't support removal
+      }
+
+      delete (this as any).cardHandle;
+      delete (this as any).deviceHandle;
+      (this as any).parentDevice = null;
     } catch (error) {
       throw mapNitroError(error);
     }
