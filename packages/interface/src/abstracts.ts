@@ -306,8 +306,8 @@ export abstract class SmartCardDevice<
   // emit is not exposed, use eventEmitter directly
 }
 
-export abstract class SmartCard {
-  protected eventEmitter = createNanoEvents();
+export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
+  protected eventEmitter = createNanoEvents<Events>();
   /**
    * @constructor
    */
@@ -352,10 +352,7 @@ export abstract class SmartCard {
   /**
    * Event emitter for card events
    */
-  on<K extends keyof DefaultEvents>(
-    event: K,
-    cb: DefaultEvents[K],
-  ): () => void {
+  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
     return this.eventEmitter.on(event, cb);
   }
 
