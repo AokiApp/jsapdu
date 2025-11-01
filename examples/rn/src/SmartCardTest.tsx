@@ -9,11 +9,16 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, Modal } from "react-native";
 import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
-import type { SmartCardDevice, SmartCard, DeviceInfo } from "@aokiapp/jsapdu-interface";
+import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import HexTextInput from "./components/HexTextInput";
+type DeviceInfo = {
+  id: string;
+  friendlyName?: string;
+  description?: string;
+} & Record<string, any>;
 
 export default function SmartCardTestScreen() {
   const platformRef = useRef<RnSmartCardPlatform | null>(null);
@@ -35,6 +40,9 @@ export default function SmartCardTestScreen() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [waitingCard, setWaitingCard] = useState(false);
   const [apduHex, setApduHex] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [lastApduOutput, setLastApduOutput] = useState<string | null>(null);
+  const [lastApduError, setLastApduError] = useState<string | null>(null);
 
   const cleanedHex = useMemo(
     () => apduHex.replace(/\s+/g, "").toUpperCase(),
@@ -116,7 +124,10 @@ export default function SmartCardTestScreen() {
       
       // Auto-select first device if available
       if (infos.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(infos[0].id);
+        const first = infos[0];
+        if (first) {
+          setSelectedDeviceId(first.id);
+        }
       }
     } catch (error) {
       console.error("[Plat] refreshDeviceList() failed", error);
@@ -256,6 +267,7 @@ export default function SmartCardTestScreen() {
       deviceRef.current = dev;
       setUi((prev) => ({ ...prev, deviceAcquired: true }));
       console.log("[Dev] acquired", selectedDeviceId);
+      setDropdownOpen(false);
 
       clearDeviceListeners();
       devUnsubsRef.current.push(
@@ -456,7 +468,9 @@ export default function SmartCardTestScreen() {
       const cmd = CommandApdu.fromUint8Array(
         bytes as unknown as Uint8Array<ArrayBuffer>
       );
-      console.log("[APDU] TX:", cmd.toHexString());
+      const tx = cmd.toHexString();
+      console.log("[APDU] TX:", tx);
+
       const resp = await card.transmit(cmd);
       const respBytes = resp.toUint8Array();
       const respHex = Array.from(respBytes)
@@ -466,14 +480,19 @@ export default function SmartCardTestScreen() {
       const sw1 = resp.sw1.toString(16).padStart(2, "0").toUpperCase();
       const sw2 = resp.sw2.toString(16).padStart(2, "0").toUpperCase();
       const sw = resp.sw.toString(16).toUpperCase();
-      console.log(`[APDU] RX: ${respHex}  SW=${sw1} ${sw2} (0x${sw})`);
+      const outLine = `${respHex}  SW=${sw1} ${sw2} (0x${sw})`;
+      console.log(`[APDU] RX: ${outLine}`);
+      setLastApduError(null);
+      setLastApduOutput(outLine);
     } catch (error) {
       console.error("[APDU] transmit() failed", error);
+      setLastApduOutput(null);
+      setLastApduError(`transmit() failed ${String(error)}`);
     }
   }, [apduReady, cleanedHex]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
       <Text style={styles.title}>Smart Card Test</Text>
 
       <View style={styles.section}>
@@ -510,21 +529,56 @@ export default function SmartCardTestScreen() {
             {ui.platformInitialized ? "No devices available" : "Initialize platform first"}
           </Text>
         ) : (
-          <View style={styles.deviceList}>
-            {availableDevices.map((device) => (
-              <Pressable
-                key={device.id}
-                style={[
-                  styles.deviceItem,
-                  selectedDeviceId === device.id && styles.deviceItemSelected,
-                ]}
-                onPress={() => setSelectedDeviceId(device.id)}
-                disabled={ui.deviceAcquired}
-              >
-                <Text style={styles.deviceName}>{device.friendlyName}</Text>
-                <Text style={styles.deviceDesc}>{device.description}</Text>
-              </Pressable>
-            ))}
+          <View>
+            <Pressable
+              accessibilityRole="button"
+              style={[
+                styles.selectBox,
+                ui.deviceAcquired && styles.selectBoxDisabled,
+              ]}
+              onPress={() => setDropdownOpen(true)}
+              disabled={ui.deviceAcquired}
+            >
+              <Text style={styles.selectText}>
+                {availableDevices.find((d) => d.id === selectedDeviceId)?.friendlyName ??
+                  "Select device"}
+              </Text>
+              <Text style={styles.selectArrow}>▾</Text>
+            </Pressable>
+
+            <Modal
+              visible={dropdownOpen && !ui.deviceAcquired}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setDropdownOpen(false)}
+            >
+              <View style={styles.modalRoot}>
+                <Pressable
+                  style={styles.modalBackdrop}
+                  onPress={() => setDropdownOpen(false)}
+                />
+                <View style={styles.modalCard}>
+                  <ScrollView style={{ maxHeight: 320 }} nestedScrollEnabled>
+                    {availableDevices.map((device) => (
+                      <Pressable
+                        key={device.id}
+                        style={[
+                          styles.deviceItem,
+                          selectedDeviceId === device.id && styles.deviceItemSelected,
+                        ]}
+                        onPress={() => {
+                          setSelectedDeviceId(device.id);
+                          setDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.deviceName}>{device.friendlyName}</Text>
+                        <Text style={styles.deviceDesc}>{device.description}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            </Modal>
           </View>
         )}
         <View style={styles.row}>
@@ -584,6 +638,8 @@ export default function SmartCardTestScreen() {
             disabled={!canCardOps}
           />
         </View>
+  
+        {/* APDU Output moved below APDU input */}
       </View>
 
       <View style={styles.section}>
@@ -602,6 +658,19 @@ export default function SmartCardTestScreen() {
             }}
             disabled={!canCardOps || !apduReady}
           />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>APDU Output</Text>
+        <View style={styles.outputBox}>
+          {lastApduError ? (
+            <Text style={[styles.outputText, styles.outputErr]}>{lastApduError}</Text>
+          ) : lastApduOutput ? (
+            <Text style={styles.outputText}>{lastApduOutput}</Text>
+          ) : (
+            <Text style={styles.infoText}>No output yet</Text>
+          )}
         </View>
       </View>
 
@@ -681,6 +750,67 @@ const styles = StyleSheet.create({
   },
   deviceName: { fontSize: 14, fontWeight: "600", marginBottom: 4 },
   deviceDesc: { fontSize: 12, color: "#666" },
+  selectBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  selectBoxDisabled: { backgroundColor: "#f0f4f8" },
+  selectText: { fontSize: 14, fontWeight: "600", color: "#333" },
+  selectArrow: { fontSize: 16, color: "#4a90e2", fontWeight: "700" },
+  dropdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  logBox: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+    backgroundColor: "#0f1115",
+  },
+  logText: { fontFamily: "monospace", fontSize: 12, color: "#eaeaea" },
+
+  /* Floating device selector (modal) */
+  modalRoot: { flex: 1, justifyContent: "center", alignItems: "center" },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0, right: 0, bottom: 0, left: 0,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  modalCard: {
+    width: "88%",
+    maxHeight: 360,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 8,
+    gap: 8,
+  },
+
+  /* APDU output (last result only) */
+  outputBox: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#0f1115",
+  },
+  outputText: { fontFamily: "monospace", fontSize: 12, color: "#eaeaea" },
+  outputErr: { fontFamily: "monospace", fontSize: 12, color: "#ff6b6b" },
+
   statusBox: {
     borderWidth: 1,
     borderColor: "#ddd",
