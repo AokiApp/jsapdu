@@ -22,7 +22,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "./App";
 
-type MenuRoute = "NfcTest" | "MynaPin";
+type MenuRoute = "NfcTest" | "SmartCardTest" | "MynaPin";
 
 type MenuItem = {
   key: string;
@@ -36,9 +36,16 @@ const ITEMS: MenuItem[] = [
   {
     key: "nfc",
     title: "NFC Test",
-    subtitle: "Read and write NFC tags",
+    subtitle: "Read and write NFC tags (legacy)",
     emoji: "📳",
     route: "NfcTest",
+  },
+  {
+    key: "smartcard",
+    title: "Smart Card Test",
+    subtitle: "Multi-device smart card tester (NFC, OMAPI...)",
+    emoji: "🧾",
+    route: "SmartCardTest",
   },
   {
     key: "myna",

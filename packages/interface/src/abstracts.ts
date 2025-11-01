@@ -176,6 +176,7 @@ export abstract class SmartCardDeviceInfo {
   public abstract readonly d2cProtocol:
     | "iso7816" // ISO 7816 (Contact)
     | "nfc" // NFC (Contactless)
+    | "integrated" // Integrated reader
     | "other" // Other
     | "unknown"; // Unknown
 
@@ -186,6 +187,7 @@ export abstract class SmartCardDeviceInfo {
     | "usb" // USB CCID
     | "ble" // Bluetooth LE
     | "nfc" // NFC
+    | "integrated" // Integrated reader
     | "other" // Other
     | "unknown"; // Unknown
 

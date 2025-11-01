@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.*
 
 /**
  * Android OMAPI device implementation that provides access to secure elements.
@@ -61,11 +62,12 @@ class OmapiDevice(
         
         enabled.set(true)
         
-        // Connect to SEService
-        val service = SEService(context) { 
+        // Connect to SEService. Provide an Executor to match SEService constructor.
+        val seExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        val service = SEService(context, seExecutor, SEService.OnConnectedListener {
             serviceConnected.set(true)
             serviceLatch.countDown()
-        }
+        })
         
         seService = service
         
@@ -87,6 +89,22 @@ class OmapiDevice(
         
         reader = foundReader
         safeEmit(StatusEventType.DEVICE_ACQUIRED, "OMAPI reader '$readerName' acquired")
+        
+        // If a secure element is present on this reader, emit CARD_FOUND to mirror NFC behavior.
+        try {
+            if (reader?.isSecureElementPresent == true) {
+                // Emit CARD_FOUND so higher layers can treat OMAPI devices like card-present readers, with delay, so that JS side can set up listeners.
+
+                GlobalScope.launch(Dispatchers.Default) {
+                    try {
+                        delay(50)
+                        safeEmit(StatusEventType.CARD_FOUND, "Secure element present on reader '$readerName'")
+                    } catch (_: Exception) { /* suppress */ }
+                }
+            }
+        } catch (_: Exception) {
+            // ignore inspection errors
+        }
     }
 
     /** Release the OMAPI device: close all sessions and disconnect from SEService */

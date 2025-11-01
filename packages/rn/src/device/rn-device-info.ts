@@ -77,23 +77,34 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
   public readonly isRemovableDevice: boolean;
 
   /**
-   * Device-to-Card communication protocol
-   * "nfc" for contactless NFC communication
-   */
-  public readonly d2cProtocol: 'iso7816' | 'nfc' | 'other' | 'unknown';
-
-  /**
-   * Platform-to-Device communication protocol
-   * "nfc" for integrated NFC reader
-   */
-  public readonly p2dProtocol: 'usb' | 'ble' | 'nfc' | 'other' | 'unknown';
-
-  /**
    * APDU API identifiers
    * Android returns: ["nfc", "androidnfc"]
    * Both values are included for FFI neutrality
    */
   public readonly apduApi: string[];
+
+  /**
+   * Device-to-Card communication protocol (keeps base type to satisfy SmartCardDeviceInfo)
+   * We map any extended native values (like 'integrated') into one of the base values.
+   */
+  public readonly d2cProtocol:
+    | 'iso7816'
+    | 'nfc'
+    | 'integrated'
+    | 'other'
+    | 'unknown';
+
+  /**
+   * Platform-to-Device communication protocol (keeps base type to satisfy SmartCardDeviceInfo)
+   * We map any extended native values (like 'integrated') into one of the base values.
+   */
+  public readonly p2dProtocol:
+    | 'usb'
+    | 'ble'
+    | 'nfc'
+    | 'integrated'
+    | 'other'
+    | 'unknown';
 
   /**
    * Construct device info from native layer data

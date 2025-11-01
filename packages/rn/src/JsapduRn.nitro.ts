@@ -3,12 +3,12 @@ import type { HybridObject } from 'react-native-nitro-modules';
 /**
  * Device-to-Card protocol types
  */
-export type D2CProtocol = 'iso7816' | 'nfc' | 'other' | 'unknown';
+export type D2CProtocol = 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
 
 /**
  * Platform-to-Device protocol types
  */
-export type P2DProtocol = 'usb' | 'ble' | 'nfc' | 'other' | 'unknown';
+export type P2DProtocol = 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
 
 /**
  * Device information structure for NFC devices

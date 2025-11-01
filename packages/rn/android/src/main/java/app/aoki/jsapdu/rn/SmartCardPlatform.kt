@@ -156,10 +156,12 @@ class SmartCardPlatform {
 
     private fun initializeOmapi() {
         val serviceLatch = CountDownLatch(1)
-        val service = SEService(appContext) {
+        // SEService constructor requires an Executor and OnConnectedListener on newer platforms.
+        val seExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        val service = SEService(appContext, seExecutor, SEService.OnConnectedListener {
             seServiceConnected = true
             serviceLatch.countDown()
-        }
+        })
         seService = service
         
         // Wait for SEService connection (max 3 seconds, non-blocking)

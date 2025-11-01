@@ -5,7 +5,9 @@
 import { createStaticNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MenuScreen from "./Menu";
+// Keep both the original NFC test screen and the new SmartCardTest screen
 import NfcTestScreen from "./NfcTest";
+import SmartCardTestScreen from "./SmartCardTest";
 import MynaPinScreen from "./screens/MynaPinScreen";
 import MynaReadScreen from "./screens/MynaReadScreen";
 import MynaShowScreen from "./screens/MynaShowScreen";
@@ -15,6 +17,8 @@ import type { BasicFourInfo } from "./types/myna";
 export type RootStackParamList = {
   Menu: undefined;
   NfcTest: undefined;
+  // New multi-device test route
+  SmartCardTest: undefined;
   MynaPin: undefined;
   MynaRead: { pin: string };
   MynaShow: { info?: BasicFourInfo; raw?: number[] };
@@ -23,7 +27,9 @@ export type RootStackParamList = {
 const RootStack = createNativeStackNavigator<RootStackParamList>({
   screens: {
     Menu: MenuScreen,
+    // Preserve original NFC test route and add a separate SmartCardTest route
     NfcTest: NfcTestScreen,
+    SmartCardTest: SmartCardTestScreen,
     MynaPin: MynaPinScreen,
     MynaRead: MynaReadScreen,
     MynaShow: MynaShowScreen,

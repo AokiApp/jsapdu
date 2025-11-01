@@ -37,8 +37,8 @@ object OmapiPlatformHelper {
                     supportsHce = false,
                     isIntegratedDevice = deviceType == "eSE",
                     isRemovableDevice = deviceType == "SIM",
-                    d2cProtocol = D2CProtocol.INTEGRATED,
-                    p2dProtocol = P2DProtocol.INTEGRATED,
+                    d2cProtocol = D2CProtocol.NFC,
+                    p2dProtocol = P2DProtocol.NFC,
                     apduApi = arrayOf("omapi", "androidse")
                 )
             }
