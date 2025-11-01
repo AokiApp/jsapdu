@@ -65,10 +65,36 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
+  private nativePlatformReleaseInProgress: Promise<void> | null = null;
 
   constructor() {
     super();
     this.hybridObject = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
+    // Event-driven mirroring for platform lifecycle without touching statusUpdateHandler
+    const ee = this.getEventEmitter();
+    ee.on('PLATFORM_RELEASED', (_payload: PlatformEventPayload) => {
+      if (this.nativePlatformReleaseInProgress || this.state.isReleasing)
+        return;
+      this.nativePlatformReleaseInProgress = this.release()
+        .catch(() => {
+          // Fallback: native already released; mirror JS-side state without re-entering native
+          try {
+            this.hybridObject.onStatusUpdate(void 0);
+          } catch {}
+          this.initialized = false;
+          try {
+            this.acquiredDevices.clear();
+          } catch {}
+        })
+        .finally(() => {
+          this.nativePlatformReleaseInProgress = null;
+        });
+    });
+
+    ee.on('PLATFORM_INITIALIZED', (_payload: PlatformEventPayload) => {
+      // Mirror native init state
+      this.initialized = true;
+    });
   }
 
   /**
@@ -204,7 +230,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       if (deviceHandle) {
         const device = this.getTarget(deviceHandle);
         if (device) {
-          device.getEventEmitter().emit(evt as unknown as DeviceEventType, payload);
+          device
+            .getEventEmitter()
+            .emit(evt as unknown as DeviceEventType, payload);
           return;
         } else {
           console.warn(
@@ -213,7 +241,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
           return;
         }
       } else {
-        console.warn(`[RnSmartCardPlatform] Missing deviceHandle for device event ${eventType}.`);
+        console.warn(
+          `[RnSmartCardPlatform] Missing deviceHandle for device event ${eventType}.`
+        );
         return;
       }
     }

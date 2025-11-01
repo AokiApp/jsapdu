@@ -63,6 +63,7 @@ export class RnSmartCard extends SmartCard<{
 }> {
   private cardHandle: string;
   private deviceHandle: string;
+  private nativeDisposeInProgress: Promise<void> | null = null;
 
   constructor(
     parentDevice: RnSmartCardDevice,
@@ -72,6 +73,21 @@ export class RnSmartCard extends SmartCard<{
     super(parentDevice);
     this.deviceHandle = deviceHandle;
     this.cardHandle = cardHandle;
+
+    // Event-driven mirroring: native CARD_LOST / CARD_SESSION_RESET -> call this.release() with reentrancy guard
+    const ee = this.getEventEmitter();
+    const onDisposed = (_payload: CardEventPayload) => {
+      if (this.nativeDisposeInProgress) return;
+      this.nativeDisposeInProgress = this.release()
+        .catch(() => {
+          // Fallback to local cleanup when native already released or handle invalid
+          this.onNativeDisposed();
+        })
+        .finally(() => {
+          this.nativeDisposeInProgress = null;
+        });
+    };
+    ee.on('CARD_LOST', onDisposed);
   }
 
   /**
@@ -111,6 +127,39 @@ export class RnSmartCard extends SmartCard<{
         'PLATFORM_ERROR',
         'Card session has been released and cannot be used'
       );
+    }
+  }
+
+  /**
+   * Internal: mirror native-driven card disposal without calling native again.
+   * Triggered by CARD_LOST or CARD_SESSION_RESET events routed to this card.
+   * @internal
+   */
+  private onNativeDisposed(): void {
+    // If already disposed, ignore
+    if (!this.cardHandle || !this.deviceHandle) {
+      return;
+    }
+
+    // Capture references/values before severing
+    const device = this.parentDevice as RnSmartCardDevice | null;
+    const h = this.cardHandle;
+
+    try {
+      // Inform parent device to drop its active card reference
+      if (device && h) {
+        device.onCardReleased(h);
+      }
+
+      // Remove listeners and sever strong refs
+      // No-op: emitter listeners will be GC'ed with this instance
+
+      // Sever internal references so this object becomes inert
+      this.cardHandle = '';
+      this.deviceHandle = '';
+      // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
+    } catch {
+      // ignore cleanup errors
     }
   }
   /**
@@ -279,15 +328,11 @@ export class RnSmartCard extends SmartCard<{
       device.onCardReleased(this.cardHandle);
 
       // Sever internal references so this object becomes GC-eligible and inert
-      try {
-        (this as any).eventEmitter?.removeAllListeners?.();
-      } catch {
-        // ignore if emitter doesn't support removal
-      }
+      // No-op: emitter listeners will be GC'ed with this instance
 
-      delete (this as any).cardHandle;
-      delete (this as any).deviceHandle;
-      (this as any).parentDevice = null;
+      this.cardHandle = '';
+      this.deviceHandle = '';
+      // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
     } catch (error) {
       throw mapNitroError(error);
     }

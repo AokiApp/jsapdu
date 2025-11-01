@@ -66,6 +66,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   private deviceInfo: RnDeviceInfo;
   private activeCard: RnSmartCard | null = null;
   private state: DeviceState = new DeviceState();
+  private nativeReleaseInProgress: Promise<void> | null = null;
 
   constructor(
     parentPlatform: RnSmartCardPlatform,
@@ -75,6 +76,20 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     super(parentPlatform);
     this.deviceHandle = deviceHandle;
     this.deviceInfo = deviceInfo;
+
+    // Event-driven mirroring: native DEVICE_RELEASED -> call this.release() with reentrancy guard
+    const ee = this.getEventEmitter();
+    ee.on('DEVICE_RELEASED', (_payload: DeviceEventPayload) => {
+      if (this.nativeReleaseInProgress) return;
+      this.nativeReleaseInProgress = this.release()
+        .catch(() => {
+          // Fallback to local cleanup when native already released or handle invalid
+          this.onNativeReleased();
+        })
+        .finally(() => {
+          this.nativeReleaseInProgress = null;
+        });
+    });
   }
 
   /**
@@ -144,12 +159,42 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     this.activeCard = null;
     this.card = null;
 
-    // Best-effort hard removal for GC friendliness (non-fatal if restricted)
+    // No additional action; strong references cleared above.
+  }
+
+  /**
+   * Internal: JS-side cleanup when native releases the device.
+   * Does not call back into native; only mirrors state and detaches references.
+   * @internal
+   */
+  private onNativeReleased(): void {
+    if (this.state.isReleased) {
+      return;
+    }
+    // Drop any active card reference; native already closed sessions
+    this.deleteActiveCard();
+
+    // Mark released and perform JS-side cleanup with a single try/catch
+    this.state.markReleased();
+
+    const platform = this.getPlatform();
+    const id = this.deviceInfo?.id;
+
     try {
-      delete (this as any).activeCard;
-      delete (this as any).card;
+      // Remove listeners and sever strong refs to become inert
+      // No-op: emitter listeners will be GC'ed with this instance
+
+      // Sever own references
+      this.deviceHandle = '';
+      // keep deviceInfo; no need to delete strongly-typed property
+      // avoid mutating parentPlatform typed reference; object is inert after markReleased()
+
+      // Untrack from platform (use captured references)
+      if (platform && id) {
+        platform.untrackDevice(id);
+      }
     } catch {
-      // ignore environment-specific restrictions
+      // ignore cleanup errors
     }
   }
 
@@ -363,14 +408,10 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       this.getPlatform().untrackDevice(this.deviceInfo.id);
 
       // Sever own references to become inert and GC-eligible (mirrors Kotlin-side cleanup intent)
-      try {
-        (this as any).eventEmitter?.removeAllListeners?.();
-      } catch {
-        // ignore if emitter API differs
-      }
-      delete (this as any).deviceHandle;
-      delete (this as any).deviceInfo;
-      (this as any).parentPlatform = null;
+      // No-op: emitter listeners will be GC'ed with this instance
+      this.deviceHandle = '';
+      // keep deviceInfo; no need to delete strongly-typed property
+      // avoid mutating parentPlatform typed reference; object is inert after markReleased()
     } catch (error) {
       throw mapNitroError(error);
     }
