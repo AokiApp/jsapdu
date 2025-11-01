@@ -19,17 +19,16 @@ class OmapiCardSession(
     private val session: Session
 ) : ICardSession {
     
-    private var basicChannel: Channel? = null
+    private var emulator: OmapiApduEmulator? = null
     private val apduLock = Any()
     
     init {
-        // Open basic channel (channel 0)
+        // Initialize APDU emulator (single-channel, SELECT-emulated)
         try {
-            basicChannel = session.openBasicChannel(null)
-                ?: throw IllegalStateException("SESSION_STATE_ERROR: Failed to open basic channel")
+            emulator = OmapiApduEmulator(session)
         } catch (e: Exception) {
             session.close()
-            throw IllegalStateException("PLATFORM_ERROR: Failed to open basic channel: ${e.message}")
+            throw IllegalStateException("PLATFORM_ERROR: Failed to initialize APDU emulator: ${e.message}")
         }
     }
 
@@ -85,7 +84,7 @@ class OmapiCardSession(
         synchronized(apduLock) {
             ensureConnected()
             
-            val channel = basicChannel
+            val emu = emulator
                 ?: platformError("Channel not available")
             
             try {
@@ -95,10 +94,8 @@ class OmapiCardSession(
                     "CommandHex=${apdu.toHex()}"
                 )
                 
-                // Transmit via basic channel
-                val response = channel.transmit(apdu)
-                    ?: throw IOException("Null response from channel")
-                
+                // Transmit via emulator (handles SELECT/CHANNEL emulation)
+                val response = emu.transmit(apdu)
                 return response
                 
             } catch (e: IOException) {
@@ -116,13 +113,8 @@ class OmapiCardSession(
             ensureConnected()
             
             try {
-                // Close and reopen the basic channel
-                basicChannel?.close()
-                basicChannel = session.openBasicChannel(null)
-                    ?: throw IllegalStateException("Failed to reopen basic channel after reset")
-                
+                emulator?.reset()
                 safeEmit(StatusEventType.CARD_SESSION_RESET, "Channel reset")
-                
             } catch (e: Exception) {
                 safeEmit(StatusEventType.CARD_LOST, "Reset failed: ${e.message}")
                 platformError("Failed to reset channel: ${e.message}")
@@ -135,12 +127,10 @@ class OmapiCardSession(
             parent.unregisterCard(handle)
             
             try {
-                // Close basic channel
-                basicChannel?.close()
+                emulator?.release()
             } catch (_: Exception) {
                 // ignore cleanup errors
             }
-            basicChannel = null
             
             try {
                 // Close session
@@ -149,15 +139,17 @@ class OmapiCardSession(
                 // ignore cleanup errors
             }
             
+            emulator = null
             safeEmit(StatusEventType.CARD_SESSION_RESET, "Session released")
         }
     }
     
     override fun isCardPresent(): Boolean {
         try {
-            // Check if session is still valid
+            // Check if session and current underlying channel are still valid
             val closed = session.isClosed
-            return !closed && basicChannel != null
+            val chOpen = (emulator?.currentChannel?.isOpen == true)
+            return !closed && chOpen
         } catch (_: Exception) {
             return false
         }
