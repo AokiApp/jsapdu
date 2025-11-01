@@ -161,6 +161,8 @@ const MynaReadScreen: React.FC = () => {
   const cardRef = useRef<SmartCard | null>(null);
   const unsubsRef = useRef<Array<() => void>>([]);
   const abortingRef = useRef(false);
+  const devListenersAttachedRef = useRef(false);
+  const cardListenersAttachedRef = useRef(false);
 
   const [ui, setUi] = useState<UiState>({
     platformInitialized: false,
@@ -234,7 +236,11 @@ const MynaReadScreen: React.FC = () => {
       const msg = details ? `${evt}: ${details}` : evt;
       setStatusText(msg);
       // Merge finalize handling into event path to reduce useEffect count
-      if (evt === "CARD_LOST") {
+      if (
+        evt === "CARD_LOST" ||
+        evt === "CARD_SESSION_RESET" ||
+        evt === "DEVICE_RELEASED"
+      ) {
         if (
           phaseRef.current === "COMPLETED" &&
           !finalizingRef.current &&
@@ -307,6 +313,43 @@ const MynaReadScreen: React.FC = () => {
       setPhase("IDLE");
     }
   }
+  // Safety-net: attach card listeners from outer scope to ensure CARD_LOST is observed even if
+  // platform-level DEVICE_ACQUIRED/CARD_SESSION_STARTED events are missed.
+  const attachCardListenersOuter = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    if (cardListenersAttachedRef.current) return;
+
+    const onCard = (evt: string) => (payload: unknown) => {
+      setUiByEvent(
+        evt as PlatformEventType,
+        (payload as PlatformEventPayload | undefined)?.details,
+      );
+      if (evt === "CARD_LOST") {
+        console.warn("[READ] CARD_EVENT CARD_LOST", payload);
+        console.log("[READ] CARD_EVENT CARDLOST");
+      }
+    };
+
+    const offs: Array<() => void> = [];
+    (["CARD_LOST", "APDU_SENT", "APDU_FAILED"] as const).forEach((evt) => {
+      offs.push(card.on(evt, onCard(evt)));
+    });
+
+    cardListenersAttachedRef.current = true;
+
+    unsubsRef.current.push(() => {
+      offs.forEach((u) => {
+        try {
+          u();
+        } catch (err) {
+          console.error("[READ] card unsubscribe failed", err);
+        }
+      });
+      cardListenersAttachedRef.current = false;
+    });
+  }, [setUiByEvent]);
+
   const attachEventHandlers = useCallback(() => {
     const platform = platformRef.current;
     if (!platform) return [];
@@ -319,12 +362,20 @@ const MynaReadScreen: React.FC = () => {
     const attachDeviceListeners = () => {
       const dev = deviceRef.current;
       if (!dev) return;
+      if (devListenersAttachedRef.current) return;
 
       const onDev = (evt: string) => (payload: unknown) => {
         setUiByEvent(
           evt as PlatformEventType,
           (payload as PlatformEventPayload | undefined)?.details,
         );
+
+        if (evt === "CARD_LOST") {
+          console.warn("[READ] DEV_EVENT CARD_LOST", payload);
+        }
+        if (evt === "CARD_SESSION_RESET") {
+          console.warn("[READ] DEV_EVENT CARD_SESSION_RESET", payload);
+        }
 
         // Bridge to card listeners when session starts
         if (evt === "CARD_SESSION_STARTED") {
@@ -346,6 +397,7 @@ const MynaReadScreen: React.FC = () => {
           });
           cardUnsubs.length = 0;
           cardRef.current = null;
+          cardListenersAttachedRef.current = false;
         }
       };
 
@@ -363,6 +415,8 @@ const MynaReadScreen: React.FC = () => {
         devUnsubs.push(dev.on(evt, onDev(evt)));
       });
 
+      devListenersAttachedRef.current = true;
+
       // Ensure device listener cleanup is included in returned unsubs
       unsubs.push(() => {
         devUnsubs.forEach((u) => {
@@ -373,24 +427,31 @@ const MynaReadScreen: React.FC = () => {
           }
         });
         devUnsubs.length = 0;
+        devListenersAttachedRef.current = false;
       });
     };
 
     const attachCardListeners = () => {
       const card = cardRef.current;
       if (!card) return;
+      if (cardListenersAttachedRef.current) return;
 
       const onCard = (evt: string) => (payload: unknown) => {
         setUiByEvent(
           evt as PlatformEventType,
           (payload as PlatformEventPayload | undefined)?.details,
         );
+        if (evt === "CARD_LOST") {
+          console.warn("[READ] CARD_EVENT CARD_LOST", payload);
+        }
       };
 
       const cardEvents = ["CARD_LOST", "APDU_SENT", "APDU_FAILED"] as const;
       cardEvents.forEach((evt) => {
         cardUnsubs.push(card.on(evt, onCard(evt)));
       });
+
+      cardListenersAttachedRef.current = true;
 
       // Ensure card listener cleanup is included in returned unsubs
       unsubs.push(() => {
@@ -402,6 +463,7 @@ const MynaReadScreen: React.FC = () => {
           }
         });
         cardUnsubs.length = 0;
+        cardListenersAttachedRef.current = false;
       });
     };
 
@@ -598,6 +660,49 @@ const MynaReadScreen: React.FC = () => {
               }
               const dev = await platform.acquireDevice(infos[0]!.id);
               deviceRef.current = dev;
+              // Immediately attach device listeners to capture CARD_* events even if platform-level events are missed.
+              (
+                [
+                  "CARD_FOUND",
+                  "CARD_LOST",
+                  "CARD_SESSION_STARTED",
+                  "CARD_SESSION_RESET",
+                  "DEVICE_RELEASED",
+                  "WAIT_TIMEOUT",
+                  "DEBUG_INFO",
+                ] as const
+              ).forEach((evt) => {
+                unsubsRef.current.push(
+                  dev.on(evt, (payload: unknown) => {
+                    if (evt === "CARD_LOST") {
+                      console.warn("[READ] DEV_EVENT CARD_LOST", payload);
+                      console.log("[READ] DEV_EVENT CARDLOST");
+                    }
+                    if (evt === "CARD_SESSION_RESET") {
+                      console.warn(
+                        "[READ] DEV_EVENT CARD_SESSION_RESET",
+                        payload,
+                      );
+                    }
+                    setUiByEvent(
+                      evt as PlatformEventType,
+                      (payload as PlatformEventPayload | undefined)?.details,
+                    );
+                    if (evt === "CARD_SESSION_STARTED") {
+                      attachCardListenersOuter();
+                    }
+                    if (
+                      (evt === "CARD_LOST" || evt === "CARD_SESSION_RESET") &&
+                      phaseRef.current === "COMPLETED" &&
+                      !finalizingRef.current &&
+                      !navigationCommittedRef.current
+                    ) {
+                      void finalizeAfterCardRemoval();
+                    }
+                    attachCardListenersOuter();
+                  }),
+                );
+              });
               setUiByEvent("DEVICE_ACQUIRED");
               if (cancelled) return;
               setPhase("WAITING_FOR_CARD");
@@ -635,7 +740,33 @@ const MynaReadScreen: React.FC = () => {
                 const card = await dev.startSession();
                 if (cancelled) return;
                 cardRef.current = card;
+                (["CARD_LOST", "APDU_SENT", "APDU_FAILED"] as const).forEach(
+                  (evt) => {
+                    unsubsRef.current.push(
+                      card.on(evt, (payload: unknown) => {
+                        if (evt === "CARD_LOST") {
+                          console.warn("[READ] CARD_EVENT CARD_LOST", payload);
+                          console.log("[READ] CARD_EVENT CARDLOST");
+                        }
+                        setUiByEvent(
+                          evt as PlatformEventType,
+                          (payload as PlatformEventPayload | undefined)
+                            ?.details,
+                        );
+                        if (
+                          evt === "CARD_LOST" &&
+                          phaseRef.current === "COMPLETED" &&
+                          !finalizingRef.current &&
+                          !navigationCommittedRef.current
+                        ) {
+                          void finalizeAfterCardRemoval();
+                        }
+                      }),
+                    );
+                  },
+                );
                 setUiByEvent("CARD_SESSION_STARTED");
+                attachCardListenersOuter();
               } catch (e) {
                 setStatusText(`startSession() error: ${stringifyError(e)}`);
                 setPhase("IDLE");
@@ -684,6 +815,34 @@ const MynaReadScreen: React.FC = () => {
   // duplicate transitions due to multiple CARD_LOST emissions.
 
   // Navigation waits for CARD_LOST; auto-fallback removed (reverted to original behavior).
+  // Fallback: if the card was already removed before phase transitioned to COMPLETED,
+  // finalize immediately based on current UI/device state. Additionally, if no removal
+  // event is observed within a short grace period, finalize to avoid a stuck UI.
+  useEffect(() => {
+    // Immediate finalize when card/session is already gone at COMPLETED
+    if (
+      phase === "COMPLETED" &&
+      !finalizingRef.current &&
+      !navigationCommittedRef.current &&
+      (!ui.cardPresent || !ui.sessionActive || cardRef.current == null)
+    ) {
+      void finalizeAfterCardRemoval();
+      return;
+    }
+    // Grace fallback finalize after 2s to avoid stuck overlay when no CARD_LOST is observed
+    if (phase === "COMPLETED" && !navigationCommittedRef.current) {
+      const t = setTimeout(() => {
+        if (!finalizingRef.current && !navigationCommittedRef.current) {
+          console.warn(
+            "[READ] Grace finalize after COMPLETED (no CARD_LOST observed)",
+          );
+          void finalizeAfterCardRemoval();
+        }
+      }, 5000);
+      return () => clearTimeout(t);
+    }
+  }, [phase, ui.cardPresent, ui.sessionActive]);
+
   const handleReadStart = useCallback(async () => {
     console.log("[READ] handleReadStart invoked", {
       phase,
