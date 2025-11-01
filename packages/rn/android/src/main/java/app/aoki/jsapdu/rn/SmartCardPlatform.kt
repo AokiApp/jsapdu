@@ -2,34 +2,43 @@ package app.aoki.jsapdu.rn
 
 import android.nfc.NfcAdapter
 import android.app.Activity
+import android.se.omapi.SEService
 import com.facebook.react.bridge.ReactApplicationContext
 import com.margelo.nitro.NitroModules
 import app.aoki.jsapdu.rn.core.IDevice
-import app.aoki.jsapdu.rn.nfc.NfcDevice
+import app.aoki.jsapdu.rn.nfc.NfcPlatformHelper
+import app.aoki.jsapdu.rn.omapi.OmapiPlatformHelper
 import com.margelo.nitro.aokiapp.jsapdurn.DeviceInfo
-import com.margelo.nitro.aokiapp.jsapdurn.D2CProtocol
-import com.margelo.nitro.aokiapp.jsapdurn.P2DProtocol
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
-import app.aoki.jsapdu.rn.StatusEventDispatcher
-import app.aoki.jsapdu.rn.StatusEventType
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Platform manager for smart card devices.
  * Manages different device types (NFC, OMAPI, BLE, etc.) through IDevice interface.
- * Currently supports NFC devices with planned support for additional types.
+ * Delegates device-specific logic to namespace helpers for better maintainability.
  */
 class SmartCardPlatform {
     private val appContext: ReactApplicationContext
+    
+    // NFC subsystem
     @Volatile private var nfcAdapter: NfcAdapter? = null
+    
+    // OMAPI subsystem
+    @Volatile private var seService: SEService? = null
+    @Volatile private var seServiceConnected: Boolean = false
+    
+    // Device registry
     private val devices = ConcurrentHashMap<String, IDevice>()
+    
+    // Lifecycle state
     @Volatile private var initialized: Boolean = false
     private val platformMutex = Mutex()
     private val acquireLock = Any()
-    // devicesLock removed; using ConcurrentHashMap
 
     init {
         val ctx = NitroModules.applicationContext
@@ -42,53 +51,34 @@ class SmartCardPlatform {
             if (initialized) {
                 throw IllegalStateException("ALREADY_INITIALIZED: Platform already initialized")
             }
-            // Initialize NFC adapter - in future, initialize other device types here
-            nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
-            // Note: NFC is optional, platform can initialize without it
+            
+            initializeNfc()
+            initializeOmapi()
+            
             initialized = true
-            // Emit platform init and initial NFC state
-            try {
-                val nfcState = when {
-                    nfcAdapter == null -> "unavailable"
-                    nfcAdapter?.isEnabled == true -> "on"
-                    else -> "off"
-                }
-                StatusEventDispatcher.emit(
-                    StatusEventType.PLATFORM_INITIALIZED,
-                    EventPayload(deviceHandle = null, cardHandle = null, details = "NFC=$nfcState")
-                )
-                if (nfcAdapter != null) {
-                    StatusEventDispatcher.emit(
-                        StatusEventType.NFC_STATE_CHANGED,
-                        EventPayload(deviceHandle = null, cardHandle = null, details = nfcState)
-                    )
-                }
-            } catch (_: Exception) { /* suppress */ }
+            emitPlatformInitialized()
         }
     }
 
     fun release() = runBlocking {
-        // Mark platform released under lifecycle lock
         platformMutex.withLock {
             if (!initialized) {
                 throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
             }
             initialized = false
-            nfcAdapter = null
+            
+            releaseNfc()
+            releaseOmapi()
         }
-        // Snapshot and clear devices outside lifecycle lock to avoid nested locking
-        val toRelease: List<IDevice> = devices.values.toList()
+        
+        // Release all devices outside lock to avoid nested locking
+        val toRelease = devices.values.toList()
         devices.clear()
         toRelease.forEach {
             try { it.release() } catch (_: Exception) { /* best-effort */ }
         }
-        // Emit platform released
-        try {
-            StatusEventDispatcher.emit(
-                StatusEventType.PLATFORM_RELEASED,
-                EventPayload(deviceHandle = null, cardHandle = null, details = "platform released")
-            )
-        } catch (_: Exception) { /* suppress */ }
+        
+        emitPlatformReleased()
     }
     
     fun isInitialized(): Boolean = initialized
@@ -97,44 +87,28 @@ class SmartCardPlatform {
 
     /**
      * Returns available device info for all supported device types.
-     * Currently returns NFC devices, will be extended for OMAPI/BLE.
      */
     fun getDeviceInfo(): Array<DeviceInfo> {
-        if (!initialized) throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
-        val deviceList = mutableListOf<DeviceInfo>()
-        
-        // Add NFC device if available
-        val adapter = nfcAdapter
-        if (adapter != null && adapter.isEnabled) {
-            deviceList.add(
-                DeviceInfo(
-                    id = "integrated-nfc-0",
-                    devicePath = null,
-                    friendlyName = "Integrated NFC Reader",
-                    description = "Android NFC with ISO-DEP support",
-                    supportsApdu = true,
-                    supportsHce = false,
-                    isIntegratedDevice = true,
-                    isRemovableDevice = false,
-                    d2cProtocol = D2CProtocol.NFC,
-                    p2dProtocol = P2DProtocol.NFC,
-                    apduApi = arrayOf("nfc", "androidnfc")
-                )
-            )
+        if (!initialized) {
+            throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
         }
         
-        // TODO: Add OMAPI devices
-        // TODO: Add BLE devices
+        val deviceList = mutableListOf<DeviceInfo>()
+        
+        // Collect devices from all subsystems
+        deviceList.addAll(NfcPlatformHelper.getDeviceInfo(nfcAdapter))
+        deviceList.addAll(OmapiPlatformHelper.getDeviceInfo(seService, seServiceConnected))
         
         return deviceList.toTypedArray()
     }
 
     /**
      * Acquire device based on device ID. Returns a device handle string.
-     * Supports different device types based on the device ID pattern.
      */
     fun acquireDevice(deviceId: String): String {
-        if (!initialized) throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
+        if (!initialized) {
+            throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
+        }
         
         synchronized(acquireLock) {
             // Enforce single-acquire per device ID
@@ -142,37 +116,13 @@ class SmartCardPlatform {
                 throw IllegalStateException("ALREADY_ACQUIRED: Device '$deviceId' already acquired")
             }
             
-            val device: IDevice = when {
-                deviceId.startsWith("integrated-nfc-") -> {
-                    // NFC device
-                    val adapter = nfcAdapter ?: throw IllegalStateException("PLATFORM_ERROR: NFC not supported")
-                    if (!adapter.isEnabled) throw IllegalStateException("PLATFORM_ERROR: NFC is disabled in system settings")
-                    
-                    if (deviceId != "integrated-nfc-0") {
-                        throw IllegalArgumentException("INVALID_DEVICE_ID: No such NFC device with ID '$deviceId'")
-                    }
-                    
-                    NfcDevice(this, adapter, id = deviceId)
-                }
-                // TODO: Add OMAPI device creation
-                // deviceId.startsWith("omapi-") -> { ... }
-                // TODO: Add BLE device creation
-                // deviceId.startsWith("ble-") -> { ... }
-                else -> {
-                    throw IllegalArgumentException("INVALID_DEVICE_ID: Unknown device type for ID '$deviceId'")
-                }
-            }
-            
+            val device = createDevice(deviceId)
             device.acquire()
+            
             val handle = device.handle
             devices[handle] = device
             
-            try {
-                StatusEventDispatcher.emit(
-                    StatusEventType.DEVICE_ACQUIRED,
-                    EventPayload(deviceHandle = handle, cardHandle = null, details = "Device '$deviceId' acquired")
-                )
-            } catch (_: Exception) { /* suppress */ }
+            emitDeviceAcquired(handle, deviceId)
             return handle
         }
     }
@@ -181,5 +131,117 @@ class SmartCardPlatform {
 
     internal fun unregisterDevice(handle: String) {
         devices.remove(handle)
+    }
+
+    // ---- Private subsystem initialization ------------------------------------------------
+
+    private fun initializeNfc() {
+        nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
+        // NFC is optional, platform can initialize without it
+        
+        // Emit NFC state if available
+        if (nfcAdapter != null) {
+            try {
+                StatusEventDispatcher.emit(
+                    StatusEventType.NFC_STATE_CHANGED,
+                    EventPayload(
+                        deviceHandle = null,
+                        cardHandle = null,
+                        details = NfcPlatformHelper.getStateString(nfcAdapter)
+                    )
+                )
+            } catch (_: Exception) { /* suppress */ }
+        }
+    }
+
+    private fun initializeOmapi() {
+        val serviceLatch = CountDownLatch(1)
+        val service = SEService(appContext) {
+            seServiceConnected = true
+            serviceLatch.countDown()
+        }
+        seService = service
+        
+        // Wait for SEService connection (max 3 seconds, non-blocking)
+        try {
+            serviceLatch.await(3, TimeUnit.SECONDS)
+        } catch (_: InterruptedException) {
+            seServiceConnected = false
+        }
+    }
+
+    private fun releaseNfc() {
+        nfcAdapter = null
+    }
+
+    private fun releaseOmapi() {
+        try {
+            seService?.shutdown()
+        } catch (_: Exception) { /* ignore */ }
+        seService = null
+        seServiceConnected = false
+    }
+
+    // ---- Private device creation --------------------------------------------------------
+
+    private fun createDevice(deviceId: String): IDevice {
+        return when {
+            deviceId.startsWith("integrated-nfc-") -> {
+                NfcPlatformHelper.createDevice(this, nfcAdapter, deviceId)
+            }
+            deviceId.startsWith("omapi-") -> {
+                OmapiPlatformHelper.createDevice(
+                    this, appContext, seService, seServiceConnected, deviceId
+                )
+            }
+            // TODO: Add BLE device creation
+            else -> {
+                throw IllegalArgumentException("INVALID_DEVICE_ID: Unknown device type for ID '$deviceId'")
+            }
+        }
+    }
+
+    // ---- Private event emission ---------------------------------------------------------
+
+    private fun emitPlatformInitialized() {
+        try {
+            val nfcState = NfcPlatformHelper.getStateString(nfcAdapter)
+            val omapiState = OmapiPlatformHelper.getStateString(seServiceConnected)
+            
+            StatusEventDispatcher.emit(
+                StatusEventType.PLATFORM_INITIALIZED,
+                EventPayload(
+                    deviceHandle = null,
+                    cardHandle = null,
+                    details = "NFC=$nfcState, OMAPI=$omapiState"
+                )
+            )
+        } catch (_: Exception) { /* suppress */ }
+    }
+
+    private fun emitPlatformReleased() {
+        try {
+            StatusEventDispatcher.emit(
+                StatusEventType.PLATFORM_RELEASED,
+                EventPayload(
+                    deviceHandle = null,
+                    cardHandle = null,
+                    details = "platform released"
+                )
+            )
+        } catch (_: Exception) { /* suppress */ }
+    }
+
+    private fun emitDeviceAcquired(handle: String, deviceId: String) {
+        try {
+            StatusEventDispatcher.emit(
+                StatusEventType.DEVICE_ACQUIRED,
+                EventPayload(
+                    deviceHandle = handle,
+                    cardHandle = null,
+                    details = "Device '$deviceId' acquired"
+                )
+            )
+        } catch (_: Exception) { /* suppress */ }
     }
 }
