@@ -28,10 +28,7 @@ import type {
   PlatformEventType,
   PlatformEventPayload,
 } from "@aokiapp/jsapdu-rn";
-import type {
-  SmartCardDevice,
-  SmartCard,
-} from "@aokiapp/jsapdu-interface";
+import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
 import type { BasicFourInfo } from "../types/myna";
@@ -274,7 +271,9 @@ const MynaReadScreen: React.FC = () => {
 
   async function finalizeAfterCardRemoval() {
     if (finalizingRef.current || navigationCommittedRef.current) {
-      console.log("[READ] finalizeAfterCardRemoval skipped (finalizing or already committed)");
+      console.log(
+        "[READ] finalizeAfterCardRemoval skipped (finalizing or already committed)",
+      );
       return;
     }
     finalizingRef.current = true;
@@ -283,11 +282,16 @@ const MynaReadScreen: React.FC = () => {
       setDrawerVisible(false);
       // Prepare params for show screen
       console.log("[READ] finalizeAfterCardRemoval", {
-        hasRaw: Array.isArray(rawBasicRef.current) ? rawBasicRef.current.length : 0,
+        hasRaw: Array.isArray(rawBasicRef.current)
+          ? rawBasicRef.current.length
+          : 0,
         hasInfo: !!basicInfo,
       });
       let params: RootStackParamList["MynaShow"] = {};
-      if (Array.isArray(rawBasicRef.current) && rawBasicRef.current.length > 0) {
+      if (
+        Array.isArray(rawBasicRef.current) &&
+        rawBasicRef.current.length > 0
+      ) {
         // clone to ensure a plain array is passed
         params = { raw: rawBasicRef.current.slice() };
       } else if (basicInfo) {
@@ -307,10 +311,132 @@ const MynaReadScreen: React.FC = () => {
     const platform = platformRef.current;
     if (!platform) return [];
     const unsubs: Array<() => void> = [];
-    const onEvt =
+
+    // Buckets for Device/Card listeners so we can detach them cleanly
+    const devUnsubs: Array<() => void> = [];
+    const cardUnsubs: Array<() => void> = [];
+
+    const attachDeviceListeners = () => {
+      const dev = deviceRef.current;
+      if (!dev) return;
+
+      const onDev = (evt: string) => (payload: unknown) => {
+        setUiByEvent(
+          evt as PlatformEventType,
+          (payload as PlatformEventPayload | undefined)?.details,
+        );
+
+        // Bridge to card listeners when session starts
+        if (evt === "CARD_SESSION_STARTED") {
+          attachCardListeners();
+        }
+
+        // Detach card listeners when card/session/device ends
+        if (
+          evt === "CARD_LOST" ||
+          evt === "CARD_SESSION_RESET" ||
+          evt === "DEVICE_RELEASED"
+        ) {
+          cardUnsubs.forEach((u) => {
+            try {
+              u();
+            } catch (err) {
+              console.error("[READ] card unsubscribe failed", err);
+            }
+          });
+          cardUnsubs.length = 0;
+          cardRef.current = null;
+        }
+      };
+
+      const deviceEvents = [
+        "CARD_FOUND",
+        "CARD_LOST",
+        "CARD_SESSION_STARTED",
+        "CARD_SESSION_RESET",
+        "DEVICE_RELEASED",
+        "WAIT_TIMEOUT",
+        "DEBUG_INFO",
+      ] as const;
+
+      deviceEvents.forEach((evt) => {
+        devUnsubs.push(dev.on(evt, onDev(evt)));
+      });
+
+      // Ensure device listener cleanup is included in returned unsubs
+      unsubs.push(() => {
+        devUnsubs.forEach((u) => {
+          try {
+            u();
+          } catch (err) {
+            console.error("[READ] device unsubscribe failed", err);
+          }
+        });
+        devUnsubs.length = 0;
+      });
+    };
+
+    const attachCardListeners = () => {
+      const card = cardRef.current;
+      if (!card) return;
+
+      const onCard = (evt: string) => (payload: unknown) => {
+        setUiByEvent(
+          evt as PlatformEventType,
+          (payload as PlatformEventPayload | undefined)?.details,
+        );
+      };
+
+      const cardEvents = ["CARD_LOST", "APDU_SENT", "APDU_FAILED"] as const;
+      cardEvents.forEach((evt) => {
+        cardUnsubs.push(card.on(evt, onCard(evt)));
+      });
+
+      // Ensure card listener cleanup is included in returned unsubs
+      unsubs.push(() => {
+        cardUnsubs.forEach((u) => {
+          try {
+            u();
+          } catch (err) {
+            console.error("[READ] card unsubscribe failed", err);
+          }
+        });
+        cardUnsubs.length = 0;
+      });
+    };
+
+    const onPlat =
       (evt: PlatformEventType) => (payload: PlatformEventPayload) => {
         setUiByEvent(evt, payload?.details);
+
+        // When device/card lifecycle happens, attach respective listeners
+        if (evt === "DEVICE_ACQUIRED") {
+          attachDeviceListeners();
+        }
+        if (evt === "CARD_SESSION_STARTED") {
+          attachCardListeners();
+        }
+        if (evt === "PLATFORM_RELEASED") {
+          // Full cleanup on platform release
+          devUnsubs.forEach((u) => {
+            try {
+              u();
+            } catch (err) {
+              console.error("[READ] device unsubscribe failed", err);
+            }
+          });
+          devUnsubs.length = 0;
+          cardUnsubs.forEach((u) => {
+            try {
+              u();
+            } catch (err) {
+              console.error("[READ] card unsubscribe failed", err);
+            }
+          });
+          cardUnsubs.length = 0;
+        }
       };
+
     const events: PlatformEventType[] = [
       "PLATFORM_INITIALIZED",
       "PLATFORM_RELEASED",
@@ -321,9 +447,10 @@ const MynaReadScreen: React.FC = () => {
       "CARD_SESSION_STARTED",
       "CARD_SESSION_RESET",
       "WAIT_TIMEOUT",
+      "DEBUG_INFO",
     ];
     events.forEach((evt) => {
-      unsubs.push(platform.on(evt, onEvt(evt)));
+      unsubs.push(platform.on(evt, onPlat(evt)));
     });
     return unsubs;
   }, [setUiByEvent]);
@@ -333,7 +460,11 @@ const MynaReadScreen: React.FC = () => {
     useCallback(() => {
       // Register back/pop intercept while screen is focused
       const beforeRemoveSub = navigation.addListener("beforeRemove", (e) => {
-        const action = (e as unknown as { data?: { action?: Parameters<typeof navigation.dispatch>[0] } }).data?.action;
+        const action = (
+          e as unknown as {
+            data?: { action?: Parameters<typeof navigation.dispatch>[0] };
+          }
+        ).data?.action;
         if (abortingRef.current) {
           // Already aborting, allow default behavior
           return;
@@ -351,7 +482,7 @@ const MynaReadScreen: React.FC = () => {
           navigation.dispatch(action);
         }
       });
-  
+
       // Cleanup on blur/unmount
       return () => {
         // remove listener
@@ -365,12 +496,11 @@ const MynaReadScreen: React.FC = () => {
     }, [navigation]),
   );
 
-
-   // Decode "63Cx" PIN retry status words into retry count
+  // Decode "63Cx" PIN retry status words into retry count
   const parsePinRetriesFromSw = (sw1: number, sw2: number): number | null => {
     const sw = (sw1 << 8) | sw2;
     // 0x63Cx => retries left in low nibble of SW2
-    return (sw & 0xfff0) === 0x63c0 ? (sw2 & 0x0f) : null;
+    return (sw & 0xfff0) === 0x63c0 ? sw2 & 0x0f : null;
   };
 
   const runSequencelet = async (card: SmartCard, pinValue: string) => {
@@ -379,31 +509,35 @@ const MynaReadScreen: React.FC = () => {
       const sel = await card.transmit(selectDf(KENHOJO_AP));
       if (sel.sw1 !== 0x90 || sel.sw2 !== 0x00) {
         throw new Error(
-          `SELECT AP failed: ${sel.sw1.toString(16)}/${sel.sw2.toString(16)}`
+          `SELECT AP failed: ${sel.sw1.toString(16)}/${sel.sw2.toString(16)}`,
         );
       }
     }
-  
+
     // 2) Verify PIN (show retries left if applicable)
     {
-      const rapdu = await card.transmit(verify(pinValue, { ef: KENHOJO_AP_EF.PIN }));
+      const rapdu = await card.transmit(
+        verify(pinValue, { ef: KENHOJO_AP_EF.PIN }),
+      );
       if (rapdu.sw1 !== 0x90 || rapdu.sw2 !== 0x00) {
         const retries = parsePinRetriesFromSw(rapdu.sw1, rapdu.sw2);
         if (retries !== null) {
           throw new Error(`PIN verification failed. 残り${retries}回`);
         }
         throw new Error(
-          `PIN verification failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`
+          `PIN verification failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`,
         );
       }
     }
-  
+
     // 3) Read BASIC_FOUR
     {
-      const rapdu = await card.transmit(readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR));
+      const rapdu = await card.transmit(
+        readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR),
+      );
       if (rapdu.sw1 !== 0x90 || rapdu.sw2 !== 0x00) {
         throw new Error(
-          `Read BASIC_FOUR failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`
+          `Read BASIC_FOUR failed: ${rapdu.sw1.toString(16)}/${rapdu.sw2.toString(16)}`,
         );
       }
       return rapdu.data;
@@ -428,7 +562,11 @@ const MynaReadScreen: React.FC = () => {
               } catch (e) {
                 const msg = stringifyError(e).toLowerCase();
                 if (msg.includes("already initialized")) {
-                  try { await platform.release(); } catch { /* ignore */ }
+                  try {
+                    await platform.release();
+                  } catch {
+                    /* ignore */
+                  }
                   await platform.init();
                 } else {
                   throw e;
@@ -515,7 +653,10 @@ const MynaReadScreen: React.FC = () => {
             }
             try {
               const basicFourData = await runSequencelet(card, pin);
-              console.log("[READ] runSequencelet basicFourData:", basicFourData);
+              console.log(
+                "[READ] runSequencelet basicFourData:",
+                basicFourData,
+              );
               if (cancelled) return;
               rawBasicRef.current = Array.from(basicFourData);
               setPhaseSafe("COMPLETED");
@@ -567,8 +708,12 @@ const MynaReadScreen: React.FC = () => {
   }, [phase, drawerVisible]);
 
   // Derived UI flags (preserve screen behavior without changing styles)
-  const reading = phase === "INITIALIZING" || phase === "ACQUIRING_DEVICE" || phase === "WAITING_FOR_CARD";
-  const deviceAcquiring = phase === "INITIALIZING" || phase === "ACQUIRING_DEVICE";
+  const reading =
+    phase === "INITIALIZING" ||
+    phase === "ACQUIRING_DEVICE" ||
+    phase === "WAITING_FOR_CARD";
+  const deviceAcquiring =
+    phase === "INITIALIZING" || phase === "ACQUIRING_DEVICE";
   const cardReading = phase === "STARTING_SESSION" || phase === "READING";
   const sequenceDone = phase === "COMPLETED";
 

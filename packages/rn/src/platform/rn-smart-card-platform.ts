@@ -170,11 +170,13 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       'PLATFORM_INITIALIZED',
       'PLATFORM_RELEASED',
       'NFC_STATE_CHANGED',
+      'DEVICE_ACQUIRED',
+      'READER_MODE_ENABLED',
+      'READER_MODE_DISABLED',
     ]);
 
     // Include DEVICE_ACQUIRED so device can observe acquisition lifecycle
     const deviceEvents = new Set<PlatformEventType>([
-      'DEVICE_ACQUIRED',
       'DEVICE_RELEASED',
       'CARD_FOUND',
       'CARD_LOST',
@@ -280,8 +282,6 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       return;
     }
 
-    this.hybridObject.onStatusUpdate(void 0);
-
     this.state.setReleasing(true);
 
     try {
@@ -295,6 +295,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
       // Release platform
       await this.hybridObject.releasePlatform();
+      this.hybridObject.onStatusUpdate(void 0);
       this.initialized = false;
     } catch (error) {
       throw mapNitroError(error);

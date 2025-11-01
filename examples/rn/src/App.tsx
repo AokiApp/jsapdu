@@ -6,7 +6,6 @@ import { createStaticNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MenuScreen from "./Menu";
 import NfcTestScreen from "./NfcTest";
-import MynaTestScreen from "./MynaTest";
 import MynaPinScreen from "./screens/MynaPinScreen";
 import MynaReadScreen from "./screens/MynaReadScreen";
 import MynaShowScreen from "./screens/MynaShowScreen";
@@ -16,7 +15,6 @@ import type { BasicFourInfo } from "./types/myna";
 export type RootStackParamList = {
   Menu: undefined;
   NfcTest: undefined;
-  MynaTest: undefined;
   MynaPin: undefined;
   MynaRead: { pin: string };
   MynaShow: { info?: BasicFourInfo; raw?: number[] };
@@ -26,7 +24,6 @@ const RootStack = createNativeStackNavigator<RootStackParamList>({
   screens: {
     Menu: MenuScreen,
     NfcTest: NfcTestScreen,
-    MynaTest: MynaTestScreen,
     MynaPin: MynaPinScreen,
     MynaRead: MynaReadScreen,
     MynaShow: MynaShowScreen,
