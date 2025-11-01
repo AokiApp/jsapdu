@@ -7,7 +7,7 @@ import android.se.omapi.Channel
 /**
  * OmapiApduEmulator intercepts SELECT/CHANNEL-management APDUs and translates
  * them into OMAPI session/channel operations, keeping ICardSession API unchanged.
- * Single-channel mode: underlying OMAPI basic channel is reopened on SELECT by AID.
+ * Single-channel mode: underlying OMAPI logical channel is opened on SELECT by AID.
  */
 class OmapiApduEmulator(private val session: Session) {
 
@@ -17,14 +17,15 @@ class OmapiApduEmulator(private val session: Session) {
     private var selectedAid: ByteArray? = null
 
     init {
-        currentChannel = session.openBasicChannel(null, 0x00.toByte())
+        // Switch to Logical channels: do not auto-open; open on first SELECT by AID
+        currentChannel = null
     }
 
     fun reset() {
         try {
             currentChannel?.close()
         } catch (_: Exception) {}
-        currentChannel = session.openBasicChannel(null, 0x00.toByte())
+        currentChannel = null
         selectedAid = null
     }
 
@@ -50,21 +51,20 @@ class OmapiApduEmulator(private val session: Session) {
             isSelectByAid(cmd) -> {
                 val aid = cmd.data ?: ByteArray(0)
                 if (aid.isEmpty()) {
-                    // empty AID: deselect to default
+                    // empty AID: deselect (close current logical channel) and acknowledge
                     selectedAid = null
                     try {
                         currentChannel?.close()
                     } catch (_: Exception) {}
-                    currentChannel = session.openBasicChannel(null, cmd.p2.toByte())
-                    val sr = currentChannel?.selectResponse
-                    return combineResponse(sr)
+                    currentChannel = null
+                    return byteArrayOf(0x90.toByte(), 0x00)
                 } else {
-                    // open basic with AID and P2
+                    // open logical channel with AID
                     try {
                         currentChannel?.close()
                     } catch (_: Exception) {}
                     selectedAid = aid
-                    currentChannel = session.openBasicChannel(aid, cmd.p2.toByte())
+                    currentChannel = session.openLogicalChannel(aid)
                     val ch = currentChannel ?: return byteArrayOf(0x6A.toByte(), 0x82.toByte())
                     if (!ch.isOpen) {
                         return byteArrayOf(0x6A.toByte(), 0x82.toByte())
@@ -93,7 +93,10 @@ class OmapiApduEmulator(private val session: Session) {
             }
             else -> {
                 val ch = currentChannel ?: throw IllegalStateException("Channel not available")
-                val resp = ch.transmit(apdu) ?: throw IllegalStateException("Null response from channel")
+                // Normalize CLA: clear logical channel bits (nibble) and extended indicator (0x40), preserve SM/proprietary bits
+                val normalized = apdu.copyOf()
+                normalized[0] = ((normalized[0].toInt() and 0xB0)).toByte()
+                val resp = ch.transmit(normalized) ?: throw IllegalStateException("Null response from channel")
                 return resp
             }
         }

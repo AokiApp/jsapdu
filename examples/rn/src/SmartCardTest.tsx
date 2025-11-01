@@ -9,7 +9,14 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Modal } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+  Modal,
+} from "react-native";
 import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
@@ -39,14 +46,14 @@ export default function SmartCardTestScreen() {
   const [availableDevices, setAvailableDevices] = useState<DeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [waitingCard, setWaitingCard] = useState(false);
-  const [apduHex, setApduHex] = useState("");
+  const [apduHex, setApduHex] = useState("00A4040009A0000001514352530000");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [lastApduOutput, setLastApduOutput] = useState<string | null>(null);
   const [lastApduError, setLastApduError] = useState<string | null>(null);
 
   const cleanedHex = useMemo(
     () => apduHex.replace(/\s+/g, "").toUpperCase(),
-    [apduHex]
+    [apduHex],
   );
   const apduReady = useMemo(() => {
     return (
@@ -56,12 +63,17 @@ export default function SmartCardTestScreen() {
     );
   }, [cleanedHex]);
 
-  const canInit = useMemo(() => !ui.platformInitialized, [ui.platformInitialized]);
+  const canInit = useMemo(
+    () => !ui.platformInitialized,
+    [ui.platformInitialized],
+  );
   const canReleasePlatform = ui.platformInitialized;
-  const canAcquireDevice = ui.platformInitialized && !ui.deviceAcquired && selectedDeviceId !== null;
+  const canAcquireDevice =
+    ui.platformInitialized && !ui.deviceAcquired && selectedDeviceId !== null;
   const canWaitCard = ui.deviceAcquired && !ui.cardPresent;
   const canReleaseDevice = ui.deviceAcquired;
-  const canStartSession = ui.deviceAcquired && ui.cardPresent && !ui.sessionActive;
+  const canStartSession =
+    ui.deviceAcquired && ui.cardPresent && !ui.sessionActive;
   const canCardOps = ui.sessionActive;
 
   function hexToBytes(hex: string): Uint8Array {
@@ -116,12 +128,12 @@ export default function SmartCardTestScreen() {
   const refreshDeviceList = useCallback(async () => {
     const plat = platformRef.current;
     if (!plat) return;
-    
+
     try {
       const infos = await plat.getDeviceInfo();
       setAvailableDevices(infos);
       console.log(`[Plat] Found ${infos.length} device(s)`);
-      
+
       // Auto-select first device if available
       if (infos.length > 0 && !selectedDeviceId) {
         const first = infos[0];
@@ -147,7 +159,7 @@ export default function SmartCardTestScreen() {
       plat.on("PLATFORM_INITIALIZED", (payload) => {
         console.log("[Plat] PLATFORM_INITIALIZED", payload);
         setUi((prev) => ({ ...prev, platformInitialized: true }));
-      })
+      }),
     );
     platUnsubsRef.current.push(
       plat.on("PLATFORM_RELEASED", (payload) => {
@@ -160,18 +172,18 @@ export default function SmartCardTestScreen() {
         });
         setAvailableDevices([]);
         setSelectedDeviceId(null);
-      })
+      }),
     );
     platUnsubsRef.current.push(
       plat.on("DEVICE_ACQUIRED", (payload) => {
         console.log("[Plat] DEVICE_ACQUIRED", payload);
         setUi((prev) => ({ ...prev, deviceAcquired: true }));
-      })
+      }),
     );
     platUnsubsRef.current.push(
       plat.on("DEBUG_INFO", (payload) => {
         console.debug("[Plat] DEBUG_INFO", payload);
-      })
+      }),
     );
 
     try {
@@ -232,7 +244,7 @@ export default function SmartCardTestScreen() {
   const handleGetDeviceInfo = useCallback(async () => {
     console.log("[UI] Get Device Info pressed");
     await refreshDeviceList();
-    
+
     // Log detailed device info
     availableDevices.forEach((info, idx) => {
       const apduApi = (info as unknown as { apduApi?: string[] }).apduApi;
@@ -274,26 +286,30 @@ export default function SmartCardTestScreen() {
         dev.on("CARD_FOUND", (payload) => {
           console.log("[Dev] CARD_FOUND", payload);
           setUi((prev) => ({ ...prev, cardPresent: true }));
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("CARD_LOST", (payload) => {
           console.warn("[Dev] CARD_LOST", payload);
-          setUi((prev) => ({ ...prev, cardPresent: false, sessionActive: false }));
+          setUi((prev) => ({
+            ...prev,
+            cardPresent: false,
+            sessionActive: false,
+          }));
           cardRef.current = null;
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("CARD_SESSION_STARTED", (payload) => {
           console.log("[Dev] CARD_SESSION_STARTED", payload);
           setUi((prev) => ({ ...prev, sessionActive: true }));
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("CARD_SESSION_RESET", (payload) => {
           console.warn("[Dev] CARD_SESSION_RESET", payload);
           setUi((prev) => ({ ...prev, sessionActive: false }));
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("DEVICE_RELEASED", (payload) => {
@@ -306,18 +322,18 @@ export default function SmartCardTestScreen() {
           }));
           deviceRef.current = null;
           cardRef.current = null;
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("WAIT_TIMEOUT", (payload) => {
           console.warn("[Dev] WAIT_TIMEOUT", payload);
           setWaitingCard(false);
-        })
+        }),
       );
       devUnsubsRef.current.push(
         dev.on("DEBUG_INFO", (payload) => {
           console.debug("[Dev] DEBUG_INFO", payload);
-        })
+        }),
       );
     } catch (error) {
       console.error("[Dev] acquireDevice() failed", error);
@@ -359,19 +375,23 @@ export default function SmartCardTestScreen() {
       cardUnsubsRef.current.push(
         card.on("CARD_LOST", (payload) => {
           console.warn("[Card] CARD_LOST", payload);
-          setUi((prev) => ({ ...prev, cardPresent: false, sessionActive: false }));
+          setUi((prev) => ({
+            ...prev,
+            cardPresent: false,
+            sessionActive: false,
+          }));
           cardRef.current = null;
-        })
+        }),
       );
       cardUnsubsRef.current.push(
         card.on("APDU_SENT", (payload) => {
           console.log("[Card] APDU_SENT", payload);
-        })
+        }),
       );
       cardUnsubsRef.current.push(
         card.on("APDU_FAILED", (payload) => {
           console.error("[Card] APDU_FAILED", payload);
-        })
+        }),
       );
     } catch (error) {
       console.error("[Card] startSession() failed", error);
@@ -404,12 +424,12 @@ export default function SmartCardTestScreen() {
       console.warn("[Card] No active session");
       return;
     }
-   try {
-     await card.reset();
-     console.log("[Card] reset() completed");
-   } catch (error) {
-     console.error("[Card] reset() failed", error);
-   }
+    try {
+      await card.reset();
+      console.log("[Card] reset() completed");
+    } catch (error) {
+      console.error("[Card] reset() failed", error);
+    }
   }, []);
 
   const handleReleaseCard = useCallback(async () => {
@@ -466,7 +486,7 @@ export default function SmartCardTestScreen() {
     try {
       const bytes = hexToBytes(cleanedHex);
       const cmd = CommandApdu.fromUint8Array(
-        bytes as unknown as Uint8Array<ArrayBuffer>
+        bytes as unknown as Uint8Array<ArrayBuffer>,
       );
       const tx = cmd.toHexString();
       console.log("[APDU] TX:", tx);
@@ -492,7 +512,11 @@ export default function SmartCardTestScreen() {
   }, [apduReady, cleanedHex]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
+    >
       <Text style={styles.title}>Smart Card Test</Text>
 
       <View style={styles.section}>
@@ -526,7 +550,9 @@ export default function SmartCardTestScreen() {
         <Text style={styles.sectionTitle}>Device Selection</Text>
         {availableDevices.length === 0 ? (
           <Text style={styles.infoText}>
-            {ui.platformInitialized ? "No devices available" : "Initialize platform first"}
+            {ui.platformInitialized
+              ? "No devices available"
+              : "Initialize platform first"}
           </Text>
         ) : (
           <View>
@@ -540,8 +566,8 @@ export default function SmartCardTestScreen() {
               disabled={ui.deviceAcquired}
             >
               <Text style={styles.selectText}>
-                {availableDevices.find((d) => d.id === selectedDeviceId)?.friendlyName ??
-                  "Select device"}
+                {availableDevices.find((d) => d.id === selectedDeviceId)
+                  ?.friendlyName ?? "Select device"}
               </Text>
               <Text style={styles.selectArrow}>▾</Text>
             </Pressable>
@@ -564,15 +590,20 @@ export default function SmartCardTestScreen() {
                         key={device.id}
                         style={[
                           styles.deviceItem,
-                          selectedDeviceId === device.id && styles.deviceItemSelected,
+                          selectedDeviceId === device.id &&
+                            styles.deviceItemSelected,
                         ]}
                         onPress={() => {
                           setSelectedDeviceId(device.id);
                           setDropdownOpen(false);
                         }}
                       >
-                        <Text style={styles.deviceName}>{device.friendlyName}</Text>
-                        <Text style={styles.deviceDesc}>{device.description}</Text>
+                        <Text style={styles.deviceName}>
+                          {device.friendlyName}
+                        </Text>
+                        <Text style={styles.deviceDesc}>
+                          {device.description}
+                        </Text>
                       </Pressable>
                     ))}
                   </ScrollView>
@@ -638,7 +669,7 @@ export default function SmartCardTestScreen() {
             disabled={!canCardOps}
           />
         </View>
-  
+
         {/* APDU Output moved below APDU input */}
       </View>
 
@@ -665,7 +696,9 @@ export default function SmartCardTestScreen() {
         <Text style={styles.sectionTitle}>APDU Output</Text>
         <View style={styles.outputBox}>
           {lastApduError ? (
-            <Text style={[styles.outputText, styles.outputErr]}>{lastApduError}</Text>
+            <Text style={[styles.outputText, styles.outputErr]}>
+              {lastApduError}
+            </Text>
           ) : lastApduOutput ? (
             <Text style={styles.outputText}>{lastApduOutput}</Text>
           ) : (
@@ -786,7 +819,10 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: "center", alignItems: "center" },
   modalBackdrop: {
     position: "absolute",
-    top: 0, right: 0, bottom: 0, left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: "rgba(0,0,0,0.35)",
   },
   modalCard: {

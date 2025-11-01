@@ -145,13 +145,11 @@ class OmapiCardSession(
     }
     
     override fun isCardPresent(): Boolean {
-        try {
-            // Check if session and current underlying channel are still valid
-            val closed = session.isClosed
-            val chOpen = (emulator?.currentChannel?.isOpen == true)
-            return !closed && chOpen
+        return try {
+            // With lazy-open logical channel, presence equals an active (not closed) Session
+            !session.isClosed
         } catch (_: Exception) {
-            return false
+            false
         }
     }
 
