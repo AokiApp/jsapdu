@@ -4,6 +4,8 @@ import com.margelo.nitro.core.ArrayBuffer
 import com.margelo.nitro.aokiapp.jsapdurn.DeviceInfo
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
 import app.aoki.jsapdu.rn.utils.ArrayBufferUtils
+import app.aoki.jsapdu.rn.core.IDevice
+import app.aoki.jsapdu.rn.core.ICardSession
 
 object FfiImpl {
     @Volatile private var smartCardPlatform: SmartCardPlatform? = null
@@ -49,44 +51,44 @@ object FfiImpl {
 
     fun isDeviceAvailable(deviceHandle: String): Boolean {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.isAvailable()
     }
 
     fun isCardPresent(deviceHandle: String): Boolean {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.isCardPresent()
     }
 
     fun waitForCardPresence(deviceHandle: String, timeout: Double): Unit {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         device.waitForCardPresence(timeout)
     }
 
     fun startSession(deviceHandle: String): String {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         return device.startSession()
     }
 
     fun releaseDevice(deviceHandle: String): Unit {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
         device.release()
     }
 
     fun getAtr(deviceHandle: String, cardHandle: String): ArrayBuffer {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        val card = device.getTarget(cardHandle)
+        val card: ICardSession = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
         val atr: ByteArray = card.getAtr()
         return ArrayBufferUtils.fromByteArray(atr)
@@ -94,9 +96,9 @@ object FfiImpl {
 
     fun transmit(deviceHandle: String, cardHandle: String, apdu: ArrayBuffer): ArrayBuffer {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        val card = device.getTarget(cardHandle)
+        val card: ICardSession = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
         val apduBytes: ByteArray = ArrayBufferUtils.copyToByteArray(apdu)
         val response: ByteArray = card.transmit(apduBytes)
@@ -105,18 +107,18 @@ object FfiImpl {
 
     fun reset(deviceHandle: String, cardHandle: String): Unit {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        val card = device.getTarget(cardHandle)
+        val card: ICardSession = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
         card.reset()
     }
 
     fun releaseCard(deviceHandle: String, cardHandle: String): Unit {
         val platform = ensureInitialized()
-        val device = platform.getTarget(deviceHandle)
+        val device: IDevice = platform.getTarget(deviceHandle)
             ?: throw IllegalArgumentException("INVALID_DEVICE_HANDLE: No such device '$deviceHandle'")
-        val card = device.getTarget(cardHandle)
+        val card: ICardSession = device.getTarget(cardHandle)
             ?: throw IllegalArgumentException("INVALID_CARD_HANDLE: No such card '$cardHandle'")
         card.release()
     }

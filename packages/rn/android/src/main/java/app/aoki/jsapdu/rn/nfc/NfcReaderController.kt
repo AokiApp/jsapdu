@@ -1,4 +1,4 @@
-package app.aoki.jsapdu.rn.platform
+package app.aoki.jsapdu.rn.nfc
 
 import android.app.Activity
 import android.nfc.NfcAdapter
