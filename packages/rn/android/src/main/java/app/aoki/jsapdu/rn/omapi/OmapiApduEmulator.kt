@@ -92,12 +92,29 @@ class OmapiApduEmulator(private val session: Session) {
                 return byteArrayOf(0x90.toByte(), 0x00)
             }
             else -> {
-                val ch = currentChannel ?: throw IllegalStateException("Channel not available")
+                val ch = currentChannel ?: throw IllegalStateException("Channel not available - no logical channel opened. Send SELECT by AID first.")
+                
+                // Check if channel is still open
+                if (!ch.isOpen) {
+                    currentChannel = null
+                    throw IllegalStateException("Channel not available - logical channel was closed. Send SELECT by AID to reopen.")
+                }
+                
                 // Normalize CLA: clear logical channel bits (nibble) and extended indicator (0x40), preserve SM/proprietary bits
                 val normalized = apdu.copyOf()
                 normalized[0] = ((normalized[0].toInt() and 0xB0)).toByte()
-                val resp = ch.transmit(normalized) ?: throw IllegalStateException("Null response from channel")
-                return resp
+                
+                try {
+                    val resp = ch.transmit(normalized) ?: throw IllegalStateException("Null response from channel")
+                    return resp
+                } catch (e: Exception) {
+                    // Channel may have been closed by the secure element
+                    if (!ch.isOpen) {
+                        currentChannel = null
+                        throw IllegalStateException("Channel closed during transmit: ${e.message}")
+                    }
+                    throw e
+                }
             }
         }
     }
