@@ -451,6 +451,7 @@ function Key({
   }, [vibrate, onPress, suppressPressIn]);
 
   const handleLongPress = useCallback(() => {
+    vibrate();
     if (onLongPressAction) {
       longPressTriggeredRef.current = true;
       onLongPressAction();
@@ -462,7 +463,7 @@ function Key({
     intervalRef.current = setInterval(() => {
       onPressRef.current();
     }, 60);
-  }, [repeatable, onLongPressAction]);
+  }, [repeatable, onLongPressAction, vibrate]);
 
   const handlePressOut = useCallback(() => {
     if (intervalRef.current) {
@@ -486,7 +487,7 @@ function Key({
     <Pressable
       onPressIn={handlePressIn}
       onLongPress={handleLongPress}
-      delayLongPress={350}
+      delayLongPress={700}
       onPressOut={handlePressOut}
       onPress={handlePress}
       style={({ pressed }) => [
