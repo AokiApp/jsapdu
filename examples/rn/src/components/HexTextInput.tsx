@@ -24,6 +24,7 @@ import type {
   NativeSyntheticEvent,
   TextInputFocusEvent,
 } from "react-native";
+import Clipboard from "@react-native-clipboard/clipboard";
 
 export type HexTextInputProps = {
   value: string;
@@ -190,11 +191,36 @@ export default function HexTextInput(props: HexTextInputProps) {
   const moveLeft = useCallback(() => {
     setCursor((c) => Math.max(0, c - 1));
   }, []);
-
   const moveRight = useCallback(() => {
     const len = sanitize(hex).length;
     setCursor((c) => Math.min(len, c + 1));
   }, [hex]);
+
+  // Copy entire HEX on long press of 'C'
+  const copyAllHex = useCallback(() => {
+    const clean = sanitize(hex);
+    // Copy even if empty to reflect current state; provide subtle haptic feedback
+    Clipboard.setString(clean);
+    Vibration.vibrate(8);
+  }, [hex]);
+
+  // Paste HEX from clipboard on long press of '7'
+  const pasteHexFromClipboard = useCallback(async () => {
+    try {
+      const txt = await Clipboard.getString();
+      const stripped = (txt || "").replace(/\s+/g, "").trim();
+      if (!stripped || !/^[0-9a-fA-F]+$/.test(stripped)) {
+        // Gently reject: non-blocking haptic only
+        Vibration.vibrate(15);
+        return;
+      }
+      const next = stripped.toUpperCase();
+      onChangeText?.(next);
+      setCursor(next.length);
+    } catch {
+      Vibration.vibrate(15);
+    }
+  }, [onChangeText]);
 
   const keys = [
     "C",
@@ -342,6 +368,18 @@ export default function HexTextInput(props: HexTextInputProps) {
                           ? "cursor"
                           : "control"
                   }
+                  // Indicate copy/paste capability and wire long-press actions
+                  suppressPressIn={k === "C" || k === "7"}
+                  onLongPressAction={
+                    k === "C"
+                      ? copyAllHex
+                      : k === "7"
+                        ? pasteHexFromClipboard
+                        : undefined
+                  }
+                  cornerIcon={
+                    k === "C" ? "copy" : k === "7" ? "paste" : undefined
+                  }
                 />
               ))}
             </View>
@@ -358,12 +396,18 @@ function Key({
   variant,
   repeatable,
   haptic = true,
+  onLongPressAction,
+  suppressPressIn = false,
+  cornerIcon,
 }: {
   label: string;
   onPress: () => void;
   variant?: "digit" | "control" | "alphabet" | "cursor";
   repeatable?: boolean;
   haptic?: boolean;
+  onLongPressAction?: () => void;
+  suppressPressIn?: boolean;
+  cornerIcon?: "copy" | "paste";
 }) {
   const map: Record<string, ViewStyle> = {
     digit: styles.keyDigit,
@@ -386,6 +430,7 @@ function Key({
   const v = variant || "digit";
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longPressTriggeredRef = useRef(false);
   // keep a ref to the latest onPress so the repeating interval always calls current handler
   const onPressRef = useRef(onPress);
   useEffect(() => {
@@ -400,17 +445,24 @@ function Key({
 
   const handlePressIn = useCallback(() => {
     vibrate();
-    onPress();
-  }, [vibrate, onPress]);
+    if (!suppressPressIn) {
+      onPress();
+    }
+  }, [vibrate, onPress, suppressPressIn]);
 
   const handleLongPress = useCallback(() => {
+    if (onLongPressAction) {
+      longPressTriggeredRef.current = true;
+      onLongPressAction();
+      return;
+    }
     if (!repeatable || intervalRef.current) return;
     // call once immediately, then start interval which uses latest handler via ref
     onPressRef.current();
     intervalRef.current = setInterval(() => {
       onPressRef.current();
     }, 60);
-  }, [repeatable]);
+  }, [repeatable, onLongPressAction]);
 
   const handlePressOut = useCallback(() => {
     if (intervalRef.current) {
@@ -419,12 +471,24 @@ function Key({
     }
   }, []);
 
+  const handlePress = useCallback(() => {
+    // prevent accidental character insertion on long-press
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    if (suppressPressIn) {
+      onPressRef.current();
+    }
+  }, [suppressPressIn]);
+
   return (
     <Pressable
       onPressIn={handlePressIn}
       onLongPress={handleLongPress}
       delayLongPress={350}
       onPressOut={handlePressOut}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.key,
         map[v],
@@ -432,6 +496,13 @@ function Key({
         pressed ? pressedMap[v] : null,
       ]}
     >
+      {cornerIcon ? (
+        <View style={styles.keyIconWrap}>
+          <Text style={styles.keyIconText}>
+            {cornerIcon === "copy" ? "⎘" : "📋"}
+          </Text>
+        </View>
+      ) : null}
       <Text style={[styles.keyText, txtMap[v]]}>{label}</Text>
     </Pressable>
   );
@@ -499,4 +570,6 @@ const styles = StyleSheet.create({
   keyPressedAlphabet: { backgroundColor: "#454854" },
   keyPressedControl: { backgroundColor: "#6085f0" },
   keyPressedCursor: { backgroundColor: "#2a2933" },
+  keyIconWrap: { position: "absolute", left: 6, top: 6 },
+  keyIconText: { fontSize: 16, color: "#c7caccff" },
 });

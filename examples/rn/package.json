@@ -16,6 +16,7 @@
     "@aokiapp/jsapdu-interface": "*",
     "@babel/runtime": "^7.28.4",
     "@bacons/text-decoder": "^0.0.0",
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-navigation/native-stack": "^7.6.1",
     "react": "19.1.0",
     "react-native": "0.81.1",
