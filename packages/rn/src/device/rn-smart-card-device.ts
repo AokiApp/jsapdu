@@ -299,8 +299,8 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     this.state.setWaiting(true);
 
     try {
-      // Native expects seconds (Double). Convert milliseconds to seconds if needed.
-      const seconds = timeout >= 1000 ? timeout / 1000 : timeout;
+      // Native expects seconds (Double). Convert milliseconds to seconds for all values.
+      const seconds = timeout / 1000;
       await this.getHybrid().waitForCardPresence(this.deviceHandle, seconds);
     } catch (error) {
       throw mapNitroError(error);
@@ -393,9 +393,14 @@ export class RnSmartCardDevice extends SmartCardDevice<{
         try {
           await this.activeCard.release();
         } catch (error) {
-          throw mapNitroError(error);
+          const mappedError =
+            error instanceof SmartCardError ? error : mapNitroError(error);
+          console.warn(
+            `[RnSmartCardDevice] Failed to release active card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
+          );
+        } finally {
+          this.deleteActiveCard();
         }
-        this.deleteActiveCard();
       }
 
       // Release device (deactivates ReaderMode / RF)

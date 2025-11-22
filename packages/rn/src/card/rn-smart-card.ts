@@ -88,6 +88,7 @@ export class RnSmartCard extends SmartCard<{
         });
     };
     ee.on('CARD_LOST', onDisposed);
+    ee.on('CARD_SESSION_RESET', onDisposed);
   }
 
   /**
@@ -320,21 +321,43 @@ export class RnSmartCard extends SmartCard<{
       return; // Idempotent: already released
     }
 
+    const device = this.parentDevice as RnSmartCardDevice;
+    const deviceHandle = this.deviceHandle;
+    const cardHandle = this.cardHandle;
+    let shouldFinalizeLocally = false;
+
     try {
-      await this.getHybrid().releaseCard(this.deviceHandle, this.cardHandle);
-
-      // Inform parent device to detach references to this card
-      const device = this.parentDevice as RnSmartCardDevice;
-      device.onCardReleased(this.cardHandle);
-
-      // Sever internal references so this object becomes GC-eligible and inert
-      // No-op: emitter listeners will be GC'ed with this instance
-
-      this.cardHandle = '';
-      this.deviceHandle = '';
-      // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
+      await this.getHybrid().releaseCard(deviceHandle, cardHandle);
+      shouldFinalizeLocally = true;
     } catch (error) {
-      throw mapNitroError(error);
+      const mappedError = mapNitroError(error);
+      if (this.isBenignReleaseError(mappedError)) {
+        shouldFinalizeLocally = true;
+      } else {
+        throw mappedError;
+      }
+    } finally {
+      if (shouldFinalizeLocally) {
+        device.onCardReleased(cardHandle);
+
+        // Sever internal references so this object becomes GC-eligible and inert
+        // No-op: emitter listeners will be GC'ed with this instance
+
+        this.cardHandle = '';
+        this.deviceHandle = '';
+        // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
+      }
     }
+  }
+
+  private isBenignReleaseError(error: SmartCardError): boolean {
+    const message = error.message.toLowerCase();
+    return (
+      error.code === 'CARD_NOT_PRESENT' ||
+      error.code === 'NOT_INITIALIZED' ||
+      message.includes('invalid_card_handle') ||
+      message.includes('invalid card handle') ||
+      message.includes('already released')
+    );
   }
 }
