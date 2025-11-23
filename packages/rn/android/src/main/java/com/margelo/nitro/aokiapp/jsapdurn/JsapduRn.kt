@@ -8,9 +8,9 @@ import app.aoki.jsapdu.rn.FfiImpl
 @DoNotStrip
 class JsapduRn : HybridJsapduRnSpec() {
 
-  override fun initPlatform(): Promise<Unit> = Promise.async { FfiImpl.initPlatform() }
+  override fun initPlatform(force: Boolean?): Promise<Unit> = Promise.async { FfiImpl.initPlatform(force ?: false) }
 
-  override fun releasePlatform(): Promise<Unit> = Promise.async { FfiImpl.releasePlatform() }
+  override fun releasePlatform(force: Boolean?): Promise<Unit> = Promise.async { FfiImpl.releasePlatform(force ?: false) }
 
   override fun getDeviceInfo(): Promise<Array<DeviceInfo>> = Promise.async { FfiImpl.getDeviceInfo() }
 

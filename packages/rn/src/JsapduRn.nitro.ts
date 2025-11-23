@@ -50,19 +50,21 @@ export interface JsapduRn
 
   /**
    * Initialize the NFC platform
-   * Precondition: Platform not initialized
+   * Precondition: Platform not initialized (ignored when force=true)
    * Postcondition: Platform initialized, ReaderMode preparation complete
+   * @param force Optional flag to ignore initialization status (idempotent)
    * @throws SmartCardError with code "ALREADY_INITIALIZED" | "PLATFORM_ERROR"
    */
-  initPlatform(): Promise<void>;
+  initPlatform(force?: boolean): Promise<void>;
 
   /**
    * Release the NFC platform and all acquired devices
-   * Precondition: Platform initialized
+   * Precondition: Platform initialized (ignored when force=true)
    * Postcondition: All devices released, platform uninitialized
+   * @param force Optional flag to ignore initialization status (idempotent)
    * @throws SmartCardError with code "NOT_INITIALIZED" | "PLATFORM_ERROR"
    */
-  releasePlatform(): Promise<void>;
+  releasePlatform(force?: boolean): Promise<void>;
 
   /**
    * Get available NFC device information

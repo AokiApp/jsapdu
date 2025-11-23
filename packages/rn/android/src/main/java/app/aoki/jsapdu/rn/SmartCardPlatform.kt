@@ -46,29 +46,29 @@ class SmartCardPlatform {
         appContext = ctx
     }
 
-    fun initialize() = runBlocking {
+    fun initialize(force: Boolean = false) = runBlocking {
         platformMutex.withLock {
-            if (initialized) {
+            if (!force && initialized) {
                 throw IllegalStateException("ALREADY_INITIALIZED: Platform already initialized")
             }
             
-            initializeNfc()
-            initializeOmapi()
+            initializeNfc(force)
+            initializeOmapi(force)
             
             initialized = true
             emitPlatformInitialized()
         }
     }
 
-    fun release() = runBlocking {
+    fun release(force: Boolean = false) = runBlocking {
         platformMutex.withLock {
-            if (!initialized) {
+            if (!force && !initialized) {
                 throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
             }
             initialized = false
             
-            releaseNfc()
-            releaseOmapi()
+            releaseNfc(force)
+            releaseOmapi(force)
         }
         
         // Release all devices outside lock to avoid nested locking
@@ -135,13 +135,13 @@ class SmartCardPlatform {
 
     // ---- Private subsystem initialization ------------------------------------------------
 
-    private fun initializeNfc() {
+    private fun initializeNfc(force: Boolean) {
         nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
         // NFC is optional, platform can initialize without it
         
     }
 
-    private fun initializeOmapi() {
+    private fun initializeOmapi(force: Boolean) {
         val serviceLatch = CountDownLatch(1)
         // SEService constructor requires an Executor and OnConnectedListener on newer platforms.
         val seExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -159,11 +159,11 @@ class SmartCardPlatform {
         }
     }
 
-    private fun releaseNfc() {
+    private fun releaseNfc(force: Boolean) {
         nfcAdapter = null
     }
 
-    private fun releaseOmapi() {
+    private fun releaseOmapi(force: Boolean) {
         try {
             seService?.shutdown()
         } catch (_: Exception) { /* ignore */ }

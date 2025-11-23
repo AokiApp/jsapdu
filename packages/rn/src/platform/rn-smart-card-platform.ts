@@ -13,7 +13,6 @@ import { PlatformState } from './platform-state';
 import type { EventPayload } from '../JsapduRn.nitro';
 import type { DeviceEventType } from '../device/rn-smart-card-device';
 import type { CardEventType } from '../card/rn-smart-card';
-import { createDeferred } from '../utils/deferred';
 import type { Deferred } from '../utils/deferred';
 
 /**
@@ -129,13 +128,18 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    *
    * @see {@link https://developer.android.com/reference/android/nfc/NfcAdapter#enableReaderMode | Android ReaderMode}
    */
-  public async init(): Promise<void> {
-    this.assertNotInitialized();
-
+  public async init(force: boolean = false): Promise<void> {
+    if (!force) {
+      this.assertNotInitialized();
+    }
     try {
       // Register status callback before initialization to capture early events
       this.hybridObject.onStatusUpdate(this.statusUpdateHandler.bind(this));
-      await this.hybridObject.initPlatform();
+      if (force) {
+        await this.hybridObject.initPlatform(true);
+      } else {
+        await this.hybridObject.initPlatform();
+      }
       this.initialized = true;
     } catch (error) {
       throw mapNitroError(error);
@@ -263,8 +267,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    * This method is idempotent for device release errors.
    * Device release failures are suppressed to ensure platform cleanup.
    */
-  public async release(): Promise<void> {
-    this.assertInitialized();
+  public async release(force: boolean = false): Promise<void> {
+    if (!force) {
+      this.assertInitialized();
+    }
 
     // Prevent concurrent release calls
     if (this.state.isReleasing) {
@@ -283,7 +289,11 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       this.acquiredDevices.clear();
 
       // Release platform
-      await this.hybridObject.releasePlatform();
+      if (force) {
+        await this.hybridObject.releasePlatform(true);
+      } else {
+        await this.hybridObject.releasePlatform();
+      }
       this.hybridObject.onStatusUpdate(void 0);
       this.initialized = false;
     } catch (error) {

@@ -35,13 +35,13 @@ export abstract class SmartCardPlatform<
    * Initialize the platform
    * @throws {SmartCardError} If initialization fails or platform is already initialized
    */
-  public abstract init(): Promise<void>;
+  public abstract init(force?: boolean): Promise<void>;
 
   /**
    * Release the platform and all acquired devices
    * @throws {SmartCardError} If release fails or platform is not initialized
    */
-  public abstract release(): Promise<void>;
+  public abstract release(force?: boolean): Promise<void>;
 
   /**
    * Get whether the platform is initialized or not

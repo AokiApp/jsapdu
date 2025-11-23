@@ -16,6 +16,7 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
+  Switch,
 } from "react-native";
 import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
@@ -50,6 +51,7 @@ export default function SmartCardTestScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [lastApduOutput, setLastApduOutput] = useState<string | null>(null);
   const [lastApduError, setLastApduError] = useState<string | null>(null);
+  const [force, setForce] = useState(false);
 
   const cleanedHex = useMemo(
     () => apduHex.replace(/\s+/g, "").toUpperCase(),
@@ -67,7 +69,7 @@ export default function SmartCardTestScreen() {
     () => !ui.platformInitialized,
     [ui.platformInitialized],
   );
-  const canReleasePlatform = ui.platformInitialized;
+  const canReleasePlatform = ui.platformInitialized || force;
   const canAcquireDevice =
     ui.platformInitialized && !ui.deviceAcquired && selectedDeviceId !== null;
   const canWaitCard = ui.deviceAcquired && !ui.cardPresent;
@@ -187,14 +189,14 @@ export default function SmartCardTestScreen() {
     );
 
     try {
-      await plat.init();
+      await plat.init(force);
       console.log("[Plat] init() completed");
       // Auto-refresh device list after initialization
       await refreshDeviceList();
     } catch (error) {
       console.error("[Plat] init() failed", error);
     }
-  }, [clearPlatformListeners, refreshDeviceList]);
+  }, [clearPlatformListeners, refreshDeviceList, force]);
 
   const handleReleasePlatform = useCallback(async () => {
     console.log("[UI] Release Platform pressed");
@@ -222,7 +224,7 @@ export default function SmartCardTestScreen() {
         deviceRef.current = null;
       }
 
-      await plat.release();
+      await plat.release(force);
       clearPlatformListeners();
       clearDeviceListeners();
       clearCardListeners();
@@ -239,7 +241,7 @@ export default function SmartCardTestScreen() {
     } catch (error) {
       console.error("[Plat] release() failed", error);
     }
-  }, [clearPlatformListeners, clearDeviceListeners, clearCardListeners]);
+  }, [clearPlatformListeners, clearDeviceListeners, clearCardListeners, force]);
 
   const handleGetDeviceInfo = useCallback(async () => {
     console.log("[UI] Get Device Info pressed");
@@ -522,6 +524,10 @@ export default function SmartCardTestScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Platform</Text>
         <View style={styles.row}>
+          <Text style={styles.checkboxLabel}>Force</Text>
+          <Switch value={force} onValueChange={setForce} />
+        </View>
+        <View style={styles.row}>
           <Button
             label="Initialize"
             onPress={() => {
@@ -767,6 +773,7 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { backgroundColor: "#9bbfe9" },
   btnText: { color: "#fff", fontWeight: "700" },
+  checkboxLabel: { fontSize: 14, fontWeight: "600", alignSelf: "center" },
   infoText: { fontSize: 14, color: "#666", fontStyle: "italic" },
   deviceList: { gap: 8 },
   deviceItem: {
