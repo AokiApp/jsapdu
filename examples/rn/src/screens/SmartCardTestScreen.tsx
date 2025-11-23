@@ -26,7 +26,7 @@ import {
 } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
-import HexTextInput from "../components/HexTextInput";
+import HexTextInput from "../components/HexTextInput/HexTextInput";
 
 export default function SmartCardTestScreen() {
   const platformRef = useRef<RnSmartCardPlatform | null>(null);
