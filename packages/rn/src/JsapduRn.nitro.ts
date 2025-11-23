@@ -3,12 +3,12 @@ import type { HybridObject } from 'react-native-nitro-modules';
 /**
  * Device-to-Card protocol types
  */
-export type D2CProtocol = 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
+type D2CProtocol = 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
 
 /**
  * Platform-to-Device protocol types
  */
-export type P2DProtocol = 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
+type P2DProtocol = 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
 
 /**
  * Device information structure for NFC devices
@@ -25,6 +25,35 @@ export interface DeviceInfo {
   d2cProtocol: D2CProtocol;
   p2dProtocol: P2DProtocol;
   apduApi: string[];
+  /**
+   * Contactless antenna information if provided by the platform
+   */
+  antennaInfo?: NfcAntennaInfo;
+}
+
+interface NfcAntennaInfo {
+  deviceSize: NfcDeviceSize;
+  antennas: NfcAntenna[];
+  formFactor: NfcFormFactor;
+}
+
+interface NfcDeviceSize {
+  width: number; // in millimeters
+  height: number; // in millimeters
+}
+
+interface NfcAntenna {
+  centerX: number; // in millimeters
+  centerY: number; // in millimeters
+  radius?: number; // in millimeters
+}
+
+enum NfcFormFactor {
+  Bifold = 0,
+  Trifold = 1,
+  Phone = 2,
+  Tablet = 3,
+  None = 4,
 }
 
 /**
@@ -155,7 +184,11 @@ export interface JsapduRn
    * @returns Response with data and status words (SW1, SW2)
    * @throws SmartCardError with code "INVALID_PARAMETER" | "PLATFORM_ERROR" | "PROTOCOL_ERROR"
    */
-  transmit(deviceHandle: string, cardHandle: string, apdu: ArrayBuffer): Promise<ArrayBuffer>;
+  transmit(
+    deviceHandle: string,
+    cardHandle: string,
+    apdu: ArrayBuffer
+  ): Promise<ArrayBuffer>;
 
   /**
    * Reset card (re-establish ISO-DEP session)

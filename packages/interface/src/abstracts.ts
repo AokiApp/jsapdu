@@ -197,6 +197,10 @@ export abstract class SmartCardDeviceInfo {
    * Supports nested protocol (e.g. BLE over WebUSB)
    */
   public abstract readonly apduApi: ApduApi[];
+  /**
+   * Contactless antenna information if provided by the platform
+   */
+  public abstract readonly antennaInfo?: NfcAntennaInfo;
 }
 
 /**
@@ -211,6 +215,22 @@ export abstract class SmartCardDeviceInfo {
  * @example "webusb" (WebUSB)
  */
 type ApduApi = string;
+
+/**
+ * NFC antenna information (platform-agnostic)
+ */
+export interface NfcAntennaInfo {
+  deviceSize: {
+    width: number; // in millimeters
+    height: number; // in millimeters
+  };
+  antennas: Array<{
+    centerX: number; // in millimeters
+    centerY: number; // in millimeters
+    radius?: number; // in millimeters
+  }>;
+  formFactor: "bifold" | "trifold" | "phone" | "tablet" | null;
+}
 
 /**
  * SmartCard Device

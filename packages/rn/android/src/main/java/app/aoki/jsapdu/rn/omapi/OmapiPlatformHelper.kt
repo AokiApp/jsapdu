@@ -39,7 +39,8 @@ object OmapiPlatformHelper {
                     isRemovableDevice = deviceType == "SIM",
                     d2cProtocol = D2CProtocol.NFC,
                     p2dProtocol = P2DProtocol.NFC,
-                    apduApi = arrayOf("omapi", "androidse")
+                    apduApi = arrayOf("omapi", "androidse"),
+                    antennaInfo = null
                 )
             }
         } catch (_: Exception) {

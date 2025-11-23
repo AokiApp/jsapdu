@@ -1,4 +1,7 @@
-import { SmartCardDeviceInfo } from '@aokiapp/jsapdu-interface';
+import {
+  SmartCardDeviceInfo,
+  type NfcAntennaInfo,
+} from '@aokiapp/jsapdu-interface';
 import type { DeviceInfo } from '../JsapduRn.nitro';
 
 /**
@@ -106,6 +109,8 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
     | 'other'
     | 'unknown';
 
+  public readonly antennaInfo?: NfcAntennaInfo;
+
   /**
    * Construct device info from native layer data
    * @param info - Device information from native layer
@@ -123,5 +128,25 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
     this.d2cProtocol = info.d2cProtocol;
     this.p2dProtocol = info.p2dProtocol;
     this.apduApi = info.apduApi;
+    if (info.antennaInfo) {
+      this.antennaInfo = {
+        deviceSize: info.antennaInfo.deviceSize,
+        antennas: info.antennaInfo.antennas,
+        formFactor: (() => {
+          switch (info.antennaInfo!.formFactor) {
+            case 0:
+              return 'bifold';
+            case 1:
+              return 'trifold';
+            case 2:
+              return 'phone';
+            case 3:
+              return 'tablet';
+            default:
+              return null;
+          }
+        })(),
+      };
+    }
   }
 }
