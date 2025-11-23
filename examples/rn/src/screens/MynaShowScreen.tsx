@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -115,7 +114,7 @@ const MynaShowScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>読み取り結果</Text>
@@ -184,7 +183,7 @@ const MynaShowScreen: React.FC = () => {
           <Text style={styles.buttonText}>最初に戻る</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

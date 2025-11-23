@@ -10,7 +10,6 @@
 
 /* React 19 automatic JSX runtime: default import not required */
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
@@ -57,10 +56,11 @@ const ITEMS: MenuItem[] = [
 ];
 
 export default function MenuScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -98,7 +98,7 @@ export default function MenuScreen() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

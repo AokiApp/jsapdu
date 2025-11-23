@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -34,7 +33,7 @@ const MynaPinScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.content}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -62,7 +61,7 @@ const MynaPinScreen: React.FC = () => {
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -6,7 +6,6 @@ import React, {
   useState,
 } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -877,7 +876,7 @@ const MynaReadScreen: React.FC = () => {
   const sequenceDone = phase === "COMPLETED";
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>読取ステップ</Text>
         <Text style={styles.description}>
@@ -959,7 +958,7 @@ const MynaReadScreen: React.FC = () => {
           </Animated.View>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
