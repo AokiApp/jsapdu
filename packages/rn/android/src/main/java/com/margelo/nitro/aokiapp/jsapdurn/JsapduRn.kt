@@ -11,6 +11,8 @@ class JsapduRn : HybridJsapduRnSpec() {
   override fun initPlatform(force: Boolean?): Promise<Unit> = Promise.async { FfiImpl.initPlatform(force ?: false) }
 
   override fun releasePlatform(force: Boolean?): Promise<Unit> = Promise.async { FfiImpl.releasePlatform(force ?: false) }
+  
+  override fun isPlatformInitialized(): Promise<Boolean> = Promise.async { FfiImpl.isPlatformInitialized() }
 
   override fun getDeviceInfo(): Promise<Array<DeviceInfo>> = Promise.async { FfiImpl.getDeviceInfo() }
 

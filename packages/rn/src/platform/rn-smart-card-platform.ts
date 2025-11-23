@@ -97,6 +97,19 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   public getEventEmitter() {
     return this.eventEmitter;
   }
+  /**
+   * Probe native platform initialization state without throwing.
+   * Returns the Kotlin-side initialized flag when available, otherwise falls back
+   * to the wrapper's local state for backward compatibility.
+   */
+  public async isPlatformInitialized(): Promise<boolean> {
+    try {
+      return await this.hybridObject.isPlatformInitialized();
+    } catch {
+      // Older native builds may not yet expose the method; use local state
+      return this.initialized === true;
+    }
+  }
 
   /**
    * Two-hop device lookup by deviceHandle

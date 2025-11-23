@@ -96,6 +96,11 @@ export interface JsapduRn
   releasePlatform(force?: boolean): Promise<void>;
 
   /**
+   * Check if the platform is initialized (non-throwing probe)
+   * @returns true if the platform is initialized, false otherwise
+   */
+  isPlatformInitialized(): Promise<boolean>;
+  /**
    * Get available NFC device information
    * Precondition: Platform initialized
    * @returns Array of device info (0 or 1 for integrated NFC, 0 for non-NFC devices)

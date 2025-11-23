@@ -18,6 +18,17 @@ object FfiImpl {
         }
         return platform
     }
+    /**
+     * Returns whether the SmartCardPlatform is initialized.
+     * - true when an instance exists and reports initialized
+     * - false when no instance exists or it is not initialized
+     *
+     * Safe to call from Kotlin at any time.
+     */
+    fun isPlatformInitialized(): Boolean {
+        val platform = smartCardPlatform
+        return platform?.isInitialized() == true
+    }
 
     fun initPlatform(force: Boolean = false): Unit {
         var bypassedOnly = false
