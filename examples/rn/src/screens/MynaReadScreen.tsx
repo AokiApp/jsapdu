@@ -87,7 +87,7 @@ type Phase =
   | "COMPLETED";
 
 // Flow constants (no UI style changes)
-const WAIT_CARD_SECONDS = 20;
+const WAIT_CARD_SECONDS = 20000;
 const GLOW_DURATION_MS = 700;
 
 const stringifyError = (e: unknown): string => {
