@@ -4,10 +4,10 @@
 
 import { createStaticNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import MenuScreen from "./Menu";
+import MenuScreen from "./screens/MenuScreen";
 // Keep both the original NFC test screen and the new SmartCardTest screen
-import NfcTestScreen from "./NfcTest";
-import SmartCardTestScreen from "./SmartCardTest";
+import NfcTestScreen from "./screens/NfcTestScreen";
+import SmartCardTestScreen from "./screens/SmartCardTestScreen";
 import MynaPinScreen from "./screens/MynaPinScreen";
 import MynaReadScreen from "./screens/MynaReadScreen";
 import MynaShowScreen from "./screens/MynaShowScreen";

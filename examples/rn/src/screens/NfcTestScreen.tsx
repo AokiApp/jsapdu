@@ -1,4 +1,3 @@
-// @eslint-disable react-hooks/exhaustive-deps
 /**
  * NFC Test Screen
  *
@@ -9,12 +8,14 @@
  * It only has control buttons or Hex input field.
  */
 
+// @eslint-disable react-hooks/exhaustive-deps
+
 import { useCallback, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
-import HexTextInput from "./components/HexTextInput";
+import HexTextInput from "../components/HexTextInput";
 
 export default function NfcTestScreen() {
   const platformRef = useRef<RnSmartCardPlatform | null>(null);
@@ -377,12 +378,12 @@ export default function NfcTestScreen() {
       console.warn("[Card] No active session");
       return;
     }
-   try {
-     await card.reset();
-     console.log("[Card] reset() completed");
-   } catch (error) {
-     console.error("[Card] reset() failed", error);
-   }
+    try {
+      await card.reset();
+      console.log("[Card] reset() completed");
+    } catch (error) {
+      console.error("[Card] reset() failed", error);
+    }
   }, []);
 
   const handleReleaseCard = useCallback(async () => {

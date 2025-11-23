@@ -1,4 +1,3 @@
-// @eslint-disable react-hooks/exhaustive-deps
 /**
  * Smart Card Test Screen
  *
@@ -7,6 +6,8 @@
  * smart card operations. Button status is controlled by events.
  * For usage of jsapdu library, see the codebase.
  */
+
+// @eslint-disable react-hooks/exhaustive-deps
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -21,7 +22,8 @@ import {
 import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
-import HexTextInput from "./components/HexTextInput";
+import HexTextInput from "../components/HexTextInput";
+
 type DeviceInfo = {
   id: string;
   friendlyName?: string;
