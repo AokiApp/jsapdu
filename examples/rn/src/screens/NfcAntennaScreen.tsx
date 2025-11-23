@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
+import { platformManager } from "@aokiapp/jsapdu-rn";
 import type { RootStackParamList } from "../App";
 
 type LocalNfcAntennaInfo = {
@@ -78,15 +78,16 @@ const PHONE_HEIGHT = 320;
 
 export default function NfcAntennaScreen() {
   const isIos = Platform.OS === "ios";
-  const [antennaInfo, setAntennaInfo] =
-    useState<LocalNfcAntennaInfo | null>(null);
+  const [antennaInfo, setAntennaInfo] = useState<LocalNfcAntennaInfo | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
-    const platform = new RnSmartCardPlatform();
+    const platform = platformManager.getPlatform();
     let cancelled = false;
 
     const load = async () => {
@@ -128,7 +129,7 @@ export default function NfcAntennaScreen() {
       void platform
         .release(true)
         .catch((e) =>
-          console.warn("[NfcAntennaScreen] platform.release failed", e)
+          console.warn("[NfcAntennaScreen] platform.release failed", e),
         );
     };
   }, []);
@@ -190,7 +191,8 @@ export default function NfcAntennaScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>NFCアンテナの位置</Text>
       <Text style={styles.subtitle}>
-        対応端末では OS のアンテナ情報 API から実アンテナ位置を取得して表示します。
+        対応端末では OS のアンテナ情報 API
+        から実アンテナ位置を取得して表示します。
         未対応端末では一般的な位置の参考図を表示します。
       </Text>
 
@@ -204,8 +206,7 @@ export default function NfcAntennaScreen() {
       {!loading && antennaInfo && (
         <View style={styles.statusRow}>
           <Text style={styles.statusText}>
-            実デバイス情報:{" "}
-            {Math.round(antennaInfo.deviceSize.width)}mm ×{" "}
+            実デバイス情報: {Math.round(antennaInfo.deviceSize.width)}mm ×{" "}
             {Math.round(antennaInfo.deviceSize.height)}mm / アンテナ数{" "}
             {antennaInfo.antennas.length} / 形状{" "}
             {antennaInfo.formFactor ?? "unknown"}
@@ -223,10 +224,7 @@ export default function NfcAntennaScreen() {
         <Text style={styles.phoneLabel}>
           {isIos ? "iPhone（参考イメージ）" : "Android（参考イメージ）"}
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleOpenDetail}
-        >
+        <Pressable accessibilityRole="button" onPress={handleOpenDetail}>
           <View style={styles.phoneOuter}>
             <View style={[styles.antennaAreaBase, antennaCircleStyle]} />
           </View>
@@ -244,7 +242,8 @@ export default function NfcAntennaScreen() {
           • 実際のアンテナ位置はメーカーや機種によって異なります。
         </Text>
         <Text style={styles.noteItem}>
-          • 読み取りに失敗する場合は、カードの位置を少しずつ動かしてみてください。
+          •
+          読み取りに失敗する場合は、カードの位置を少しずつ動かしてみてください。
         </Text>
         <Text style={styles.noteItem}>
           • ケースや金属プレートがあると読み取りに影響することがあります。

@@ -22,7 +22,7 @@ import {
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../App";
-import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
+import { type RnSmartCardPlatform, platformManager } from "@aokiapp/jsapdu-rn";
 import type {
   PlatformEventType,
   PlatformEventPayload,
@@ -613,7 +613,7 @@ const MynaReadScreen: React.FC = () => {
         switch (phase) {
           case "INITIALIZING": {
             try {
-              const platform = new RnSmartCardPlatform();
+              const platform = platformManager.getPlatform();
               platformRef.current = platform;
               const unsubs = attachEventHandlers();
               unsubsRef.current = unsubs;

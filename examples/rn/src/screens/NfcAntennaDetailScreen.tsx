@@ -1,6 +1,6 @@
 import { View, StyleSheet, Dimensions, StatusBar, Text } from "react-native";
 import { useEffect, useState } from "react";
-import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
+import { platformManager } from "@aokiapp/jsapdu-rn";
 
 type LocalNfcAntennaInfo = {
   deviceSize: {
@@ -56,7 +56,7 @@ export default function NfcAntennaDetailScreen() {
   );
 
   useEffect(() => {
-    const platform = new RnSmartCardPlatform();
+    const platform = platformManager.getPlatform();
     let cancelled = false;
     const load = async () => {
       try {

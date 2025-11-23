@@ -1,6 +1,5 @@
 import {
   SmartCardDevice,
-  SmartCardDeviceInfo,
   SmartCardPlatform,
   SmartCardError,
 } from '@aokiapp/jsapdu-interface';

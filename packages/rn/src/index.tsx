@@ -69,10 +69,14 @@
 // Core Implementation Classes
 // ============================================================================
 
-export * from './platform/rn-smart-card-platform';
-export { RnSmartCardDevice } from './device/rn-smart-card-device';
-export { RnSmartCard } from './card/rn-smart-card';
-export { RnDeviceInfo } from './device/rn-device-info';
+export {
+  type RnSmartCardPlatform,
+  type PlatformEventPayload,
+  type PlatformEventType,
+} from './platform/rn-smart-card-platform';
+export { type RnSmartCardDevice } from './device/rn-smart-card-device';
+export { type RnSmartCard } from './card/rn-smart-card';
+export { type RnDeviceInfo } from './device/rn-device-info';
 
 // ============================================================================
 // Error Handling

@@ -19,16 +19,14 @@ import {
   Modal,
   Switch,
 } from "react-native";
-import { RnSmartCardPlatform } from "@aokiapp/jsapdu-rn";
+import {
+  type RnDeviceInfo,
+  type RnSmartCardPlatform,
+  platformManager,
+} from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import HexTextInput from "../components/HexTextInput";
-
-type DeviceInfo = {
-  id: string;
-  friendlyName?: string;
-  description?: string;
-} & Record<string, any>;
 
 export default function SmartCardTestScreen() {
   const platformRef = useRef<RnSmartCardPlatform | null>(null);
@@ -46,7 +44,7 @@ export default function SmartCardTestScreen() {
     cardPresent: false,
     sessionActive: false,
   });
-  const [availableDevices, setAvailableDevices] = useState<DeviceInfo[]>([]);
+  const [availableDevices, setAvailableDevices] = useState<RnDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [waitingCard, setWaitingCard] = useState(false);
   const [apduHex, setApduHex] = useState("00A4040009A0000001514352530000");
@@ -153,7 +151,7 @@ export default function SmartCardTestScreen() {
   const handleInit = useCallback(async () => {
     console.log("[UI] Initialize pressed");
     if (!platformRef.current) {
-      platformRef.current = new RnSmartCardPlatform();
+      platformRef.current = platformManager.getPlatform();
     }
     const plat = platformRef.current;
 
@@ -251,7 +249,6 @@ export default function SmartCardTestScreen() {
 
     // Log detailed device info
     availableDevices.forEach((info, idx) => {
-      const apduApi = (info as unknown as { apduApi?: string[] }).apduApi;
       console.log(`[Plat] Device[${idx}]`, {
         id: info.id,
         supportsApdu: info.supportsApdu,
@@ -260,7 +257,6 @@ export default function SmartCardTestScreen() {
         removable: info.isRemovableDevice,
         d2c: info.d2cProtocol,
         p2d: info.p2dProtocol,
-        apduApi,
         friendlyName: info.friendlyName,
         description: info.description,
       });
