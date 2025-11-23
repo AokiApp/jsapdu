@@ -21,7 +21,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 
-type MenuRoute = "NfcTest" | "SmartCardTest" | "MynaPin";
+type MenuRoute = "NfcAntenna" | "SmartCardTest" | "MynaPin";
 
 type MenuItem = {
   key: string;
@@ -33,11 +33,11 @@ type MenuItem = {
 
 const ITEMS: MenuItem[] = [
   {
-    key: "nfc",
-    title: "NFC Test",
-    subtitle: "Read and write NFC tags (legacy)",
-    emoji: "📳",
-    route: "NfcTest",
+    key: "nfc-antenna",
+    title: "NFC Antenna Guide",
+    subtitle: "Where to place your card on the device",
+    emoji: "📡",
+    route: "NfcAntenna",
   },
   {
     key: "smartcard",
@@ -77,7 +77,9 @@ export default function MenuScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${i.title}. ${i.subtitle ?? ""}`}
               android_ripple={{ color: "rgba(79,70,229,0.12)" }}
-              onPress={() => navigation.navigate(i.route)}
+              onPress={() =>
+                navigation.navigate({ name: i.route, params: undefined })
+              }
               style={({ pressed }) => [
                 styles.card,
                 pressed && styles.cardPressed,
