@@ -118,6 +118,9 @@ class NfcDevice(
     /** Whether an ISO-DEP card is detected in RF field */
     override fun isCardPresent(): Boolean = cardPresent.get()
 
+    /** Whether a freshly detected IsoDep is ready to start a session */
+    private fun hasPendingIsoDep(): Boolean = awaitingIsoDep != null
+
     /** Returns latest IsoDep when present, otherwise null */
     fun getAwaitingIsoDep(): IsoDep? = awaitingIsoDep
 
@@ -184,7 +187,7 @@ class NfcDevice(
     override fun waitForCardPresence(timeout: Double) {
         val deadline = System.currentTimeMillis() + (timeout * 1000.0).toLong()
         while (System.currentTimeMillis() < deadline) {
-            if (isCardPresent()) return
+            if (hasPendingIsoDep()) return
             try {
                 Thread.sleep(50)
             } catch (_: InterruptedException) {

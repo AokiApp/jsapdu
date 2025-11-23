@@ -114,7 +114,7 @@ class OmapiCardSession(
             
             try {
                 emulator?.reset()
-                safeEmit(StatusEventType.CARD_SESSION_RESET, "Channel reset")
+                safeEmit(StatusEventType.CARD_SESSION_STARTED, "Channel reset")
             } catch (e: Exception) {
                 safeEmit(StatusEventType.CARD_LOST, "Reset failed: ${e.message}")
                 platformError("Failed to reset channel: ${e.message}")

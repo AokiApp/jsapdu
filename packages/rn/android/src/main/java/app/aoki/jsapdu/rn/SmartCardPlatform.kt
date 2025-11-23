@@ -139,19 +139,6 @@ class SmartCardPlatform {
         nfcAdapter = NfcAdapter.getDefaultAdapter(appContext)
         // NFC is optional, platform can initialize without it
         
-        // Emit NFC state if available
-        if (nfcAdapter != null) {
-            try {
-                StatusEventDispatcher.emit(
-                    StatusEventType.NFC_STATE_CHANGED,
-                    EventPayload(
-                        deviceHandle = null,
-                        cardHandle = null,
-                        details = NfcPlatformHelper.getStateString(nfcAdapter)
-                    )
-                )
-            } catch (_: Exception) { /* suppress */ }
-        }
     }
 
     private fun initializeOmapi() {

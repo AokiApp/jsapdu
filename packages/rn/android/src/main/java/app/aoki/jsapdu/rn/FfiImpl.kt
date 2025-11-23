@@ -19,24 +19,52 @@ object FfiImpl {
         return platform
     }
 
-    fun initPlatform(): Unit {
+    fun initPlatform(force: Boolean = false): Unit {
+        var bypassedOnly = false
         synchronized(platformLock) {
-            if (smartCardPlatform?.isInitialized() == true) {
-                throw IllegalStateException("FfiImpl: Platform already initialized")
+            val existing = smartCardPlatform
+            if (existing?.isInitialized() == true) {
+                if (!force) {
+                    throw IllegalStateException("FfiImpl: Platform already initialized")
+                }
+                // force=true: bypass precondition check only (no-op)
+                bypassedOnly = true
+            } else {
+                val platform = existing ?: SmartCardPlatform().also { smartCardPlatform = it }
+                platform.initialize(force)
             }
-            val platform = SmartCardPlatform()
-            platform.initialize()
-            smartCardPlatform = platform
         }
+        if (bypassedOnly) return
     }
 
-    fun releasePlatform(): Unit {
-        val platformToRelease: SmartCardPlatform = synchronized(platformLock) {
-            val platform = smartCardPlatform ?: throw IllegalStateException("FfiImpl: Platform not initialized")
-            smartCardPlatform = null
-            platform
+    fun releasePlatform(force: Boolean = false): Unit {
+        var platformToRelease: SmartCardPlatform? = null
+        var bypassedOnly = false
+        synchronized(platformLock) {
+            val platform = smartCardPlatform
+            if (platform == null) {
+                if (!force) {
+                    throw IllegalStateException("FfiImpl: Platform not initialized")
+                }
+                // force=true: bypass precondition check only (no-op)
+                bypassedOnly = true
+            } else {
+                val isInit = platform.isInitialized()
+                if (!isInit) {
+                    if (!force) {
+                        throw IllegalStateException("FfiImpl: Platform not initialized")
+                    }
+                    // force=true: bypass precondition check only (no-op)
+                    bypassedOnly = true
+                } else {
+                    // Normal release path
+                    smartCardPlatform = null
+                    platformToRelease = platform
+                }
+            }
         }
-        platformToRelease.release()
+        if (bypassedOnly) return
+        platformToRelease?.release(force)
     }
 
     fun getDeviceInfo(): Array<DeviceInfo> {

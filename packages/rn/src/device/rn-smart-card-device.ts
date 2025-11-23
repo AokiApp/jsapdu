@@ -11,6 +11,8 @@ import { RnDeviceInfo } from './rn-device-info';
 import { DeviceState, DEFAULT_CARD_PRESENCE_TIMEOUT } from './device-state';
 import type { RnSmartCardPlatform } from '../platform/rn-smart-card-platform';
 import type { EventPayload } from '../JsapduRn.nitro';
+import { createDeferred } from '../utils/deferred';
+import type { Deferred } from '../utils/deferred';
 
 /**
  * Device-level event types (aligned with native StatusEventType subset)
@@ -66,7 +68,8 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   private deviceInfo: RnDeviceInfo;
   private activeCard: RnSmartCard | null = null;
   private state: DeviceState = new DeviceState();
-  private nativeReleaseInProgress: Promise<void> | null = null;
+  private releaseDeferred: Deferred<void> | null = null;
+  private startSessionPromise: Promise<RnSmartCard> | null = null;
 
   constructor(
     parentPlatform: RnSmartCardPlatform,
@@ -77,18 +80,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     this.deviceHandle = deviceHandle;
     this.deviceInfo = deviceInfo;
 
-    // Event-driven mirroring: native DEVICE_RELEASED -> call this.release() with reentrancy guard
     const ee = this.getEventEmitter();
     ee.on('DEVICE_RELEASED', (_payload: DeviceEventPayload) => {
-      if (this.nativeReleaseInProgress) return;
-      this.nativeReleaseInProgress = this.release()
-        .catch(() => {
-          // Fallback to local cleanup when native already released or handle invalid
-          this.onNativeReleased();
-        })
-        .finally(() => {
-          this.nativeReleaseInProgress = null;
-        });
+      this.handleNativeDeviceReleased();
     });
   }
 
@@ -173,6 +167,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     }
     // Drop any active card reference; native already closed sessions
     this.deleteActiveCard();
+    this.startSessionPromise = null;
 
     // Mark released and perform JS-side cleanup with a single try/catch
     this.state.markReleased();
@@ -334,20 +329,32 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   public async startSession(): Promise<SmartCard> {
     this.state.assertNotReleased();
 
-    // Return existing session if already active
     if (this.activeCard) {
       return this.activeCard;
     }
 
-    try {
-      const cardHandle = await this.getHybrid().startSession(this.deviceHandle);
-      const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
-      this.card = card;
-      this.activeCard = card;
-      return card;
-    } catch (error) {
-      throw mapNitroError(error);
+    if (this.startSessionPromise) {
+      return this.startSessionPromise;
     }
+
+    const startPromise = (async () => {
+      try {
+        const cardHandle = await this.getHybrid().startSession(
+          this.deviceHandle
+        );
+        const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
+        this.card = card;
+        this.activeCard = card;
+        return card;
+      } catch (error) {
+        throw mapNitroError(error);
+      } finally {
+        this.startSessionPromise = null;
+      }
+    })();
+
+    this.startSessionPromise = startPromise;
+    return startPromise;
   }
 
   /**
@@ -384,41 +391,59 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    */
   public async release(): Promise<void> {
     if (this.state.isReleased) {
-      return; // Idempotent: already released
+      return;
     }
 
-    try {
-      // Release active card session first
-      if (this.activeCard) {
-        try {
-          await this.activeCard.release();
-        } catch (error) {
-          const mappedError =
-            error instanceof SmartCardError ? error : mapNitroError(error);
-          console.warn(
-            `[RnSmartCardDevice] Failed to release active card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
-          );
-        } finally {
-          this.deleteActiveCard();
-        }
+    if (this.releaseDeferred) {
+      await this.releaseDeferred.promise;
+      return;
+    }
+
+    const pendingStart = this.startSessionPromise;
+    if (pendingStart) {
+      try {
+        await pendingStart;
+      } catch {
+        // Ignore start failures during release; continue cleanup.
       }
+    }
 
-      // Release device (deactivates ReaderMode / RF)
+    if (this.activeCard) {
+      try {
+        await this.activeCard.release();
+      } catch (error) {
+        const mappedError =
+          error instanceof SmartCardError ? error : mapNitroError(error);
+        console.warn(
+          `[RnSmartCardDevice] Failed to release active card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
+        );
+      }
+    }
+
+    const deferred = createDeferred<void>();
+    this.releaseDeferred = deferred;
+
+    try {
       await this.getHybrid().releaseDevice(this.deviceHandle);
-
-      // Mark as released
-      this.state.markReleased();
-
-      // Untrack from platform
-      this.getPlatform().untrackDevice(this.deviceInfo.id);
-
-      // Sever own references to become inert and GC-eligible (mirrors Kotlin-side cleanup intent)
-      // No-op: emitter listeners will be GC'ed with this instance
-      this.deviceHandle = '';
-      // keep deviceInfo; no need to delete strongly-typed property
-      // avoid mutating parentPlatform typed reference; object is inert after markReleased()
     } catch (error) {
-      throw mapNitroError(error);
+      const mappedError = mapNitroError(error);
+      this.releaseDeferred = null;
+      deferred.reject(mappedError);
+      throw mappedError;
+    }
+
+    await deferred.promise;
+  }
+
+  private handleNativeDeviceReleased(): void {
+    this.onNativeReleased();
+    this.resolveDeviceReleaseDeferred();
+  }
+
+  private resolveDeviceReleaseDeferred(): void {
+    if (this.releaseDeferred) {
+      this.releaseDeferred.resolve();
+      this.releaseDeferred = null;
     }
   }
 }

@@ -142,7 +142,39 @@ class NfcCardSession(
     }
 
     override fun reset() {
-        throw NotImplementedError("NfcCardSession.reset not implemented")
+        synchronized(apduLock) {
+            ensureConnected(
+                orFailApdu = false,
+                lostDetails = "Disconnected before reset"
+            )
+            try {
+                try {
+                    if (isoDep.isConnected) {
+                        isoDep.close()
+                    }
+                } catch (_: Exception) {
+                    // Ignore close errors; we'll try to reconnect below
+                }
+
+                isoDep.connect()
+                try {
+                    isoDep.timeout = 5000
+                } catch (e: Exception) {
+                    onTagLost("Error setting timeout during reset: ${e.message}")
+                    platformError("Failed to set IsoDep timeout during reset: ${e.message}")
+                }
+                safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session reset complete")
+            } catch (e: TagLostException) {
+                onTagLost("TagLost during reset")
+                platformError("Card removed during session reset")
+            } catch (e: IOException) {
+                onTagLost("IO during reset: ${e.message}")
+                platformError("NFC I/O error during session reset: ${e.message}")
+            } catch (e: Exception) {
+                onTagLost("Reset failed: ${e.message}")
+                platformError("Failed to reset NFC session: ${e.message}")
+            }
+        }
     }
 
     override fun release() {

@@ -13,6 +13,8 @@ import { PlatformState } from './platform-state';
 import type { EventPayload } from '../JsapduRn.nitro';
 import type { DeviceEventType } from '../device/rn-smart-card-device';
 import type { CardEventType } from '../card/rn-smart-card';
+import { createDeferred } from '../utils/deferred';
+import type { Deferred } from '../utils/deferred';
 
 /**
  * React Native NFC SmartCard platform implementation
@@ -48,8 +50,6 @@ export type PlatformEventType =
   | 'CARD_SESSION_STARTED'
   | 'CARD_SESSION_RESET'
   | 'WAIT_TIMEOUT'
-  | 'POWER_STATE_CHANGED'
-  | 'NFC_STATE_CHANGED'
   | 'APDU_SENT'
   | 'APDU_FAILED'
   | 'READER_MODE_ENABLED'
@@ -65,34 +65,17 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   private hybridObject: JsapduRn;
   private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
   private state: PlatformState = new PlatformState();
-  private nativePlatformReleaseInProgress: Promise<void> | null = null;
+  private platformReleaseDeferred: Deferred<void> | null = null;
 
   constructor() {
     super();
     this.hybridObject = NitroModules.createHybridObject<JsapduRn>('JsapduRn');
-    // Event-driven mirroring for platform lifecycle without touching statusUpdateHandler
     const ee = this.getEventEmitter();
-    ee.on('PLATFORM_RELEASED', (_payload: PlatformEventPayload) => {
-      if (this.nativePlatformReleaseInProgress || this.state.isReleasing)
-        return;
-      this.nativePlatformReleaseInProgress = this.release()
-        .catch(() => {
-          // Fallback: native already released; mirror JS-side state without re-entering native
-          try {
-            this.hybridObject.onStatusUpdate(void 0);
-          } catch {}
-          this.initialized = false;
-          try {
-            this.acquiredDevices.clear();
-          } catch {}
-        })
-        .finally(() => {
-          this.nativePlatformReleaseInProgress = null;
-        });
+    ee.on('PLATFORM_RELEASED', (payload: PlatformEventPayload) => {
+      this.onNativePlatformReleased(payload);
     });
 
     ee.on('PLATFORM_INITIALIZED', (_payload: PlatformEventPayload) => {
-      // Mirror native init state
       this.initialized = true;
     });
   }
@@ -169,8 +152,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
     const platformOnly = new Set<PlatformEventType>([
       'PLATFORM_INITIALIZED',
       'PLATFORM_RELEASED',
-      'NFC_STATE_CHANGED',
       'DEVICE_ACQUIRED',
+    ]);
+
+    const sharedPlatformEvents = new Set<PlatformEventType>([
       'READER_MODE_ENABLED',
       'READER_MODE_DISABLED',
     ]);
@@ -203,6 +188,10 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       return;
     }
 
+    if (sharedPlatformEvents.has(evt)) {
+      this.eventEmitter.emit(evt, payload);
+    }
+
     const { deviceHandle, cardHandle } = payload;
 
     // Card-level events take precedence when both handles are present
@@ -217,13 +206,13 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
           console.warn(
             `[RnSmartCardPlatform] Card target not found for ${eventType}. device=${deviceHandle}, card=${cardHandle}, details=${payload.details}`
           );
-          return;
+          // fall through to device-level handling if possible
         }
       } else {
         console.warn(
           `[RnSmartCardPlatform] Missing handles for card event ${eventType}. device=${deviceHandle}, card=${cardHandle}`
         );
-        return;
+        // fall through to device-level handling if possible
       }
     }
 
@@ -410,5 +399,30 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    */
   public untrackDevice(deviceId: string): void {
     this.acquiredDevices.delete(deviceId);
+  }
+
+  private onNativePlatformReleased(_payload: PlatformEventPayload): void {
+    if (!this.initialized) {
+      this.resolvePlatformReleaseDeferred();
+      return;
+    }
+
+    this.hybridObject.onStatusUpdate(void 0);
+    this.initialized = false;
+
+    try {
+      this.acquiredDevices.clear();
+    } catch {
+      // ignore cleanup errors
+    }
+
+    this.resolvePlatformReleaseDeferred();
+  }
+
+  private resolvePlatformReleaseDeferred(): void {
+    if (this.platformReleaseDeferred) {
+      this.platformReleaseDeferred.resolve();
+      this.platformReleaseDeferred = null;
+    }
   }
 }

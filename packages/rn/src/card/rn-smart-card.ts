@@ -7,6 +7,8 @@ import {
 import { mapNitroError } from '../errors/error-mapper';
 import type { RnSmartCardDevice } from '../device/rn-smart-card-device';
 import type { EventPayload } from '../JsapduRn.nitro';
+import { createDeferred } from '../utils/deferred';
+import type { Deferred } from '../utils/deferred';
 
 /**
  * Card-level event types (aligned with native StatusEventType subset)
@@ -63,7 +65,7 @@ export class RnSmartCard extends SmartCard<{
 }> {
   private cardHandle: string;
   private deviceHandle: string;
-  private nativeDisposeInProgress: Promise<void> | null = null;
+  private releaseDeferred: Deferred<void> | null = null;
 
   constructor(
     parentDevice: RnSmartCardDevice,
@@ -74,21 +76,12 @@ export class RnSmartCard extends SmartCard<{
     this.deviceHandle = deviceHandle;
     this.cardHandle = cardHandle;
 
-    // Event-driven mirroring: native CARD_LOST / CARD_SESSION_RESET -> call this.release() with reentrancy guard
     const ee = this.getEventEmitter();
-    const onDisposed = (_payload: CardEventPayload) => {
-      if (this.nativeDisposeInProgress) return;
-      this.nativeDisposeInProgress = this.release()
-        .catch(() => {
-          // Fallback to local cleanup when native already released or handle invalid
-          this.onNativeDisposed();
-        })
-        .finally(() => {
-          this.nativeDisposeInProgress = null;
-        });
+    const onCardDisposed = (_payload: CardEventPayload) => {
+      this.handleNativeCardDisposed();
     };
-    ee.on('CARD_LOST', onDisposed);
-    ee.on('CARD_SESSION_RESET', onDisposed);
+    ee.on('CARD_LOST', onCardDisposed);
+    ee.on('CARD_SESSION_RESET', onCardDisposed);
   }
 
   /**
@@ -133,34 +126,32 @@ export class RnSmartCard extends SmartCard<{
 
   /**
    * Internal: mirror native-driven card disposal without calling native again.
-   * Triggered by CARD_LOST or CARD_SESSION_RESET events routed to this card.
+   * Triggered by CARD_LOST events routed to this card.
    * @internal
    */
-  private onNativeDisposed(): void {
-    // If already disposed, ignore
+  private handleNativeCardDisposed(): void {
+    this.finalizeNativeDisposal();
+  }
+
+  private finalizeNativeDisposal(): void {
     if (!this.cardHandle || !this.deviceHandle) {
+      this.resolveReleaseDeferred();
       return;
     }
 
-    // Capture references/values before severing
     const device = this.parentDevice as RnSmartCardDevice | null;
     const h = this.cardHandle;
 
     try {
-      // Inform parent device to drop its active card reference
       if (device && h) {
         device.onCardReleased(h);
       }
-
-      // Remove listeners and sever strong refs
-      // No-op: emitter listeners will be GC'ed with this instance
-
-      // Sever internal references so this object becomes inert
-      this.cardHandle = '';
-      this.deviceHandle = '';
-      // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
     } catch {
       // ignore cleanup errors
+    } finally {
+      this.cardHandle = '';
+      this.deviceHandle = '';
+      this.resolveReleaseDeferred();
     }
   }
   /**
@@ -316,38 +307,35 @@ export class RnSmartCard extends SmartCard<{
    * - New session can be started with device.startSession()
    */
   public async release(): Promise<void> {
-    // If handles are already cleared/missing, treat as disposed (idempotent)
     if (!this.cardHandle || !this.deviceHandle) {
-      return; // Idempotent: already released
+      if (this.releaseDeferred) {
+        await this.releaseDeferred.promise;
+      }
+      return;
     }
 
-    const device = this.parentDevice as RnSmartCardDevice;
-    const deviceHandle = this.deviceHandle;
-    const cardHandle = this.cardHandle;
-    let shouldFinalizeLocally = false;
+    if (this.releaseDeferred) {
+      await this.releaseDeferred.promise;
+      return;
+    }
+
+    const deferred = createDeferred<void>();
+    this.releaseDeferred = deferred;
 
     try {
-      await this.getHybrid().releaseCard(deviceHandle, cardHandle);
-      shouldFinalizeLocally = true;
+      await this.getHybrid().releaseCard(this.deviceHandle, this.cardHandle);
     } catch (error) {
       const mappedError = mapNitroError(error);
       if (this.isBenignReleaseError(mappedError)) {
-        shouldFinalizeLocally = true;
+        this.finalizeNativeDisposal();
       } else {
+        this.releaseDeferred = null;
+        deferred.reject(mappedError);
         throw mappedError;
       }
-    } finally {
-      if (shouldFinalizeLocally) {
-        device.onCardReleased(cardHandle);
-
-        // Sever internal references so this object becomes GC-eligible and inert
-        // No-op: emitter listeners will be GC'ed with this instance
-
-        this.cardHandle = '';
-        this.deviceHandle = '';
-        // avoid mutating parentDevice typed reference; object becomes inert after handles invalidated
-      }
     }
+
+    await deferred.promise;
   }
 
   private isBenignReleaseError(error: SmartCardError): boolean {
@@ -359,5 +347,12 @@ export class RnSmartCard extends SmartCard<{
       message.includes('invalid card handle') ||
       message.includes('already released')
     );
+  }
+
+  private resolveReleaseDeferred(): void {
+    if (this.releaseDeferred) {
+      this.releaseDeferred.resolve();
+      this.releaseDeferred = null;
+    }
   }
 }
