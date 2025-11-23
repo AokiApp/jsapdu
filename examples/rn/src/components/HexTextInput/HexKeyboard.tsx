@@ -35,6 +35,18 @@ const keys = [
   '⏎',
 ];
 
+const getVariant = (k: string): 'digit' | 'alphabet' | 'cursor' | 'control' => {
+  if (/^[0-9]$/.test(k)) return 'digit';
+  if (/^[A-F]$/.test(k)) return 'alphabet';
+  if (/^[<>]$/.test(k)) return 'cursor';
+  return 'control';
+};
+
+const isRepeatable = (k: string) => k === '⌫' || k === '<' || k === '>';
+
+const getCornerIcon = (k: string): 'copy' | 'paste' | undefined =>
+  k === 'C' ? 'copy' : k === '7' ? 'paste' : undefined;
+
 export default function HexKeyboard({
   onKeyPress,
   onBackspace,
@@ -44,38 +56,29 @@ export default function HexKeyboard({
   onCopyAll,
   onPasteFromClipboard,
 }: HexKeyboardProps) {
+  const handlePress = (k: string) => {
+    if (k === '⌫') return onBackspace();
+    if (k === '⏎') return onEnter();
+    if (k === '<') return onMoveLeft();
+    if (k === '>') return onMoveRight();
+    onKeyPress(k);
+  };
+
+  const getLongPressAction = (k: string) =>
+    k === 'C' ? onCopyAll : k === '7' ? onPasteFromClipboard : undefined;
+
   return (
     <View style={styles.grid}>
-      {keys.map((k, i) => (
+      {keys.map((k) => (
         <Key
-          key={k + i}
+          key={k}
           label={k}
-          onPress={() => {
-            if (k === '⌫') return onBackspace();
-            if (k === '⏎') return onEnter();
-            if (k === '<') return onMoveLeft();
-            if (k === '>') return onMoveRight();
-            onKeyPress(k);
-          }}
-          repeatable={k === '⌫' || k === '<' || k === '>'}
-          variant={
-            /^[0-9]$/.test(k)
-              ? 'digit'
-              : /^[A-F]$/.test(k)
-                ? 'alphabet'
-                : /^[<>]$/.test(k)
-                  ? 'cursor'
-                  : 'control'
-          }
+          onPress={() => handlePress(k)}
+          repeatable={isRepeatable(k)}
+          variant={getVariant(k)}
           suppressPressIn={k === 'C' || k === '7'}
-          onLongPressAction={
-            k === 'C'
-              ? onCopyAll
-              : k === '7'
-                ? onPasteFromClipboard
-                : undefined
-          }
-          cornerIcon={k === 'C' ? 'copy' : k === '7' ? 'paste' : undefined}
+          onLongPressAction={getLongPressAction(k)}
+          cornerIcon={getCornerIcon(k)}
         />
       ))}
     </View>
