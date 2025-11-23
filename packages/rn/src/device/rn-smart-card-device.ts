@@ -11,6 +11,7 @@ import { RnDeviceInfo } from './rn-device-info';
 import { DeviceState, DEFAULT_CARD_PRESENCE_TIMEOUT } from './device-state';
 import type { RnSmartCardPlatform } from '../platform/rn-smart-card-platform';
 import type { EventPayload } from '../JsapduRn.nitro';
+import type { CardEventType } from '../card/rn-smart-card';
 import { createDeferred } from '../utils/deferred';
 import type { Deferred } from '../utils/deferred';
 
@@ -24,6 +25,8 @@ export type DeviceEventType =
   | 'CARD_LOST'
   | 'CARD_SESSION_STARTED'
   | 'CARD_SESSION_RESET'
+  | 'APDU_SENT'
+  | 'APDU_FAILED'
   | 'WAIT_TIMEOUT'
   | 'READER_MODE_ENABLED'
   | 'READER_MODE_DISABLED'
@@ -66,10 +69,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
 }> {
   private deviceHandle: string;
   private deviceInfo: RnDeviceInfo;
-  private activeCard: RnSmartCard | null = null;
+  private cards: Map<string, RnSmartCard> = new Map();
   private state: DeviceState = new DeviceState();
   private releaseDeferred: Deferred<void> | null = null;
-  private startSessionPromise: Promise<RnSmartCard> | null = null;
 
   constructor(
     parentPlatform: RnSmartCardPlatform,
@@ -84,6 +86,22 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     ee.on('DEVICE_RELEASED', (_payload: DeviceEventPayload) => {
       this.handleNativeDeviceReleased();
     });
+    // Route card-level events to the appropriate card (O(1) by handle)
+    ee.on('CARD_SESSION_RESET', (payload: DeviceEventPayload) =>
+      this.routeCardEvent('CARD_SESSION_RESET', payload)
+    );
+    ee.on('CARD_LOST', (payload: DeviceEventPayload) =>
+      this.routeCardEvent('CARD_LOST', payload)
+    );
+    ee.on('APDU_SENT', (payload: DeviceEventPayload) =>
+      this.routeCardEvent('APDU_SENT', payload)
+    );
+    ee.on('APDU_FAILED', (payload: DeviceEventPayload) =>
+      this.routeCardEvent('APDU_FAILED', payload)
+    );
+    ee.on('DEBUG_INFO', (payload: DeviceEventPayload) =>
+      this.routeCardEvent('DEBUG_INFO', payload)
+    );
   }
 
   /**
@@ -110,6 +128,24 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     return this.eventEmitter;
   }
 
+  private routeCardEvent(evt: CardEventType, payload: DeviceEventPayload): void {
+    try {
+      const h = payload.cardHandle;
+      if (!h) {
+        console.warn(`[RnSmartCardDevice] Missing cardHandle for ${evt}.`);
+        return;
+      }
+      const card = this.cards.get(h);
+      if (card) {
+        card.getEventEmitter().emit(evt, payload as any);
+      } else {
+        console.warn(`[RnSmartCardDevice] Card target not found for ${evt}. card=${h}`);
+      }
+    } catch {
+      // ignore routing errors
+    }
+  }
+
   /**
    * Internal: device handle accessor for two-hop platform lookups
    * @internal
@@ -123,12 +159,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    * @internal
    */
   public getTarget(cardHandle: string): RnSmartCard | undefined {
-    const c = this.activeCard;
-    // Delegate release state checking to card methods; return if handle matches
-    if (c && c.getCardHandle() === cardHandle) {
-      return c;
-    }
-    return undefined;
+    return this.cards.get(cardHandle);
   }
 
   /**
@@ -137,9 +168,11 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    * @internal
    */
   public onCardReleased(cardHandle: string): void {
-    const c = this.activeCard;
-    if (c && c.getCardHandle() === cardHandle) {
-      this.deleteActiveCard();
+    this.cards.delete(cardHandle);
+    // Clear convenience pointer if it matches
+    const last = (this as any).card as RnSmartCard | null;
+    if (last && (last as any).getCardHandle && last.getCardHandle() === cardHandle) {
+      (this as any).card = null;
     }
   }
 
@@ -148,12 +181,14 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    * Ensures GC eligibility by clearing and deleting properties.
    * @internal
    */
-  private deleteActiveCard(): void {
-    // Clear strong references
-    this.activeCard = null;
-    this.card = null;
-
-    // No additional action; strong references cleared above.
+  private detachAllCards(): void {
+    try {
+      this.cards.clear();
+    } catch {
+      // ignore cleanup errors
+    }
+    // Clear convenience pointer
+    (this as any).card = null;
   }
 
   /**
@@ -165,29 +200,24 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     if (this.state.isReleased) {
       return;
     }
-    // Drop any active card reference; native already closed sessions
-    this.deleteActiveCard();
-    this.startSessionPromise = null;
+    // Drop any card references; native already closed sessions
+    this.detachAllCards();
 
-    // Mark released and perform JS-side cleanup with a single try/catch
+    // Mark released
     this.state.markReleased();
 
     const platform = this.getPlatform();
     const id = this.deviceInfo?.id;
+    const handle = this.deviceHandle;
 
     try {
-      // Remove listeners and sever strong refs to become inert
-      // No-op: emitter listeners will be GC'ed with this instance
-
+      // Untrack from platform before clearing handle
+      if (platform && id) {
+        platform.untrackDevice(id, handle);
+      }
       // Sever own references
       this.deviceHandle = '';
       // keep deviceInfo; no need to delete strongly-typed property
-      // avoid mutating parentPlatform typed reference; object is inert after markReleased()
-
-      // Untrack from platform (use captured references)
-      if (platform && id) {
-        platform.untrackDevice(id);
-      }
     } catch {
       // ignore cleanup errors
     }
@@ -206,7 +236,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    * @returns true if session is active, false otherwise
    */
   public isSessionActive(): boolean {
-    return this.activeCard !== null && !this.state.isReleased;
+    return this.cards.size > 0 && !this.state.isReleased;
   }
 
   /**
@@ -329,32 +359,16 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   public async startSession(): Promise<SmartCard> {
     this.state.assertNotReleased();
 
-    if (this.activeCard) {
-      return this.activeCard;
+    try {
+      const cardHandle = await this.getHybrid().startSession(this.deviceHandle);
+      const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
+      this.cards.set(cardHandle, card);
+      // Maintain backward-compatible convenience pointer to "last" card
+      (this as any).card = card;
+      return card;
+    } catch (error) {
+      throw mapNitroError(error);
     }
-
-    if (this.startSessionPromise) {
-      return this.startSessionPromise;
-    }
-
-    const startPromise = (async () => {
-      try {
-        const cardHandle = await this.getHybrid().startSession(
-          this.deviceHandle
-        );
-        const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
-        this.card = card;
-        this.activeCard = card;
-        return card;
-      } catch (error) {
-        throw mapNitroError(error);
-      } finally {
-        this.startSessionPromise = null;
-      }
-    })();
-
-    this.startSessionPromise = startPromise;
-    return startPromise;
   }
 
   /**
@@ -399,24 +413,17 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       return;
     }
 
-    const pendingStart = this.startSessionPromise;
-    if (pendingStart) {
-      try {
-        await pendingStart;
-      } catch {
-        // Ignore start failures during release; continue cleanup.
-      }
-    }
-
-    if (this.activeCard) {
-      try {
-        await this.activeCard.release();
-      } catch (error) {
-        const mappedError =
-          error instanceof SmartCardError ? error : mapNitroError(error);
-        console.warn(
-          `[RnSmartCardDevice] Failed to release active card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
-        );
+    const cards = Array.from(this.cards.values());
+    if (cards.length) {
+      const results = await Promise.allSettled(cards.map((c) => c.release()));
+      for (const r of results) {
+        if (r.status === 'rejected') {
+          const mappedError =
+            r.reason instanceof SmartCardError ? r.reason : mapNitroError(r.reason);
+          console.warn(
+            `[RnSmartCardDevice] Failed to release a card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
+          );
+        }
       }
     }
 

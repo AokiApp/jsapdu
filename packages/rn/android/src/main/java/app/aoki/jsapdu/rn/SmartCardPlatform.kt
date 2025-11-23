@@ -34,6 +34,7 @@ class SmartCardPlatform {
     
     // Device registry
     private val devices = ConcurrentHashMap<String, IDevice>()
+    private val devicesById = ConcurrentHashMap<String, String>() // id -> handle
     
     // Lifecycle state
     @Volatile private var initialized: Boolean = false
@@ -74,6 +75,7 @@ class SmartCardPlatform {
         // Release all devices outside lock to avoid nested locking
         val toRelease = devices.values.toList()
         devices.clear()
+        devicesById.clear()
         toRelease.forEach {
             try { it.release() } catch (_: Exception) { /* best-effort */ }
         }
@@ -109,28 +111,29 @@ class SmartCardPlatform {
         if (!initialized) {
             throw IllegalStateException("NOT_INITIALIZED: Platform not initialized")
         }
-        
         synchronized(acquireLock) {
-            // Enforce single-acquire per device ID
-            if (devices.values.any { it.id == deviceId }) {
+            // Enforce single-acquire per device ID with O(1) check
+            if (devicesById.containsKey(deviceId)) {
                 throw IllegalStateException("ALREADY_ACQUIRED: Device '$deviceId' already acquired")
             }
-            
+
             val device = createDevice(deviceId)
             device.acquire()
-            
+
             val handle = device.handle
             devices[handle] = device
-            
-            emitDeviceAcquired(handle, deviceId)
-            return handle
-        }
-    }
-    
-    fun getTarget(deviceHandle: String): IDevice? = devices[deviceHandle]
+            devicesById[deviceId] = handle
+emitDeviceAcquired(handle, deviceId)
+return handle
+}
+}
 
+fun getTarget(deviceHandle: String): IDevice? = devices[deviceHandle]
     internal fun unregisterDevice(handle: String) {
-        devices.remove(handle)
+        val dev = devices.remove(handle)
+        if (dev != null) {
+            devicesById.remove(dev.id)
+        }
     }
 
     // ---- Private subsystem initialization ------------------------------------------------

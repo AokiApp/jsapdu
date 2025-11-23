@@ -11,7 +11,6 @@ import { RnSmartCardDevice } from '../device/rn-smart-card-device';
 import { PlatformState } from './platform-state';
 import type { EventPayload } from '../JsapduRn.nitro';
 import type { DeviceEventType } from '../device/rn-smart-card-device';
-import type { CardEventType } from '../card/rn-smart-card';
 import type { Deferred } from '../utils/deferred';
 
 /**
@@ -61,7 +60,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   [key in PlatformEventType]: (payload: PlatformEventPayload) => void;
 }> {
   private hybridObject: JsapduRn;
-  private acquiredDevices: Map<string, RnSmartCardDevice> = new Map();
+  // O(1) device maps
+  private acquiredDevices: Map<string, RnSmartCardDevice> = new Map(); // id -> device
+  private devicesByHandle: Map<string, RnSmartCardDevice> = new Map(); // handle -> device
   private state: PlatformState = new PlatformState();
   private platformReleaseDeferred: Deferred<void> | null = null;
 
@@ -102,12 +103,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    * @internal
    */
   public getTarget(deviceHandle: string): RnSmartCardDevice | undefined {
-    for (const device of this.acquiredDevices.values()) {
-      if (device.getDeviceHandle() === deviceHandle) {
-        return device;
-      }
-    }
-    return undefined;
+    return this.devicesByHandle.get(deviceHandle);
   }
   /**
    * Initialize the NFC platform
@@ -197,25 +193,24 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
     const { deviceHandle, cardHandle } = payload;
 
-    // Card-level events take precedence when both handles are present
+    // Card-level events: route to device emitter only; device will route to its own cards
     if (cardEvents.has(evt)) {
-      if (deviceHandle && cardHandle) {
+      if (deviceHandle) {
         const device = this.getTarget(deviceHandle);
-        const card = device?.getTarget(cardHandle);
-        if (card) {
-          card.getEventEmitter().emit(evt as unknown as CardEventType, payload);
+        if (device) {
+          device.getEventEmitter().emit(evt as unknown as DeviceEventType, payload);
           return;
         } else {
           console.warn(
-            `[RnSmartCardPlatform] Card target not found for ${eventType}. device=${deviceHandle}, card=${cardHandle}, details=${payload.details}`
+            `[RnSmartCardPlatform] Device target not found for card event ${eventType}. device=${deviceHandle}, card=${cardHandle}, details=${payload.details}`
           );
-          // fall through to device-level handling if possible
+          return;
         }
       } else {
         console.warn(
-          `[RnSmartCardPlatform] Missing handles for card event ${eventType}. device=${deviceHandle}, card=${cardHandle}`
+          `[RnSmartCardPlatform] Missing deviceHandle for card event ${eventType}. card=${cardHandle}`
         );
-        // fall through to device-level handling if possible
+        return;
       }
     }
 
@@ -286,6 +281,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
       await Promise.allSettled(releasePromises);
       this.acquiredDevices.clear();
+      this.devicesByHandle.clear();
 
       // Release platform
       if (force) {
@@ -393,6 +389,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
       // Track acquired device
       this.acquiredDevices.set(id, device);
+      this.devicesByHandle.set(deviceHandle, device);
       return device;
     } catch (error) {
       throw mapNitroError(error);
@@ -406,8 +403,23 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    * @internal
    * @param deviceId - Device ID to untrack
    */
-  public untrackDevice(deviceId: string): void {
+  public untrackDevice(deviceId: string, deviceHandle?: string): void {
     this.acquiredDevices.delete(deviceId);
+    if (deviceHandle) {
+      this.devicesByHandle.delete(deviceHandle);
+    } else {
+      // Fallback: best-effort removal by deviceId
+      for (const [handle, dev] of this.devicesByHandle) {
+        try {
+          if (dev.getDeviceInfo().id === deviceId) {
+            this.devicesByHandle.delete(handle);
+            break;
+          }
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    }
   }
 
   private onNativePlatformReleased(_payload: PlatformEventPayload): void {
@@ -421,6 +433,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
 
     try {
       this.acquiredDevices.clear();
+      this.devicesByHandle.clear();
     } catch {
       // ignore cleanup errors
     }
