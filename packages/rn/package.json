@@ -97,7 +97,6 @@
     "react-native": "*",
     "react-native-nitro-modules": "^0.31.1"
   },
-  "packageManager": "yarn@3.6.1",
   "jest": {
     "preset": "react-native",
     "modulePathIgnorePatterns": [
