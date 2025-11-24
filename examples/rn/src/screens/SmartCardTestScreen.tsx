@@ -27,8 +27,17 @@ import {
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import HexTextInput from "../components/HexTextInput/HexTextInput";
+import HexKeyboardProvider from "../components/HexTextInput/HexKeyboardProvider";
 
 export default function SmartCardTestScreen() {
+  return (
+    <HexKeyboardProvider>
+      <SmartCardTestScreenInner />
+    </HexKeyboardProvider>
+  );
+  //return <SmartCardTestScreenInner />;
+}
+function SmartCardTestScreenInner() {
   const platformRef = useRef<RnSmartCardPlatform | null>(null);
   const deviceRef = useRef<SmartCardDevice | null>(null);
   const cardRef = useRef<SmartCard | null>(null);
