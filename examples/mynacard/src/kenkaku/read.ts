@@ -13,6 +13,11 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
+import {
+  CertificateParsed,
+  KenkakuEntriesParsed,
+  KenkakuMyNumberParsed,
+} from "../types.js";
 import { arrayBufferToBase64, askPassword, getPlatform } from "../utils.js";
 
 async function readEntries(session: SmartCard) {
@@ -26,7 +31,7 @@ async function readEntries(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaKenkakuEntries);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer) as KenkakuEntriesParsed;
 
   const offsets = [
     [parsed.offsets[0], parsed.offsets[2]],
@@ -72,7 +77,7 @@ async function readCertificate(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaCertificate);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer) as CertificateParsed;
 
   console.log(parsed);
 
@@ -90,7 +95,7 @@ async function readMyNumber(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaKenkakuMyNumber);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer) as KenkakuMyNumberParsed;
 
   console.log(parsed);
 

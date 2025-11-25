@@ -2,6 +2,8 @@ import { schemaKenhojoBasicFour } from "@aokiapp/mynacard";
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 import { BasicTLVParser, SchemaParser } from "@aokiapp/tlv/parser";
 
+import { KenhojoBasicFourParsed } from "./types.js";
+
 /**
  * Prompts the user for a password in the terminal, masking input with asterisks.
  * @param query The prompt message to display
@@ -83,7 +85,7 @@ export async function calculateBasicFourHash(
   buffer: ArrayBuffer,
 ): Promise<ArrayBuffer> {
   const parser = new SchemaParser(schemaKenhojoBasicFour);
-  const parsed = parser.parse(buffer);
+  const parsed = parser.parse(buffer) as KenhojoBasicFourParsed;
   const { endOffset } = BasicTLVParser.parse(buffer);
   const digest = await crypto.subtle.digest(
     "SHA-256",
@@ -98,7 +100,7 @@ export function uint8ArrayToHexString(uint8Array: Uint8Array): string {
     .join("");
 }
 
-export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+export function arrayBufferToBase64(buffer: ArrayBufferLike): string {
   if (typeof Buffer !== "undefined") {
     return Buffer.from(buffer).toString("base64");
   } else {

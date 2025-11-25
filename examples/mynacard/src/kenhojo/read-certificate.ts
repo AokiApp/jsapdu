@@ -12,6 +12,7 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
+import { CertificateParsed, KenhojoAuthKeyParsed } from "../types.js";
 import { askPassword, getPlatform } from "../utils.js";
 
 async function readAuthKey(session: SmartCard) {
@@ -25,7 +26,7 @@ async function readAuthKey(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaKenhojoAuthKey);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer) as KenhojoAuthKeyParsed;
 
   console.log(parsed);
 
@@ -43,7 +44,7 @@ async function readIntermediateCertificate(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaCertificate);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer) as CertificateParsed;
 
   console.log(parsed.contents);
 

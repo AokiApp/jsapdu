@@ -7,6 +7,7 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
+import { KenkakuMyNumberParsed } from "../types.js";
 import { askPassword, getPlatform } from "../utils.js";
 
 async function main() {
@@ -45,10 +46,11 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuMyNumber);
-    const parsed = await parser.parse(buffer, { async: true });
+    const parsed = parser.parse(buffer) as KenkakuMyNumberParsed;
 
     console.log(parsed);
-    console.log(parsed.publicKey.algorithm);
+    // Note: publicKeyRaw is now raw buffer, CryptoKey import is done separately if needed
+    console.log("Public key raw data:", parsed.publicKeyRaw);
   } catch (error) {
     console.error("error:", error);
   } finally {

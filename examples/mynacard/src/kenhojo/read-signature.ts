@@ -7,6 +7,7 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
+import { KenhojoSignatureParsed } from "../types.js";
 import { askPassword, getPlatform, uint8ArrayToHexString } from "../utils.js";
 
 async function main() {
@@ -45,7 +46,7 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenhojoSignature);
-    const parsed = parser.parse(buffer);
+    const parsed = parser.parse(buffer) as KenhojoSignatureParsed;
 
     console.log(
       "Kenhojo My Number Hash:",
