@@ -40,7 +40,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: platforms;android-35,build-tools;35.0.0,ndk;27.0.12077973,cmake;3.22.1
+          packages: platforms;android-35 build-tools;35.0.0 ndk;27.0.12077973 cmake;3.22.1
 
       - name: Install dependencies
         run: npm ci
@@ -81,7 +81,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: platforms;android-35,build-tools;35.0.0
+          packages: platforms;android-35 build-tools;35.0.0
 
       - name: Run Spotless/Lint read-only checks on library
         working-directory: examples/rn/android
