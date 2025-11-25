@@ -3,6 +3,7 @@
 This document records the current build architecture, constraints, and reasoning behind using the example app to validate the Android AAR, and clarifies when and why a standalone library-only build may not be reliable.
 
 Canonical files:
+
 - [`packages/rn/android/build.gradle`](packages/rn/android/build.gradle:1)
 - [`packages/rn/android/gradle.properties`](packages/rn/android/gradle.properties:1)
 - [`packages/rn/android/settings.gradle`](packages/rn/android/settings.gradle:1)
@@ -20,29 +21,25 @@ Canonical files:
 
 ## Why building library-only can fail or be brittle
 
-1) React Gradle plugin rewriting of com.facebook.react:react-native
-
+1. React Gradle plugin rewriting of com.facebook.react:react-native
    - Many libraries declare `implementation "com.facebook.react:react-native:+"`.
    - RN publishes Android artifacts under com.facebook.react:react-android for ≥0.71; the plugin rewrites requests.
    - In a library-only build without the app-level react plugin, nothing performs that rewrite, so dependency resolution fails.
    - We mitigate this with a global resolution strategy in [`packages/rn/android/build.gradle`](packages/rn/android/build.gradle:165):
      - Substitute com.facebook.react:react-native[+,specific] → com.facebook.react:react-android:0.81.1.
 
-2) AndroidX
-
+2. AndroidX
    - RN Android artifacts depend on AndroidX; `android.useAndroidX=true` is mandatory.
    - Missing this flag leads to Gradle errors like "Configuration contains AndroidX dependencies ... android.useAndroidX is not enabled".
    - We enable it in [`packages/rn/android/gradle.properties`](packages/rn/android/gradle.properties:1) and [`examples/rn/android/gradle.properties`](examples/rn/android/gradle.properties:23).
 
-3) Nitro Modules: Prefab and optional codegen
-
+3. Nitro Modules: Prefab and optional codegen
    - Nitro sets `prefab true` and publishes headers via Prefab in [`node_modules/react-native-nitro-modules/android/build.gradle`](node_modules/react-native-nitro-modules/android/build.gradle:76).
    - The new architecture (`newArchEnabled=true`) applies `apply plugin: "com.facebook.react"` and triggers codegen and autolinking.
    - In a library-only build with `newArchEnabled=false`, Nitro falls back to `src/oldarch` without the react plugin; builds can succeed, but codegen is not exercised.
    - The example app ensures codegen/autolinking paths execute and Prefab publications are consumed by the app’s CMake pipeline.
 
-4) Jetify/Prefab memory
-
+4. Jetify/Prefab memory
    - Transforming large AARs like react-android–debug sometimes OOMs in constrained environments.
    - We increase Gradle heap and limit ABIs to arm64-v8a to stabilize.
    - See heap settings in [`packages/rn/android/gradle.properties`](packages/rn/android/gradle.properties:1) and [`examples/rn/android/gradle.properties`](examples/rn/android/gradle.properties:13).
@@ -66,24 +63,26 @@ Canonical files:
 
 A) Verified path (preferred): build the example app
 
-   This exercises React plugin rewriting, Prefab consumption, and (if enabled) codegen.
+This exercises React plugin rewriting, Prefab consumption, and (if enabled) codegen.
 
-   Commands:
-   ```bash
-   cd examples/rn/android
-   ./gradlew --info --no-parallel --max-workers=2 -PreactNativeArchitectures=arm64-v8a :react-native-nitro-modules:assembleDebug :aokiapp_jsapdu-rn:assembleDebug :app:assembleDebug
-   ```
+Commands:
+
+```bash
+cd examples/rn/android
+./gradlew --info --no-parallel --max-workers=2 -PreactNativeArchitectures=arm64-v8a :react-native-nitro-modules:assembleDebug :aokiapp_jsapdu-rn:assembleDebug :app:assembleDebug
+```
 
 B) Library-only AAR (old-arch, no app/plugin participation)
 
-   This compiles the AAR with compileOnly RN core and Nitro old-arch sources.
-   It is useful for local packaging checks, but does not validate plugin rewrites or codegen.
+This compiles the AAR with compileOnly RN core and Nitro old-arch sources.
+It is useful for local packaging checks, but does not validate plugin rewrites or codegen.
 
-   Commands (run Gradle wrapper from the example app to reuse the Android SDK setup):
-   ```bash
-   cd examples/rn/android
-   ./gradlew --info --no-parallel --max-workers=2 -PreactNativeArchitectures=arm64-v8a -p ../../packages/rn/android :assembleDebug
-   ```
+Commands (run Gradle wrapper from the example app to reuse the Android SDK setup):
+
+```bash
+cd examples/rn/android
+./gradlew --info --no-parallel --max-workers=2 -PreactNativeArchitectures=arm64-v8a -p ../../packages/rn/android :assembleDebug
+```
 
 ## Why we keep using examples/rn as the test harness
 
@@ -128,6 +127,7 @@ A: We align to the version in [`examples/rn/package.json`](examples/rn/package.j
 **Q: Where are SDK versions controlled?**
 
 A: `compileSdk`, `minSdk`, `targetSdk`, `ndkVersion`, and `buildToolsVersion` are set in the library’s and app’s Gradle files:
+
 - [`packages/rn/android/build.gradle`](packages/rn/android/build.gradle:9)
 - [`examples/rn/android/build.gradle`](examples/rn/android/build.gradle:1)
 - [`examples/rn/android/app/build.gradle`](examples/rn/android/app/build.gradle:75)

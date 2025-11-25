@@ -128,7 +128,10 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     return this.eventEmitter;
   }
 
-  private routeCardEvent(evt: CardEventType, payload: DeviceEventPayload): void {
+  private routeCardEvent(
+    evt: CardEventType,
+    payload: DeviceEventPayload
+  ): void {
     try {
       const h = payload.cardHandle;
       if (!h) {
@@ -139,7 +142,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       if (card) {
         card.getEventEmitter().emit(evt, payload as any);
       } else {
-        console.warn(`[RnSmartCardDevice] Card target not found for ${evt}. card=${h}`);
+        console.warn(
+          `[RnSmartCardDevice] Card target not found for ${evt}. card=${h}`
+        );
       }
     } catch {
       // ignore routing errors
@@ -171,7 +176,11 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     this.cards.delete(cardHandle);
     // Clear convenience pointer if it matches
     const last = (this as any).card as RnSmartCard | null;
-    if (last && (last as any).getCardHandle && last.getCardHandle() === cardHandle) {
+    if (
+      last &&
+      (last as any).getCardHandle &&
+      last.getCardHandle() === cardHandle
+    ) {
       (this as any).card = null;
     }
   }
@@ -419,7 +428,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       for (const r of results) {
         if (r.status === 'rejected') {
           const mappedError =
-            r.reason instanceof SmartCardError ? r.reason : mapNitroError(r.reason);
+            r.reason instanceof SmartCardError
+              ? r.reason
+              : mapNitroError(r.reason);
           console.warn(
             `[RnSmartCardDevice] Failed to release a card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
           );

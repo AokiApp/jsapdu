@@ -211,7 +211,9 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       if (deviceHandle) {
         const device = this.getTarget(deviceHandle);
         if (device) {
-          device.getEventEmitter().emit(evt as unknown as DeviceEventType, payload);
+          device
+            .getEventEmitter()
+            .emit(evt as unknown as DeviceEventType, payload);
           return;
         } else {
           console.warn(
