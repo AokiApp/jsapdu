@@ -1,6 +1,7 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
 import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/jsapdu-interface";
 import {
+  decodePublicKey,
   KENKAKU_AP,
   KENKAKU_AP_EF,
   schemaKenkakuMyNumber,
@@ -49,8 +50,10 @@ async function main() {
     const parsed = parser.parse(buffer) as KenkakuMyNumberParsed;
 
     console.log(parsed);
-    // Note: publicKeyRaw is now raw buffer, CryptoKey import is done separately if needed
-    console.log("Public key raw data:", parsed.publicKeyRaw);
+
+    // The publicKeyRaw is now a raw ArrayBuffer. To get a CryptoKey, use decodePublicKey:
+    const publicKey = await decodePublicKey(parsed.publicKeyRaw);
+    console.log("Public key algorithm:", publicKey.algorithm);
   } catch (error) {
     console.error("error:", error);
   } finally {

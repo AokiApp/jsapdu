@@ -4,6 +4,10 @@ import { decodeOffsets, decodeText } from "./utils.js";
 // Note: Explicit 'any' type is used because @aokiapp/tlv doesn't export its internal schema types.
 // This is a known limitation of the library. Type inference for parse results still works at runtime.
 
+// Common decoder functions
+const decodeAsUint8Array = (buffer: ArrayBuffer) => new Uint8Array(buffer);
+const decodeAsArrayBuffer = (buffer: ArrayBuffer) => buffer;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const schemaCertificate: any = Schema.constructed(
   "certificate",
@@ -31,7 +35,7 @@ export const schemaCertificate: any = Schema.constructed(
         tagClass: TagClass.Application,
         tagNumber: 0x37,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
@@ -95,12 +99,12 @@ export const schemaKenhojoSignature: any = Schema.constructed(
     Schema.primitive(
       "kenhojoMyNumberHash",
       { tagClass: TagClass.Private, tagNumber: 0x31 },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "kenhojoBasicFourHash",
       { tagClass: TagClass.Private, tagNumber: 0x32 },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "thisSignature",
@@ -108,7 +112,7 @@ export const schemaKenhojoSignature: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x33,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
@@ -127,7 +131,7 @@ export const schemaKenhojoAuthKey: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x51,
       },
-      (buffer: ArrayBuffer) => buffer,
+      decodeAsArrayBuffer,
     ),
     Schema.primitive(
       "thisSignature",
@@ -135,7 +139,7 @@ export const schemaKenhojoAuthKey: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x52,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
@@ -159,7 +163,7 @@ export const schemaKenkakuBirth: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x12,
       },
-      (buffer: ArrayBuffer) => buffer,
+      decodeAsArrayBuffer,
     ),
     Schema.primitive(
       "thisSignature",
@@ -167,7 +171,7 @@ export const schemaKenkakuBirth: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x13,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
@@ -207,7 +211,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x24,
       },
-      (buffer: ArrayBuffer) => buffer,
+      decodeAsArrayBuffer,
     ),
     Schema.primitive(
       "namePng",
@@ -215,7 +219,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x25,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "addressPng",
@@ -223,7 +227,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x26,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "faceJp2",
@@ -231,7 +235,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x27,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "thisSignature",
@@ -239,7 +243,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x28,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "expire",
@@ -255,7 +259,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x2a,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
@@ -274,7 +278,7 @@ export const schemaKenkakuMyNumber: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x41,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
     Schema.primitive(
       "publicKeyRaw",
@@ -282,7 +286,7 @@ export const schemaKenkakuMyNumber: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x42,
       },
-      (buffer: ArrayBuffer) => buffer,
+      decodeAsArrayBuffer,
     ),
     Schema.primitive(
       "thisSignature",
@@ -290,7 +294,7 @@ export const schemaKenkakuMyNumber: any = Schema.constructed(
         tagClass: TagClass.Private,
         tagNumber: 0x43,
       },
-      (buffer: ArrayBuffer) => new Uint8Array(buffer),
+      decodeAsUint8Array,
     ),
   ],
 );
