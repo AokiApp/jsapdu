@@ -75,6 +75,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
     });
 
     ee.on('PLATFORM_INITIALIZED', (_payload: PlatformEventPayload) => {
+      void _payload; // Silence unused variable warning
       this.initialized = true;
     });
   }
@@ -396,11 +397,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
       }
 
       // Create device instance
-      const device = new RnSmartCardDevice(
-        this,
-        deviceHandle,
-        deviceInfoObj as RnDeviceInfo
-      );
+      const device = new RnSmartCardDevice(this, deviceHandle, deviceInfoObj);
 
       // Track acquired device
       this.acquiredDevices.set(id, device);
@@ -438,6 +435,7 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
   }
 
   private onNativePlatformReleased(_payload: PlatformEventPayload): void {
+    void _payload; // Silence unused variable warning
     if (!this.initialized) {
       this.resolvePlatformReleaseDeferred();
       return;

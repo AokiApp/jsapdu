@@ -78,6 +78,7 @@ export class RnSmartCard extends SmartCard<{
 
     const ee = this.getEventEmitter();
     const onCardDisposed = (_payload: CardEventPayload) => {
+      void _payload; // Silence unused variable warning
       this.handleNativeCardDisposed();
     };
     ee.on('CARD_LOST', onCardDisposed);
