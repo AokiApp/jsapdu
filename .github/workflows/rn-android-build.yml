@@ -57,14 +57,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-library-aar
-          path: packages/rn/android/build/outputs/aar/*.aar
+          path: packages/rn/android/build/outputs/aar/aokiapp_jsapdu-rn-release.aar
           if-no-files-found: warn
 
       - name: Upload example app APK
         uses: actions/upload-artifact@v4
         with:
           name: example-app-apk
-          path: examples/rn/android/app/build/outputs/apk/debug/*.apk
+          path: examples/rn/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: warn
 
   library-checks:
