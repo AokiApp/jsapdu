@@ -18,60 +18,58 @@ import android.os.Bundle
  */
 class NfcReaderController(private val adapter: NfcAdapter, private val onIsoDep: (IsoDep) -> Unit) {
 
-    // Listener interface removed; using constructor-provided callback
+  // Listener interface removed; using constructor-provided callback
 
-    /**
-     * Enable NFC ReaderMode with given flags and optional extras.
-     * The listener is invoked for ISO-DEP capable tags.
-     */
-    fun enable(
-        activity: Activity,
-        flags: Int = DEFAULT_FLAGS,
-        extras: Bundle? = null
-    ) {
-        val options = (extras ?: Bundle()).apply {
-            try {
-                if (!containsKey(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY)) {
-                    // Speed up platform presence checks for quicker TagLost I/O failures
-                    putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 500)
-                }
-            } catch (_: Exception) { /* ignore option errors */ }
+  /**
+   * Enable NFC ReaderMode with given flags and optional extras.
+   * The listener is invoked for ISO-DEP capable tags.
+   */
+  fun enable(activity: Activity, flags: Int = DEFAULT_FLAGS, extras: Bundle? = null) {
+    val options = (extras ?: Bundle()).apply {
+      try {
+        if (!containsKey(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY)) {
+          // Speed up platform presence checks for quicker TagLost I/O failures
+          putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 500)
         }
-        adapter.enableReaderMode(
-            activity,
-            NfcAdapter.ReaderCallback { tag: Tag? ->
-                if (tag != null) {
-                    val isoDep = IsoDep.get(tag)
-                    if (isoDep != null) {
-                        try {
-                            // Set a reasonable default timeout for faster tag-loss detection on I/O
-                            try { isoDep.timeout = 5000 } catch (_: Exception) {}
-                            onIsoDep(isoDep)
-                        } catch (_: Exception) {
-                            // Swallow callback exceptions to avoid crashing
-                        }
-                    }
-                }
-            },
-            flags,
-            options
-        )
+      } catch (_: Exception) { /* ignore option errors */ }
     }
+    adapter.enableReaderMode(
+      activity,
+      NfcAdapter.ReaderCallback { tag: Tag? ->
+        if (tag != null) {
+          val isoDep = IsoDep.get(tag)
+          if (isoDep != null) {
+            try {
+              // Set a reasonable default timeout for faster tag-loss detection on I/O
+              try {
+                isoDep.timeout = 5000
+              } catch (_: Exception) {}
+              onIsoDep(isoDep)
+            } catch (_: Exception) {
+              // Swallow callback exceptions to avoid crashing
+            }
+          }
+        }
+      },
+      flags,
+      options
+    )
+  }
 
-    /**
-     * Disable NFC ReaderMode on the provided Activity.
-     */
-    fun disable(activity: Activity) {
-        adapter.disableReaderMode(activity)
-    }
+  /**
+   * Disable NFC ReaderMode on the provided Activity.
+   */
+  fun disable(activity: Activity) {
+    adapter.disableReaderMode(activity)
+  }
 
-    companion object {
-        // Typical flags: support NFC-A/NFC-B/NFC-F, skip NDEF and mute platform sounds
-        const val DEFAULT_FLAGS: Int =
-            NfcAdapter.FLAG_READER_NFC_A or
-            NfcAdapter.FLAG_READER_NFC_B or
-            NfcAdapter.FLAG_READER_NFC_F or
-            NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
-            NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
-    }
+  companion object {
+    // Typical flags: support NFC-A/NFC-B/NFC-F, skip NDEF and mute platform sounds
+    const val DEFAULT_FLAGS: Int =
+      NfcAdapter.FLAG_READER_NFC_A or
+        NfcAdapter.FLAG_READER_NFC_B or
+        NfcAdapter.FLAG_READER_NFC_F or
+        NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+        NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+  }
 }

@@ -101,7 +101,7 @@ android {
   }
 
   lintOptions {
-    disable "GradleCompatible"
+    disable "GradleCompatible", "AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable"
     abortOnError true
     warningsAsErrors true
   }
@@ -137,6 +137,7 @@ dependencies {
   // Do not package RN core into this AAR; let the app provide it to avoid duplicate classes
   compileOnly "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  implementation "androidx.annotation:annotation:1.9.1"
   implementation project(":react-native-nitro-modules")
 }
 

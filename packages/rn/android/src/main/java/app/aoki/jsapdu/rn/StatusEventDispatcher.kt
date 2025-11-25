@@ -1,11 +1,9 @@
 package app.aoki.jsapdu.rn
 
-
 import android.os.Handler
 import android.os.Looper
-import java.util.concurrent.atomic.AtomicReference
 import com.margelo.nitro.aokiapp.jsapdurn.EventPayload
-
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Status event dispatcher for JsapduRN.
@@ -50,7 +48,11 @@ object StatusEventDispatcher {
     }
   }
 
-  private fun safeInvoke(cb: (eventType: String, payload: EventPayload) -> Unit, typeName: String, payload: EventPayload) {
+  private fun safeInvoke(
+    cb: (eventType: String, payload: EventPayload) -> Unit,
+    typeName: String,
+    payload: EventPayload
+  ) {
     try {
       cb(typeName, payload)
     } catch (_: Throwable) {
@@ -76,5 +78,5 @@ enum class StatusEventType {
   APDU_FAILED,
   READER_MODE_ENABLED,
   READER_MODE_DISABLED,
-  DEBUG_INFO,
+  DEBUG_INFO
 }
