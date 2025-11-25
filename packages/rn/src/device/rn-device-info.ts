@@ -133,7 +133,7 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
         deviceSize: info.antennaInfo.deviceSize,
         antennas: info.antennaInfo.antennas,
         formFactor: (() => {
-          switch (info.antennaInfo!.formFactor) {
+          switch (info.antennaInfo.formFactor) {
             case 0:
               return 'bifold';
             case 1:

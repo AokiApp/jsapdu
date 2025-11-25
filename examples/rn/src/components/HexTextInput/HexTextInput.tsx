@@ -1,6 +1,11 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { View, Modal, Pressable, StyleSheet, Animated } from "react-native";
-import type { StyleProp, TextStyle, NativeSyntheticEvent, TextInputFocusEvent } from "react-native";
+import type {
+  StyleProp,
+  TextStyle,
+  NativeSyntheticEvent,
+  TextInputFocusEvent,
+} from "react-native";
 import HexInputBox from "./HexInputBox";
 import HexKeyboard from "./HexKeyboard";
 import { useOptionalHexKeyboard } from "./HexKeyboardProvider";
@@ -17,10 +22,19 @@ export type HexTextInputProps = {
   autoFocus?: boolean;
 };
 
-const sanitize = (s: string = "") => s.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
+const sanitize = (s: string = "") =>
+  s.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
 
 export default function HexTextInput(props: HexTextInputProps) {
-  const { value, onChangeText, style, onFocus, onBlur, editable = true, placeholder } = props;
+  const {
+    value,
+    onChangeText,
+    style,
+    onFocus,
+    onBlur,
+    editable = true,
+    placeholder,
+  } = props;
   const ctx = useOptionalHexKeyboard();
   const idRef = useRef(Symbol("HexTextInput"));
 
@@ -37,8 +51,8 @@ export default function HexTextInput(props: HexTextInputProps) {
     ctx && active
       ? ctx.cursor
       : !ctx && active
-      ? controller.cursor
-      : displayHex.length;
+        ? controller.cursor
+        : displayHex.length;
 
   const show = useCallback(() => {
     if (!editable) return;
@@ -48,7 +62,12 @@ export default function HexTextInput(props: HexTextInputProps) {
       return;
     }
     // Fallback: open via shared controller; uses same state/handlers as Provider path
-    controller.open({ id: idRef.current, value: hexProp, onChangeText, onBlur });
+    controller.open({
+      id: idRef.current,
+      value: hexProp,
+      onChangeText,
+      onBlur,
+    });
     onFocus?.({} as NativeSyntheticEvent<TextInputFocusEvent>);
   }, [editable, ctx, controller, hexProp, onChangeText, onBlur, onFocus]);
 
@@ -79,7 +98,10 @@ export default function HexTextInput(props: HexTextInputProps) {
             />
 
             <Animated.View
-              style={[styles.sheet, { transform: [{ translateY: controller.sheetTranslateY }] }]}
+              style={[
+                styles.sheet,
+                { transform: [{ translateY: controller.sheetTranslateY }] },
+              ]}
             >
               <HexKeyboard
                 onKeyPress={controller.pressNibble}
@@ -88,7 +110,9 @@ export default function HexTextInput(props: HexTextInputProps) {
                 onMoveLeft={controller.moveLeft}
                 onMoveRight={controller.moveRight}
                 onCopyAll={controller.copyAllHex}
-                onPasteFromClipboard={() => { void controller.pasteHexFromClipboard(); }}
+                onPasteFromClipboard={() => {
+                  void controller.pasteHexFromClipboard();
+                }}
               />
             </Animated.View>
           </View>

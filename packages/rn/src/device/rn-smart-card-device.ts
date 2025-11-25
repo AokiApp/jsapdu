@@ -72,6 +72,8 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   private cards: Map<string, RnSmartCard> = new Map();
   private state: DeviceState = new DeviceState();
   private releaseDeferred: Deferred<void> | null = null;
+  /** @internal Convenience pointer to the last active card */
+  private _lastCard: RnSmartCard | null = null;
 
   constructor(
     parentPlatform: RnSmartCardPlatform,
@@ -84,6 +86,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
 
     const ee = this.getEventEmitter();
     ee.on('DEVICE_RELEASED', (_payload: DeviceEventPayload) => {
+      void _payload; // Silence unused variable warning
       this.handleNativeDeviceReleased();
     });
     // Route card-level events to the appropriate card (O(1) by handle)
@@ -128,7 +131,10 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     return this.eventEmitter;
   }
 
-  private routeCardEvent(evt: CardEventType, payload: DeviceEventPayload): void {
+  private routeCardEvent(
+    evt: CardEventType,
+    payload: DeviceEventPayload
+  ): void {
     try {
       const h = payload.cardHandle;
       if (!h) {
@@ -137,9 +143,11 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       }
       const card = this.cards.get(h);
       if (card) {
-        card.getEventEmitter().emit(evt, payload as any);
+        card.getEventEmitter().emit(evt, payload);
       } else {
-        console.warn(`[RnSmartCardDevice] Card target not found for ${evt}. card=${h}`);
+        console.warn(
+          `[RnSmartCardDevice] Card target not found for ${evt}. card=${h}`
+        );
       }
     } catch {
       // ignore routing errors
@@ -170,9 +178,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
   public onCardReleased(cardHandle: string): void {
     this.cards.delete(cardHandle);
     // Clear convenience pointer if it matches
-    const last = (this as any).card as RnSmartCard | null;
-    if (last && (last as any).getCardHandle && last.getCardHandle() === cardHandle) {
-      (this as any).card = null;
+    const last = this._lastCard;
+    if (last && last.getCardHandle() === cardHandle) {
+      this._lastCard = null;
     }
   }
 
@@ -188,7 +196,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       // ignore cleanup errors
     }
     // Clear convenience pointer
-    (this as any).card = null;
+    this._lastCard = null;
   }
 
   /**
@@ -364,7 +372,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       const card = new RnSmartCard(this, this.deviceHandle, cardHandle);
       this.cards.set(cardHandle, card);
       // Maintain backward-compatible convenience pointer to "last" card
-      (this as any).card = card;
+      this._lastCard = card;
       return card;
     } catch (error) {
       throw mapNitroError(error);
@@ -419,7 +427,9 @@ export class RnSmartCardDevice extends SmartCardDevice<{
       for (const r of results) {
         if (r.status === 'rejected') {
           const mappedError =
-            r.reason instanceof SmartCardError ? r.reason : mapNitroError(r.reason);
+            r.reason instanceof SmartCardError
+              ? r.reason
+              : mapNitroError(r.reason);
           console.warn(
             `[RnSmartCardDevice] Failed to release a card cleanly (code=${mappedError.code}). Continuing device release. details=${mappedError.message}`
           );
