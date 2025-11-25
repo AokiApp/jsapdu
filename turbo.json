@@ -2,14 +2,23 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "lib/**"]
     },
     "typecheck": {
-      "dependsOn": [],
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
       "outputs": []
     },
     "clean": {
-      "outputs": []
+      "outputs": [],
+      "cache": false
     }
   }
 }

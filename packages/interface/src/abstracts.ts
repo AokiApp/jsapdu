@@ -1,6 +1,8 @@
 import { CommandApdu, ResponseApdu } from "./apdu/index.js";
 import { SmartCardError, fromUnknownError } from "./errors.js";
 
+import { createNanoEvents, DefaultEvents, EventsMap } from "nanoevents";
+
 /**
  * Platform manager for SmartCard R/W
  */
@@ -14,7 +16,10 @@ export abstract class SmartCardPlatformManager {
  * @class
  * @name Context
  */
-export abstract class SmartCardPlatform {
+export abstract class SmartCardPlatform<
+  Events extends EventsMap = DefaultEvents,
+> {
+  protected eventEmitter = createNanoEvents<Events>();
   /**
    * Indicates if the platform is initialized
    * @readonly
@@ -30,13 +35,13 @@ export abstract class SmartCardPlatform {
    * Initialize the platform
    * @throws {SmartCardError} If initialization fails or platform is already initialized
    */
-  public abstract init(): Promise<void>;
+  public abstract init(force?: boolean): Promise<void>;
 
   /**
    * Release the platform and all acquired devices
    * @throws {SmartCardError} If release fails or platform is not initialized
    */
-  public abstract release(): Promise<void>;
+  public abstract release(force?: boolean): Promise<void>;
 
   /**
    * Get whether the platform is initialized or not
@@ -101,6 +106,15 @@ export abstract class SmartCardPlatform {
    * - Any other error occurs during acquisition
    */
   public abstract acquireDevice(id: string): Promise<SmartCardDevice>;
+
+  /**
+   * Event emitter for platform events
+   */
+  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
+    return this.eventEmitter.on(event, cb);
+  }
+
+  // emit is not exposed, use eventEmitter directly
 }
 
 /**
@@ -162,6 +176,7 @@ export abstract class SmartCardDeviceInfo {
   public abstract readonly d2cProtocol:
     | "iso7816" // ISO 7816 (Contact)
     | "nfc" // NFC (Contactless)
+    | "integrated" // Integrated reader
     | "other" // Other
     | "unknown"; // Unknown
 
@@ -172,6 +187,7 @@ export abstract class SmartCardDeviceInfo {
     | "usb" // USB CCID
     | "ble" // Bluetooth LE
     | "nfc" // NFC
+    | "integrated" // Integrated reader
     | "other" // Other
     | "unknown"; // Unknown
 
@@ -181,6 +197,10 @@ export abstract class SmartCardDeviceInfo {
    * Supports nested protocol (e.g. BLE over WebUSB)
    */
   public abstract readonly apduApi: ApduApi[];
+  /**
+   * Contactless antenna information if provided by the platform
+   */
+  public abstract readonly antennaInfo?: NfcAntennaInfo;
 }
 
 /**
@@ -197,9 +217,28 @@ export abstract class SmartCardDeviceInfo {
 type ApduApi = string;
 
 /**
+ * NFC antenna information (platform-agnostic)
+ */
+export interface NfcAntennaInfo {
+  deviceSize: {
+    width: number; // in millimeters
+    height: number; // in millimeters
+  };
+  antennas: Array<{
+    centerX: number; // in millimeters
+    centerY: number; // in millimeters
+    radius?: number; // in millimeters
+  }>;
+  formFactor: "bifold" | "trifold" | "phone" | "tablet" | null;
+}
+
+/**
  * SmartCard Device
  */
-export abstract class SmartCardDevice {
+export abstract class SmartCardDevice<
+  Events extends EventsMap = DefaultEvents,
+> {
+  protected eventEmitter = createNanoEvents<Events>();
   /**
    * @constructor
    */
@@ -278,9 +317,19 @@ export abstract class SmartCardDevice {
       throw fromUnknownError(error);
     }
   }
+
+  /**
+   * Event emitter for device events
+   */
+  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
+    return this.eventEmitter.on(event, cb);
+  }
+
+  // emit is not exposed, use eventEmitter directly
 }
 
-export abstract class SmartCard {
+export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
+  protected eventEmitter = createNanoEvents<Events>();
   /**
    * @constructor
    */
@@ -321,11 +370,21 @@ export abstract class SmartCard {
       throw fromUnknownError(error);
     }
   }
+
+  /**
+   * Event emitter for card events
+   */
+  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
+    return this.eventEmitter.on(event, cb);
+  }
+
+  // emit is not exposed, use eventEmitter directly
 }
 
 type Atr = Uint8Array;
 
-export abstract class EmulatedCard {
+export abstract class EmulatedCard<Events extends EventsMap = DefaultEvents> {
+  protected eventEmitter = createNanoEvents<Events>();
   /**
    * @constructor
    */
@@ -345,14 +404,6 @@ export abstract class EmulatedCard {
   ): Promise<void>;
 
   /**
-   * Set state change handler
-   * @throws {SmartCardError} If setting handler fails
-   */
-  public abstract setStateChangeHandler(
-    handler: (state: EmulatedCardState) => void,
-  ): Promise<void>; // todo: consider using event emitter
-
-  /**
    * Release the session
    * @throws {SmartCardError} If release fails
    */
@@ -368,7 +419,13 @@ export abstract class EmulatedCard {
       throw fromUnknownError(error);
     }
   }
-}
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-type EmulatedCardState = "disconnected" | string; // todo: def
+  /**
+   * Event emitter for emulated card events
+   */
+  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
+    return this.eventEmitter.on(event, cb);
+  }
+
+  // emit is not exposed, use eventEmitter directly
+}

@@ -44,8 +44,12 @@ export class PcscPlatform extends SmartCardPlatform {
    * Initialize the platform
    * @throws {SmartCardError} If initialization fails or platform is already initialized
    */
-  public init(): Promise<void> {
-    this.assertNotInitialized();
+  // fake async to match interface
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async init(force: boolean = false): Promise<void> {
+    if (!force) {
+      this.assertNotInitialized();
+    }
 
     try {
       // Establish PC/SC context
@@ -60,7 +64,6 @@ export class PcscPlatform extends SmartCardPlatform {
 
       this.context = hContext[0];
       this.initialized = true;
-      return Promise.resolve();
     } catch (error) {
       throw new SmartCardError(
         "PLATFORM_ERROR",
@@ -74,9 +77,17 @@ export class PcscPlatform extends SmartCardPlatform {
    * Release the platform and all acquired devices
    * @throws {SmartCardError} If release fails or platform is not initialized
    */
-  public async release(): Promise<void> {
+  public async release(force: boolean = false): Promise<void> {
     await this.mutex.lock(async () => {
-      this.assertInitialized();
+      if (!force) {
+        this.assertInitialized();
+      } else {
+        if (!this.initialized) {
+          // Force mode: bypass precondition check only (no cleanup)
+          return;
+        }
+      }
+
       let deviceReleaseError: Error | undefined = undefined;
       try {
         // Release all acquired devices

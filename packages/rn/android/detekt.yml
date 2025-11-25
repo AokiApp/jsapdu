@@ -1,0 +1,98 @@
+# Detekt configuration for the RN Android library module (packages/rn/android)
+#
+# Goals:
+# - Reasonable defaults that align with Spotless/ktlint config (120 char lines)
+# - Avoid noisy rules initially (e.g., MagicNumber, WildcardImport)
+# - Keep checks quick and focused on Java/Kotlin sources under src/main/java
+#
+# To run locally:
+#   ./gradlew -p packages/rn/android detekt
+
+config:
+  validation: true
+
+build:
+  # Set to 0 to fail on any issue; raise if onboarding requires a baseline period
+  maxIssues: 0
+  excludeCorrectable: false
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+  exclude:
+    - 'ProjectStatisticsReport'
+    - 'ComplexityReport'
+    - 'NotificationReport'
+    - 'FindingsReport'
+    - 'FileBasedFindingsReport'
+
+output-reports:
+  active: true
+  exclude: []
+  # Reports are emitted under build/reports/detekt by default
+
+detekt:
+  parallel: true
+  # Run on main JVM/Kotlin sources
+  source:
+    - 'src/main/java'
+    - 'src/main/kotlin'
+  # Baseline is intentionally not used at first; add one if needed:
+  # baseline: detekt-baseline.xml
+  autoCorrect: false
+  allRules: false
+  buildUponDefaultConfig: true
+
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+    excludeCommentStatements: false
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false
+  UnusedPrivateMember:
+    active: true
+
+complexity:
+  LongParameterList:
+    active: true
+    threshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 20
+    ignoreDeprecated: true
+  ComplexCondition:
+    active: true
+    threshold: 5
+
+performance:
+  SpreadOperator:
+    active: false
+  ForEachOnRange:
+    active: true
+
+exceptions:
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes:
+      - 'InterruptedException'
+
+formatting:
+  # These formatting rules require detekt-formatting on the classpath
+  # (optional enhancement). Without it, this section is ignored.
+  active: true
+  android: true
+  MaximumLineLength:
+    active: true
+    maxLineLength: 120
+  NoWildcardImports:
+    active: false

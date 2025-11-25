@@ -117,4 +117,12 @@ export class PcscDeviceInfo extends SmartCardDeviceInfo {
   public get apduApi(): string[] {
     return ["pcsc"];
   }
+
+  /**
+   * Contactless antenna information if provided by the platform
+   * Windows/PCSCでは提供しないのでnullを返す
+   */
+  public get antennaInfo() {
+    return undefined;
+  }
 }
