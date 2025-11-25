@@ -18,10 +18,10 @@
     "clean": "rimraf dist .turbo node_modules"
   },
   "dependencies": {
-    "@aokiapp/tlv": "^0.1.0",
-    "@aokiapp/mynacard": "*",
+    "@aokiapp/apdu-utils": "*",
     "@aokiapp/jsapdu-interface": "*",
     "@aokiapp/jsapdu-pcsc": "*",
-    "@aokiapp/apdu-utils": "*"
+    "@aokiapp/mynacard": "*",
+    "@aokiapp/tlv": "^0.3.1"
   }
 }
