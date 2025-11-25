@@ -12,6 +12,9 @@ buildscript {
     classpath "com.android.tools.build:gradle:8.7.2"
     // noinspection DifferentKotlinGradleVersion
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+    // Formatting and static analysis plugins
+    classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
+    classpath "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.6"
   }
 }
 
@@ -25,6 +28,8 @@ apply plugin: "kotlin-android"
 apply from: '../nitrogen/generated/android/aokiapp_jsapdurn+autolinking.gradle'
 
 apply plugin: "com.facebook.react"
+apply plugin: "com.diffplug.spotless"
+apply plugin: "io.gitlab.arturbosch.detekt"
 
 def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["JsapduRn_" + name]).toInteger()
@@ -97,6 +102,8 @@ android {
 
   lintOptions {
     disable "GradleCompatible"
+    abortOnError true
+    warningsAsErrors true
   }
 
   compileOptions {
@@ -131,4 +138,33 @@ dependencies {
   compileOnly "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation project(":react-native-nitro-modules")
+}
+
+// Formatting: Spotless with ktlint
+spotless {
+  kotlin {
+    target "src/**/*.kt"
+    ktlint("1.2.1").editorConfigOverride([
+      "ktlint_code_style": "android_studio",
+      "indent_size": "2",
+      "insert_final_newline": "true",
+      "max_line_length": "120",
+      "ktlint_standard_no-wildcard-imports": "disabled"
+    ])
+  }
+}
+
+// Static analysis: Detekt (defaults)
+detekt {
+  buildUponDefaultConfig = true
+  allRules = false
+  source = files("src/main/java")
+  parallel = true
+}
+
+// Syntax/type check: compile Kotlin (without producing AAR)
+tasks.register("libraryTypeCheck") {
+  group = "verification"
+  description = "Compile Kotlin sources to perform syntax/type checking for the RN library module"
+  dependsOn("compileDebugKotlin")
 }
