@@ -1,15 +1,11 @@
 import { Schema, TagClass } from "@aokiapp/tlv/parser";
 import { decodeOffsets, decodeText } from "./utils.js";
 
-// Note: Explicit 'any' type is used because @aokiapp/tlv doesn't export its internal schema types.
-// This is a known limitation of the library. Type inference for parse results still works at runtime.
-
 // Common decoder functions
 const decodeAsUint8Array = (buffer: ArrayBuffer) => new Uint8Array(buffer);
 const decodeAsArrayBuffer = (buffer: ArrayBuffer) => buffer;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaCertificate: any = Schema.constructed(
+export const schemaCertificate = Schema.constructed(
   "certificate",
   {
     tagClass: TagClass.Application,
@@ -40,8 +36,7 @@ export const schemaCertificate: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenhojoBasicFour: any = Schema.constructed(
+export const schemaKenhojoBasicFour = Schema.constructed(
   "kenhojoBasicFour",
   {},
   [
@@ -88,8 +83,7 @@ export const schemaKenhojoBasicFour: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenhojoSignature: any = Schema.constructed(
+export const schemaKenhojoSignature = Schema.constructed(
   "kenhojoSignature",
   {
     tagClass: TagClass.Private,
@@ -117,8 +111,7 @@ export const schemaKenhojoSignature: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenhojoAuthKey: any = Schema.constructed(
+export const schemaKenhojoAuthKey = Schema.constructed(
   "kenhojoAuthKey",
   {
     tagClass: TagClass.Private,
@@ -144,8 +137,7 @@ export const schemaKenhojoAuthKey: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenkakuBirth: any = Schema.constructed(
+export const schemaKenkakuBirth = Schema.constructed(
   "kenkakuBirth",
   {},
   [
@@ -176,8 +168,7 @@ export const schemaKenkakuBirth: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenkakuEntries: any = Schema.constructed(
+export const schemaKenkakuEntries = Schema.constructed(
   "kenkakuEntries",
   {},
   [
@@ -264,8 +255,7 @@ export const schemaKenkakuEntries: any = Schema.constructed(
   ],
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const schemaKenkakuMyNumber: any = Schema.constructed(
+export const schemaKenkakuMyNumber = Schema.constructed(
   "kenkakuMyNumber",
   {
     tagClass: TagClass.Private,

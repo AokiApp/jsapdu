@@ -1,14 +1,12 @@
 import { readEfBinaryFull, selectDf, verify } from "@aokiapp/apdu-utils";
 import { SmartCardDevice, SmartCardPlatform } from "@aokiapp/jsapdu-interface";
 import {
-  decodePublicKey,
   KENKAKU_AP,
   KENKAKU_AP_EF,
   schemaKenkakuMyNumber,
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
-import { KenkakuMyNumberParsed } from "../types.js";
 import { askPassword, getPlatform } from "../utils.js";
 
 async function main() {
@@ -47,13 +45,11 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuMyNumber);
-    const parsed = parser.parse(buffer) as KenkakuMyNumberParsed;
+    const parsed = parser.parse(buffer);
 
     console.log(parsed);
-
-    // The publicKeyRaw is now a raw ArrayBuffer. To get a CryptoKey, use decodePublicKey:
-    const publicKey = await decodePublicKey(parsed.publicKeyRaw);
-    console.log("Public key algorithm:", publicKey.algorithm);
+    // Note: publicKeyRaw is now raw ArrayBuffer, use decodePublicKey if CryptoKey is needed
+    console.log(parsed.publicKeyRaw);
   } catch (error) {
     console.error("error:", error);
   } finally {

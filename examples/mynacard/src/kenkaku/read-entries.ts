@@ -7,7 +7,6 @@ import {
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 
-import { KenkakuEntriesParsed } from "../types.js";
 import { askPassword, getPlatform } from "../utils.js";
 
 async function main() {
@@ -46,7 +45,7 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuEntries);
-    const parsed = parser.parse(buffer) as KenkakuEntriesParsed;
+    const parsed = parser.parse(buffer);
 
     const digest_1 = await crypto.subtle.digest(
       "SHA-256",
