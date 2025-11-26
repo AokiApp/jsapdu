@@ -26,7 +26,7 @@ async function readEntries(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaKenkakuEntries);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer);
 
   const offsets = [
     [parsed.offsets[0], parsed.offsets[2]],
@@ -72,7 +72,7 @@ async function readCertificate(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaCertificate);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer);
 
   console.log(parsed);
 
@@ -90,7 +90,7 @@ async function readMyNumber(session: SmartCard) {
 
   const buffer = readBinaryResponse.arrayBuffer();
   const parser = new SchemaParser(schemaKenkakuMyNumber);
-  const parsed = await parser.parse(buffer, { async: true });
+  const parsed = parser.parse(buffer);
 
   console.log(parsed);
 

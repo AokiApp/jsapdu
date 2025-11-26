@@ -45,7 +45,7 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuEntries);
-    const parsed = await parser.parse(buffer, { async: true });
+    const parsed = parser.parse(buffer);
 
     const digest_1 = await crypto.subtle.digest(
       "SHA-256",

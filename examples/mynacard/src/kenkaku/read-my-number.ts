@@ -45,10 +45,11 @@ async function main() {
 
     const buffer = readBinaryResponse.arrayBuffer();
     const parser = new SchemaParser(schemaKenkakuMyNumber);
-    const parsed = await parser.parse(buffer, { async: true });
+    const parsed = parser.parse(buffer);
 
     console.log(parsed);
-    console.log(parsed.publicKey.algorithm);
+    // Note: publicKeyRaw is now raw ArrayBuffer, use decodePublicKey if CryptoKey is needed
+    console.log(parsed.publicKeyRaw);
   } catch (error) {
     console.error("error:", error);
   } finally {
