@@ -349,6 +349,48 @@ export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
   public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
 
   /**
+   * Check if the card connection is valid
+   * Pings the card to ensure it's still present and responsive
+   * @throws {SmartCardError} If validation fails
+   */
+  public abstract isValid(): Promise<boolean>;
+
+  /**
+   * Transmit control command to the card reader
+   * Used for reader-specific operations like PIN verification, biometrics, etc.
+   * @param controlCode - Control code for the operation
+   * @param command - Command data to send
+   * @returns Response data from the reader
+   * @throws {SmartCardError} If transmission fails
+   */
+  public abstract transmitControlCommand(
+    controlCode: number,
+    command: Uint8Array,
+  ): Promise<Uint8Array>;
+
+  /**
+   * Begin exclusive access to the card
+   * Prevents other applications from accessing the card
+   * @throws {SmartCardError} If exclusive access fails or already active
+   */
+  public abstract beginExclusive(): Promise<void>;
+
+  /**
+   * End exclusive access to the card
+   * Releases exclusive access previously established
+   * @throws {SmartCardError} If no exclusive access is active or operation fails
+   */
+  public abstract endExclusive(): Promise<void>;
+
+  /**
+   * Open a new logical channel to the card
+   * Returns a new SmartCardLogicalChannel instance representing the logical channel
+   * @returns New SmartCardLogicalChannel instance for the logical channel
+   * @throws {SmartCardError} If logical channel could not be opened
+   */
+  public abstract openLogicalChannel(): Promise<SmartCardLogicalChannel>;
+
+  /**
    * Reset the card
    * @throws {SmartCardError} If reset fails
    */
@@ -379,6 +421,41 @@ export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
   }
 
   // emit is not exposed, use eventEmitter directly
+}
+
+/**
+ * Abstract class for logical channel operations
+ */
+export abstract class SmartCardLogicalChannel {
+  protected channelNumber: number;
+  protected parentCard: SmartCard;
+
+  constructor(parentCard: SmartCard, channelNumber: number) {
+    this.parentCard = parentCard;
+    this.channelNumber = channelNumber;
+  }
+
+  /**
+   * Get the logical channel number
+   * @returns number - Channel number (0 for basic channel)
+   */
+  public getChannelNumber(): number {
+    return this.channelNumber;
+  }
+
+  /**
+   * Transmit APDU on this logical channel
+   * @param apdu - Command APDU to transmit
+   * @returns Promise<ResponseApdu> - Response APDU
+   * @throws {SmartCardError} If transmission fails
+   */
+  public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+
+  /**
+   * Close this logical channel
+   * @throws {SmartCardError} If close fails or channel is basic channel
+   */
+  public abstract close(): Promise<void>;
 }
 
 type Atr = Uint8Array;
