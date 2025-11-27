@@ -4,80 +4,68 @@ Complete API documentation for all jsapdu packages.
 
 ## Core Packages
 
-### [@aokiapp/jsapdu-interface](./interface.md)
+### [@aokiapp/jsapdu-interface](../../packages/interface/README.md)
 
 Core abstractions and interfaces for platform-agnostic SmartCard communication.
 
 **Key Classes:**
 
-- [`SmartCardPlatformManager`](./interface.md#smartcardplatformmanager) - Platform manager abstraction
-- [`SmartCardPlatform`](./interface.md#smartcardplatform) - Platform interface
-- [`SmartCardDevice`](./interface.md#smartcarddevice) - Device abstraction
-- [`SmartCard`](./interface.md#smartcard) - Card communication interface
-- [`CommandApdu`](./interface.md#commandapdu) - APDU command construction
-- [`ResponseApdu`](./interface.md#responseapdu) - APDU response parsing
-- [`SmartCardError`](./interface.md#smartcarderror) - Error handling system
+- [abstracts.ts](../../packages/interface/src/abstracts.ts) - Platform and device/card interfaces
+- [command-apdu.ts](../../packages/interface/src/apdu/command-apdu.ts) - APDU command construction
+- [response-apdu.ts](../../packages/interface/src/apdu/response-apdu.ts) - APDU response parsing
+- [errors.ts](../../packages/interface/src/errors.ts) - Structured error handling
 
-### [@aokiapp/jsapdu-pcsc](./pcsc.md)
+### [@aokiapp/jsapdu-pcsc](../../packages/pcsc/README.md)
 
 PC/SC platform implementation for desktop environments.
 
 **Key Classes:**
 
-- [`PcscPlatformManager`](./pcsc.md#pcscplatformmanager) - PC/SC platform manager
-- [`PcscPlatform`](./pcsc.md#pcscplatform) - PC/SC platform implementation
-- [`PcscDevice`](./pcsc.md#pcscdevice) - PC/SC device implementation
-- [`PcscCard`](./pcsc.md#pcsccard) - PC/SC card communication
+- [platform-manager.ts](../../packages/pcsc/src/platform-manager.ts) - PC/SC platform manager
+- [platform.ts](../../packages/pcsc/src/platform.ts) - PC/SC platform implementation
+- [device.ts](../../packages/pcsc/src/device.ts) - PC/SC device implementation
+- [card.ts](../../packages/pcsc/src/card.ts) - PC/SC card communication
 
-### [@aokiapp/jsapdu-rn](./rn.md)
+### [@aokiapp/jsapdu-rn](../../packages/rn/README.md)
 
-React Native platform implementation for mobile environments.
-
-**Key Classes:**
-- W.I.P.
+Experimental React Native implementation for mobile environments.
 
 ## Auxiliary Packages
 
-### [@aokiapp/apdu-utils](./apdu-utils.md)
+### [@aokiapp/apdu-utils](../../packages/apdu-utils/README.md)
 
 Utility functions for building common APDU commands.
 
 **Key Functions:**
 
-- [`selectDf()`](./apdu-utils.md#selectdf) - Select directory file (application)
-- [`selectEf()`](./apdu-utils.md#selectef) - Select elementary file
-- [`readEfBinaryFull()`](./apdu-utils.md#readefbinaryfull) - Read complete file
-- [`readBinary()`](./apdu-utils.md#readbinary) - Read binary data with options
-- [`verify()`](./apdu-utils.md#verify) - PIN verification
+- [select.ts](../../packages/apdu-utils/src/select.ts) - selectDf, selectEf
+- [read-binary.ts](../../packages/apdu-utils/src/read-binary.ts) - readEfBinaryFull, readBinary
+- [verify.ts](../../packages/apdu-utils/src/verify.ts) - verify
 
-### [@aokiapp/mynacard](./mynacard.md)
+### [@aokiapp/mynacard](../../packages/mynacard/README.md)
 
 Japanese MynaCard support with specialized functionality.
 
 **Key Constants:**
 
-- [`JPKI_AP`](./mynacard.md#jpki_ap) - JPKI application constants
-- [`KENHOJO_AP`](./mynacard.md#kenhojo_ap) - Kenhojo application constants
-- [`KENKAKU_AP`](./mynacard.md#kenkaku_ap) - Kenkaku application constants
+- [constants.ts](../../packages/mynacard/src/constants.ts) - JPKI_AP, KENHOJO_AP, KENKAKU_AP constants
 
 **Key Schemas:**
 
-- [`schemaKenhojoBasicFour`](./mynacard.md#schemakenhojobasicfour) - Basic four information
-- [`schemaCertificate`](./mynacard.md#schemacertificate) - Certificate structure
-- [`schemaKenhojoSignature`](./mynacard.md#schemakenhojosignature) - Signature structure
+- [schema.ts](../../packages/mynacard/src/schema.ts) - TLV schemas (schemaKenhojoBasicFour, schemaCertificate, schemaKenhojoSignature)
 
 ## Low-Level Packages
 
-### [@aokiapp/pcsc-ffi-node](./pcsc-ffi-node.md)
+### [@aokiapp/pcsc-ffi-node](../../packages/pcsc-ffi-node/README.md)
 
 Native PC/SC bindings through Foreign Function Interface.
 
 **Key Functions:**
 
-- [`SCardEstablishContext()`](./pcsc-ffi-node.md#scardestablishcontext) - Initialize PC/SC
-- [`SCardConnect()`](./pcsc-ffi-node.md#scardconnect) - Connect to card
-- [`SCardTransmit()`](./pcsc-ffi-node.md#scardtransmit) - Send APDU commands
-- [`SCardListReaders()`](./pcsc-ffi-node.md#scardlistreaders) - List available readers
+- [SCardEstablishContext()](../../packages/pcsc-ffi-node/README.md) - Initialize PC/SC
+- [SCardConnect()](../../packages/pcsc-ffi-node/README.md) - Connect to card
+- [SCardTransmit()](../../packages/pcsc-ffi-node/README.md) - Send APDU commands
+- [SCardListReaders()](../../packages/pcsc-ffi-node/README.md) - List available readers
 
 ## Quick Reference
 
@@ -133,7 +121,7 @@ import {
   KENHOJO_AP_EF,
   schemaKenhojoBasicFour,
 } from "@aokiapp/mynacard";
-import { verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
+import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 
 await card.transmit(selectDf(KENHOJO_AP));
 await card.transmit(verify(pin, { ef: KENHOJO_AP_EF.PIN }));
@@ -231,4 +219,3 @@ type verify = function;
 - [Getting Started Guide](../getting-started.md)
 - [Architecture Documentation](../architecture/README.md)
 - [MynaCard Guide](../guides/mynacard.md)
-- [Examples](../examples/README.md)

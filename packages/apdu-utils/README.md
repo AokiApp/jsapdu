@@ -162,22 +162,22 @@ const pinBytes = new Uint8Array([0x31, 0x32, 0x33, 0x34]);
 const cmd5 = verify(pinBytes, { ef: 0x11 });
 ```
 
-## Utility Functions
+## Data Conversion
 
-### toUint8Array() - Data Conversion
+apdu-utils focuses on APDU builders. If you need general-purpose conversions, use utilities provided by `@aokiapp/jsapdu-interface`:
 
 ```typescript
-import { toUint8Array } from "@aokiapp/apdu-utils";
+import { toUint8Array } from "@aokiapp/jsapdu-interface";
 
 // Convert hex string to bytes
-const bytes1 = toUint8Array("01020304"); // Uint8Array([1, 2, 3, 4])
+const bytes1 = toUint8Array("01020304");
 
 // Convert number array to bytes
-const bytes2 = toUint8Array([1, 2, 3, 4]); // Uint8Array([1, 2, 3, 4])
+const bytes2 = toUint8Array([1, 2, 3, 4]);
 
 // Pass through existing Uint8Array
 const existing = new Uint8Array([1, 2, 3, 4]);
-const bytes3 = toUint8Array(existing); // Same array
+const bytes3 = toUint8Array(existing);
 ```
 
 ## Common Usage Patterns

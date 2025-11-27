@@ -34,8 +34,8 @@
         <uses-feature android:name="android.hardware.nfc" android:required="false" />
       </manifest>
       ```
-    - 参照: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:102), [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:113)
-    - 適用先（例プロジェクト）: [examples/rn/android/app/src/main/AndroidManifest.xml](examples/rn/android/app/src/main/AndroidManifest.xml:1)
+    - 参照: [android-nfc-tsd.md](tsd/android-nfc-tsd.md)
+    - 適用先: ホストアプリの AndroidManifest.xml
     - デフォルト配布方針: android.hardware.nfc required=false
       - 非NFC端末時の挙動: [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33) は成功、[SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87) は0件、[SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103) は "PLATFORM_ERROR"。
   - SDKベースライン
@@ -44,11 +44,11 @@
     - 例の現在設定: [examples/rn/android/build.gradle](examples/rn/android/build.gradle:3), [examples/rn/android/app/build.gradle](examples/rn/android/app/build.gradle:78)
 
 - 実装の5ステップ（FFI中立な公開契約準拠）
-  1. プラットフォーム初期化 [SmartCardPlatform.init()](packages/interface/src/abstracts.ts:33)
-  2. デバイス情報取得 [SmartCardPlatform.getDeviceInfo()](packages/interface/src/abstracts.ts:87) → 現行は統合NFCデバイスを単一IDで返す（受入基準は0または1件）。非NFC端末では0件。将来は複数デバイス（例: BLEリーダ）を許容。IDは例示 "integrated-nfc-0"。apduApi=["nfc","androidnfc"]。supportsHce=false（初期版）。公開スキーマはインタフェース定義に一致させ、追加のケイパは含めない。
-  3. デバイス取得でRFを有効化 [SmartCardPlatform.acquireDevice()](packages/interface/src/abstracts.ts:103)
-  4. タグ検出の待機 [SmartCardDevice.waitForCardPresence()](packages/interface/src/abstracts.ts:259)（イベント駆動。タイムアウト/キャンセルで終了）
-  5. セッション開始とI/O [SmartCardDevice.startSession()](packages/interface/src/abstracts.ts:249), [SmartCard.transmit()](packages/interface/src/abstracts.ts:300), [SmartCard.getAtr()](packages/interface/src/abstracts.ts:293)
+  1. プラットフォーム初期化 [SmartCardPlatform.init()](../../interface/src/abstracts.ts)
+  2. デバイス情報取得 [SmartCardPlatform.getDeviceInfo()](../../interface/src/abstracts.ts) → 現行は統合NFCデバイスを単一IDで返す（受入基準は0または1件）。非NFC端末では0件。将来は複数デバイス（例: BLEリーダ）を許容。IDは例示 "integrated-nfc-0"。apduApi=["nfc","androidnfc"]。supportsHce=false（初期版）。公開スキーマはインタフェース定義に一致させ、追加のケイパは含めない。
+  3. デバイス取得でRFを有効化 [SmartCardPlatform.acquireDevice()](../../interface/src/abstracts.ts)
+  4. カード検出の待機 [SmartCardDevice.waitForCardPresence()](../../interface/src/abstracts.ts)（イベント駆動。タイムアウト/キャンセルで終了）
+  5. セッション開始とI/O [SmartCardDevice.startSession()](../../interface/src/abstracts.ts), [SmartCard.transmit()](../../interface/src/abstracts.ts), [SmartCard.getAtr()](../../interface/src/abstracts.ts)
      - 終了時はカード→デバイス→プラットフォームの順で解放 [SmartCard.release()](packages/interface/src/abstracts.ts:312), [SmartCardDevice.release()](packages/interface/src/abstracts.ts:269), [SmartCardPlatform.release()](packages/interface/src/abstracts.ts:39)
 
 - ライフサイクルとフラグ（確定方針）
@@ -91,11 +91,11 @@
 
 ## 読み順（Read First）
 
-1. 依頼事項の全体像: [my-requests.md](packages/rn/docs/my-requests.md:1)
-2. 実装者チェックリスト（行動指針の単一情報源）: [implementer-checklists.md](packages/rn/docs/implementer-checklists.md:1)
-3. 公開API契約（FFI中立の仕様本文）: [api-contract.md](packages/rn/docs/tsd/api-contract.md:1)
-4. 技術仕様（時間制約・長さ・例外・スレッド）: [android-nfc-tsd.md](packages/rn/docs/tsd/android-nfc-tsd.md:1)
-5. 設計詳細（責務分担・排他制御・イベント処理）: [android-nfc-ddd.md](packages/rn/docs/ddd/android-nfc-ddd.md:1)
+1. 依頼事項の全体像: [my-requests.md](my-requests.md)
+2. 実装者チェックリスト（行動指針の単一情報源）: [implementer-checklists.md](implementer-checklists.md)
+3. 公開API契約（FFI中立の仕様本文）: [api-contract.md](tsd/api-contract.md)
+4. 技術仕様（時間制約・長さ・例外・スレッド）: [android-nfc-tsd.md](tsd/android-nfc-tsd.md)
+5. 設計詳細（責務分担・排他制御・イベント処理）: [android-nfc-ddd.md](ddd/android-nfc-ddd.md)
 6. 要件定義（範囲・非機能・方針）: [android-nfc-rdd.md](packages/rn/docs/rdd/android-nfc-rdd.md:1)
 
 付録（必要時に参照）
@@ -103,8 +103,8 @@
 - 互換性・端末差異: [compat-devices.md](packages/rn/docs/tsd/compat-devices.md:1)
 - APDU長規程: [length-limits.md](packages/rn/docs/tsd/length-limits.md:1)
 - 試験計画: [test-plan.md](packages/rn/docs/rdd/test-plan.md:1)
-- バックログ: GitHub Issues を参照してください（[Known issues](packages/rn/docs/rdd/test-plan.md:1)も参照）
-- リサーチ第1バッチサマリ: [research-batch-1.md](packages/rn/docs/rdd/research-batch-1.md:1)
+- バックログ: GitHub Issues を参照してください（[Known issues](rdd/test-plan.md)も参照）
+- リサーチ第1バッチサマリ: [research-batch-1.md](history/research-batch-1.md)
 
 ## 実装者クイックスタート（手順のみ）
 

@@ -304,6 +304,9 @@ import {
   SmartCardDevice,
   SmartCardDeviceInfo,
   SmartCard,
+  EmulatedCard,
+  SmartCardError,
+  ResponseApdu,
 } from "@aokiapp/jsapdu-interface";
 
 export class MockPlatform extends SmartCardPlatform {
@@ -759,7 +762,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "22"
       - run: npm ci
       - run: npm run test:unit
 
@@ -769,7 +772,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "22"
       - run: npm ci
       - run: npm run test:integration
 
@@ -781,7 +784,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "22"
       - run: npm ci
       - run: npm run test:e2e
         env:

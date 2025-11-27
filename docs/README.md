@@ -33,8 +33,6 @@ New to jsapdu? Start here:
 | Resource                                    | Description                          | Audience       |
 | ------------------------------------------- | ------------------------------------ | -------------- |
 | **[Contributing Guide](./CONTRIBUTING.md)** | Development workflow and standards   | Contributors   |
-| **[Examples](./examples/README.md)**        | Real-world usage examples            | All developers |
-| **[Package Naming](../PACKAGE_NAMING.md)**  | Package organization recommendations | Maintainers    |
 
 ## 🏗️ Package Documentation
 
@@ -154,7 +152,7 @@ graph TD
 
 - [Use PC/SC readers](../packages/pcsc/README.md)
 - [Access native PC/SC APIs](../packages/pcsc-ffi-node/README.md)
-- [Implement new platforms](./guides/extending-platforms.md)
+- Implement new platforms: see [Contributing → Adding New Features](./CONTRIBUTING.md#adding-new-features)
 
 #### **Development & Testing**
 
@@ -166,7 +164,7 @@ graph TD
 
 - [Complete API reference](./api/README.md)
 - [Common error codes](./guides/error-handling.md#error-codes)
-- [Troubleshooting guide](./guides/troubleshooting.md)
+- [Troubleshooting tips](./guides/error-handling.md)
 
 ## 📋 Documentation Standards
 
@@ -186,4 +184,4 @@ This documentation follows these principles:
 
 ---
 
-**Next Steps**: [Get Started →](./getting-started.md) | [View Examples →](./examples/README.md) | [API Reference →](./api/README.md)
+**Next Steps**: [Get Started →](./getting-started.md) | [API Reference →](./api/README.md)

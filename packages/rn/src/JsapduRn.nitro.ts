@@ -139,15 +139,15 @@ export interface JsapduRn
   isCardPresent(deviceHandle: string): Promise<boolean>;
 
   /**
-   * Wait for card presence (blocking, event-driven)
-   * Precondition: Device acquired, ReaderMode enabled
-   * Postcondition: ISO-DEP tag detected or timeout
-   * @param deviceHandle Device handle from acquireDevice()
-   * @param timeout Optional timeout in milliseconds (default: 30000ms)
-   * @throws SmartCardError with code "CARD_NOT_PRESENT" | "TIMEOUT" | "PLATFORM_ERROR"
-   */
-  waitForCardPresence(deviceHandle: string, timeout: number): Promise<void>;
-
+   /**
+    * Wait for card presence (blocking, event-driven)
+    * Precondition: Device acquired, ReaderMode enabled
+    * Postcondition: ISO-DEP tag detected or timeout
+    * @param deviceHandle Device handle from acquireDevice()
+    * @param timeout Timeout in seconds (default: 30s). The RN wrapper converts milliseconds to seconds internally.
+    * @throws SmartCardError with code "CARD_NOT_PRESENT" | "TIMEOUT" | "PLATFORM_ERROR"
+    */
+   waitForCardPresence(deviceHandle: string, timeout: number): Promise<void>;
   /**
    * Start communication session with detected card
    * Precondition: Card present

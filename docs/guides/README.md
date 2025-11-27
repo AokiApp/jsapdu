@@ -33,26 +33,17 @@ Comprehensive guides for implementing SmartCard applications with jsapdu.
 
 ### 🛠️ Technical Guides
 
-**[Error Handling Guide](./error-handling.md)** - Best practices for error management _(Coming Soon)_
+**[Error Handling Guide](./error-handling.md)** - Best practices for error management
 
 - Structured error handling
 - Recovery strategies
 - Logging and debugging
 - Security considerations
 
-**[Troubleshooting Guide](./troubleshooting.md)** - Common issues and solutions _(Coming Soon)_
 
-- Hardware setup issues
-- Platform-specific problems
-- Authentication failures
-- Performance optimization
+**Extending Platforms** - Adding new platform support
 
-**[Extending Platforms Guide](./extending-platforms.md)** - Adding new platform support _(Coming Soon)_
-
-- Platform abstraction implementation
-- Native binding integration
-- Testing new platforms
-- Documentation requirements
+- See [Contributing → Adding New Features](../CONTRIBUTING.md#adding-new-features)
 
 ## Guide Categories
 
@@ -62,14 +53,13 @@ For developers new to jsapdu or SmartCard development:
 
 - Start with [Getting Started](../getting-started.md)
 - Review [Architecture Overview](../architecture/README.md)
-- Try [Basic Examples](../examples/README.md)
 
 ### Domain-Specific
 
 For specific use cases and integrations:
 
 - **Japanese Government**: [MynaCard Guide](./mynacard.md)
-- **Custom Cards**: [Extending Platforms Guide](./extending-platforms.md)
+- **Custom Cards**: See [Contributing → Adding New Features](../CONTRIBUTING.md#adding-new-features)
 - **Testing**: [Testing Guide](./testing.md)
 
 ### Advanced Topics
@@ -78,7 +68,7 @@ For experienced developers and contributors:
 
 - **Contributing**: [Contributing Guide](../CONTRIBUTING.md)
 - **Error Handling**: [Error Handling Guide](./error-handling.md)
-- **Performance**: [Troubleshooting Guide](./troubleshooting.md)
+- **Performance**: [Error Handling Guide](./error-handling.md)
 
 ## Cross-References
 
@@ -90,12 +80,6 @@ For experienced developers and contributors:
 - [APDU Utils Package](../../packages/apdu-utils/README.md) - Command utilities
 - [MynaCard Package](../../packages/mynacard/README.md) - Japanese card support
 
-### Related Examples
-
-- [Examples Overview](../examples/README.md)
-- [MynaCard Examples](../../examples/mynacard/)
-- [PC/SC Examples](../../examples/pcsc-ffi/)
-- [End-to-End Tests](../../examples/mynacard-e2e/)
 
 ### Architecture & Design
 
@@ -151,4 +135,4 @@ For MynaCard and other Japanese-specific content:
 
 ---
 
-**Navigation**: [← Documentation Home](../README.md) | [API Reference →](../api/README.md) | [Examples →](../examples/README.md)
+**Navigation**: [← Documentation Home](../README.md) | [API Reference →](../api/README.md)

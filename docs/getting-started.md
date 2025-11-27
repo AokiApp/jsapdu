@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-npm install @aokiapp/jsapdu
+npm install @aokiapp/jsapdu-interface @aokiapp/jsapdu-pcsc @aokiapp/apdu-utils @aokiapp/mynacard
 ```
 
 ## Basic Usage
@@ -11,44 +11,39 @@ npm install @aokiapp/jsapdu
 Here's a simple example of using jsapdu to communicate with a smart card:
 
 ```typescript
-import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+import { selectDf } from "@aokiapp/apdu-utils";
 
 async function main() {
   // Initialize the platform
-  const manager = new PcscPlatformManager();
+  const manager = PcscPlatformManager.getInstance();
   const platform = manager.getPlatform();
   await platform.init();
 
   try {
     // Get available devices
-    const devices = await platform.getDevices();
-    if (devices.length === 0) {
+    const deviceInfos = await platform.getDeviceInfo();
+    if (deviceInfos.length === 0) {
       console.log("No card readers found");
       return;
     }
 
-    // Connect to the first device
-    const device = await devices[0].acquireDevice();
+    // Acquire the first device
+    const device = await platform.acquireDevice(deviceInfos[0].id);
 
     // Start a session with the card
     const card = await device.startSession();
 
     // Get card ATR
     const atr = await card.getAtr();
-    console.log("Card ATR:", Buffer.from(atr).toString("hex"));
+    console.log(
+      "Card ATR:",
+      Array.from(atr).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    );
 
     // Send a command to select an application
-    const selectCommand = new CommandApdu({
-      cla: 0x00,
-      ins: 0xa4,
-      p1: 0x04,
-      p2: 0x00,
-      data: Buffer.from("A0000000041010", "hex"),
-    });
-
-    const response = await card.transmit(selectCommand);
-    console.log("Response:", response.toString());
+    const response = await card.transmit(selectDf("A0000000041010", true));
+    console.log("Status Word:", response.sw.toString(16));
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error:", error.message);
@@ -71,7 +66,7 @@ The platform manager is responsible for creating platform instances. Each suppor
 ```typescript
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
 
-const manager = new PcscPlatformManager();
+const manager = PcscPlatformManager.getInstance();
 ```
 
 ### Platform
@@ -88,8 +83,8 @@ await platform.init();
 A device represents a card reader:
 
 ```typescript
-const devices = await platform.getDevices();
-const device = await devices[0].acquireDevice();
+const infos = await platform.getDeviceInfo();
+const device = await platform.acquireDevice(infos[0].id);
 ```
 
 ### Card Session
@@ -122,12 +117,13 @@ jsapdu supports modern resource management using `Symbol.asyncDispose`:
 
 ```typescript
 async function example() {
-  const manager = new PcscPlatformManager();
+  const manager = PcscPlatformManager.getInstance();
 
   await using platform = manager.getPlatform();
   await platform.init();
 
-  await using device = (await platform.getDevices())[0].acquireDevice();
+  const infos = await platform.getDeviceInfo();
+  await using device = await platform.acquireDevice(infos[0].id);
   await using card = await device.startSession();
 
   // Resources will be automatically released
@@ -140,7 +136,7 @@ jsapdu provides structured error handling:
 
 ```typescript
 try {
-  const devices = await platform.getDevices();
+  const devices = await platform.getDeviceInfo();
   // ...
 } catch (error) {
   if (error instanceof SmartCardError) {
@@ -161,5 +157,5 @@ try {
 ## Next Steps
 
 - Read the [Architecture Guide](./architecture/README.md) for a deeper understanding
-- Check out the [Examples](./examples/README.md) for more usage patterns
+- Check out repository examples under ../examples/mynacard and ../examples/mynacard-e2e
 - See the [API Reference](./api/README.md) for detailed API documentation

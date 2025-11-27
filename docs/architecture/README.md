@@ -15,9 +15,10 @@ jsapdu is designed with a layered architecture that provides:
 
 ```typescript
 export abstract class SmartCardPlatform {
-  public abstract init(): Promise<void>;
-  public abstract release(): Promise<void>;
-  public abstract getDevices(): Promise<SmartCardDeviceInfo[]>;
+  public abstract init(force?: boolean): Promise<void>;
+  public abstract release(force?: boolean): Promise<void>;
+  public abstract getDeviceInfo(): Promise<SmartCardDeviceInfo[]>;
+  public abstract acquireDevice(id: string): Promise<SmartCardDevice>;
 }
 ```
 
@@ -29,14 +30,18 @@ The platform layer provides:
 - Error handling and recovery
 
 ### 2. Device Layer
-
 ```typescript
 export abstract class SmartCardDevice {
-  public abstract isActive(): boolean;
+  public abstract getDeviceInfo(): SmartCardDeviceInfo;
+  public abstract isSessionActive(): boolean;
+  public abstract isDeviceAvailable(): Promise<boolean>;
   public abstract isCardPresent(): Promise<boolean>;
   public abstract startSession(): Promise<SmartCard>;
+  public abstract waitForCardPresence(timeout: number): Promise<void>;
+  public abstract startHceSession(): Promise<EmulatedCard>;
   public abstract release(): Promise<void>;
 }
+```
 ```
 
 The device layer handles:
@@ -52,6 +57,7 @@ The device layer handles:
 export abstract class SmartCard {
   public abstract getAtr(): Promise<Uint8Array>;
   public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  public abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
   public abstract reset(): Promise<void>;
   public abstract release(): Promise<void>;
 }
@@ -69,11 +75,12 @@ The card layer provides:
 ```
 jsapdu/
 ├── packages/
-│   ├── interface/        # Core abstractions
-│   ├── pcsc/            # PC/SC implementation
-│   ├── apdu-utils/      # APDU utilities
-│   ├── mynacard/        # MynaCard specific code
-│   └── mynacard-demo/   # Demo applications
+│   ├── interface/         # Core abstractions
+│   ├── pcsc/              # PC/SC implementation
+│   ├── pcsc-ffi-node/     # Native PC/SC FFI bindings
+│   ├── apdu-utils/        # APDU utilities
+│   ├── mynacard/          # MynaCard specific code
+│   └── rn/                # React Native module
 ```
 
 ### Interface Package
@@ -126,7 +133,8 @@ Example:
 ```typescript
 async function example() {
   await using platform = manager.getPlatform();
-  await using device = (await platform.getDevices())[0].acquireDevice();
+  const infos = await platform.getDeviceInfo();
+  await using device = await platform.acquireDevice(infos[0].id);
   await using card = await device.startSession();
 
   // Resources automatically cleaned up

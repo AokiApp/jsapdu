@@ -172,7 +172,8 @@ try {
 ```typescript
 async function example() {
   await using platform = manager.getPlatform();
-  await using device = (await platform.getDevices())[0].acquireDevice();
+  const deviceInfos = await platform.getDeviceInfo();
+  await using device = await platform.acquireDevice(deviceInfos[0].id);
   await using card = await device.startSession();
 
   // Resources automatically cleaned up even if error occurs

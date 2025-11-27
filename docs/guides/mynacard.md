@@ -33,7 +33,7 @@ npm install @aokiapp/jsapdu-pcsc @aokiapp/mynacard @aokiapp/apdu-utils @aokiapp/
 
 ```typescript
 import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
-import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
+import { selectDf, selectEf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
 import {
   JPKI_AP,
   JPKI_AP_EF,
@@ -42,9 +42,13 @@ import {
   KENKAKU_AP,
   KENKAKU_AP_EF,
   schemaKenhojoBasicFour,
+  schemaCertificate,
+  schemaKenhojoSignature,
+  schemaKenkakuEntries,
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
-
+```
+```typescript
 async function connectToMynaCard() {
   const manager = PcscPlatformManager.getInstance();
   await using platform = manager.getPlatform();
@@ -196,10 +200,10 @@ async function readSignatureCertificate() {
     const cert = parser.parse(response.arrayBuffer());
 
     return {
-      publicKey: cert.contents.public_key, // CryptoKey object
-      issuer: cert.contents.issuer, // 発行者情報
-      subject: cert.contents.subject, // 主体者情報
-      signature: cert.thisSignature, // 証明書署名
+      publicKeyRaw: cert.contents.publicKeyRaw,
+      issuer: cert.contents.issuer,
+      subject: cert.contents.subject,
+      signature: cert.thisSignature,
     };
   } catch (error) {
     console.error("Error reading signature certificate:", error);
@@ -279,7 +283,7 @@ async function readCardSurfaceInfo(pinB: string) {
     return {
       birth: entries.birth, // 生年月日
       gender: entries.gender, // 性別
-      publicKey: entries.publicKey, // 公開鍵
+      publicKeyRaw: entries.publicKeyRaw, // 公開鍵
       namePng: entries.namePng, // 氏名PNG画像
       addressPng: entries.addressPng, // 住所PNG画像
       faceJp2: entries.faceJp2, // 顔写真JPEG2000
@@ -315,8 +319,8 @@ async function authenticateUser(pin6digit: string, challenge: Uint8Array) {
       throw new Error("Authentication PIN verification failed");
     }
 
-    // Select authentication private key
-    await card.transmit(selectEf(JPKI_AP_EF.AUTH_KEY));
+    // Select authentication private key (short EF id -> two-byte FID)
+    await card.transmit(selectEf([0x00, JPKI_AP_EF.AUTH_KEY]));
 
     // Perform internal authentication (内部認証)
     const authCommand = new CommandApdu(

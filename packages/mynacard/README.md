@@ -141,12 +141,12 @@ import { schemaCertificate } from "@aokiapp/mynacard";
 const parser = new SchemaParser(schemaCertificate);
 const cert = parser.parse(buffer);
 
-// Parsed structure:
+ // Parsed structure:
 interface CertificateInfo {
   contents: {
     issuer: ArrayBuffer; // 発行者 (Issuer)
     subject: ArrayBuffer; // 主体者 (Subject)
-    public_key: CryptoKey; // 公開鍵 (Public Key)
+    publicKeyRaw: ArrayBuffer; // 公開鍵 (Raw Public Key bytes)
   };
   thisSignature: Uint8Array; // 署名 (Signature)
 }
@@ -249,7 +249,7 @@ async function readSignatureCertificate(card) {
   const cert = parser.parse(response.arrayBuffer());
 
   return {
-    publicKey: cert.contents.public_key, // 公開鍵
+    publicKeyRaw: cert.contents.publicKeyRaw, // 公開鍵 (Raw bytes)
     issuer: cert.contents.issuer, // 発行者
     subject: cert.contents.subject, // 主体者
     signature: cert.thisSignature, // 署名

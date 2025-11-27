@@ -257,40 +257,37 @@ try {
 
 ## Advanced Usage
 
-### Reader State Monitoring
+### Reader/Card Presence Monitoring
 
 ```typescript
-// Check detailed reader state
-const readerState = await getReaderCurrentState(context, readerName);
-console.log("State flags:", readerState.state);
-console.log("ATR changed:", readerState.atrChanged);
+// Prefer high-level APIs
+
+// Non-blocking: quick presence check
+const present = await device.isCardPresent();
+
+// Blocking: wait for insertion with timeout
+await device.waitForCardPresence(30000); // 30 seconds
 ```
 
 ### Transaction Control
 
-```typescript
-// Manual transaction management (advanced)
-await card.beginTransaction();
-try {
-  await card.transmit(command1);
-  await card.transmit(command2);
-} finally {
-  await card.endTransaction();
-}
-```
+Card-level transaction APIs (beginTransaction/endTransaction) are not exposed in `@aokiapp/jsapdu-pcsc`. The platform manages transaction boundaries internally. Use `card.transmit()` for APDU I/O and `card.reset()` when needed.
 
 ### Multiple Readers
 
 ```typescript
 // Work with multiple readers simultaneously
-const devices = await platform.getDeviceInfo();
-const sessions = [];
+const infos = await platform.getDeviceInfo();
+const sessions: Array<{ info: SmartCardDeviceInfo; device: SmartCardDevice; card: SmartCard }> = [];
 
-for (const deviceInfo of devices) {
-  if (await deviceInfo.isCardPresent()) {
-    const device = await platform.acquireDevice(deviceInfo.id);
+for (const info of infos) {
+  const device = await platform.acquireDevice(info.id);
+  if (await device.isCardPresent()) {
     const card = await device.startSession();
-    sessions.push({ deviceInfo, device, card });
+    sessions.push({ info, device, card });
+  } else {
+    // Release device if no card is present
+    await device.release();
   }
 }
 

@@ -55,7 +55,7 @@ jsapdu/ (モノレポ)
 
 1. **[Nitro Modulesを学ぶ](./nitro-modules-guide.md)** - フレームワーク理解
 2. **[Android NFC APIを学ぶ](#android-nfc-参考資料)** - ReaderMode・IsoDep
-3. **[既存実装を参考にする](../../../pcsc/)** - 設計パターン理解
+2. **[既存実装を参考にする](../../pcsc/)** - 設計パターン理解
 
 ### ステップ3: 実装開始 (30分)
 

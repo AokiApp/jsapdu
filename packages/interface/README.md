@@ -32,8 +32,8 @@ abstract class SmartCardPlatformManager {
 ```typescript
 // Main platform interface
 abstract class SmartCardPlatform {
-  public abstract init(): Promise<void>;
-  public abstract release(): Promise<void>;
+  public abstract init(force?: boolean): Promise<void>;
+  public abstract release(force?: boolean): Promise<void>;
   public abstract getDeviceInfo(): Promise<SmartCardDeviceInfo[]>;
   public abstract acquireDevice(id: string): Promise<SmartCardDevice>;
 }
@@ -60,6 +60,7 @@ abstract class SmartCardDevice {
 abstract class SmartCard {
   public abstract getAtr(): Promise<Uint8Array>;
   public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  public abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
   public abstract reset(): Promise<void>;
   public abstract release(): Promise<void>;
 }

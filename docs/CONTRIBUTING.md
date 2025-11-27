@@ -19,7 +19,7 @@ Thank you for your interest in contributing to jsapdu! This guide will help you 
 
 ### Prerequisites
 
-- **Node.js**: Version 18 or higher
+- **Node.js**: Version 22 or higher
 - **npm**: Version 9 or higher
 - **PC/SC**: Smart card reader support
   - Windows: Included with OS
@@ -73,37 +73,29 @@ npm run format
 ```
 jsapdu/
 ├── packages/                    # Monorepo packages
-│   ├── interface/              # Core abstractions
-│   ├── pcsc/                   # PC/SC implementation
-│   ├── pcsc-ffi-node/          # Native PC/SC bindings
-│   ├── apdu-utils/             # APDU utilities
-│   ├── tlv-parser/             # TLV data parsing
-│   └── mynacard/               # Japanese MynaCard support
-├── examples/                   # Usage examples
-│   ├── mynacard/               # MynaCard examples
-│   ├── pcsc-ffi/              # Low-level examples
-│   ├── smartcard-mcp/         # MCP server example
-│   └── mynacard-e2e/          # End-to-end tests
-├── docs/                      # Documentation
-│   ├── api/                   # API reference
-│   ├── guides/                # User guides
-│   ├── architecture/          # Architecture docs
-│   └── examples/              # Example documentation
-├── package.json               # Root package configuration
-├── turbo.json                 # Turbo build configuration
-└── eslint.config.mjs          # ESLint configuration
+│   ├── interface/               # Core abstractions
+│   ├── pcsc/                    # PC/SC implementation
+│   ├── pcsc-ffi-node/           # Native PC/SC bindings
+│   ├── apdu-utils/              # APDU utilities
+│   └── mynacard/                # Japanese MynaCard support
+├── docs/                        # Documentation
+│   ├── api/                     # API reference
+│   ├── guides/                  # User guides
+│   └── architecture/            # Architecture docs
+├── rn/                          # React Native module (mobile integration)
+├── package.json                 # Root package configuration
+├── turbo.json                   # Turbo build configuration
+└── eslint.config.mjs            # ESLint configuration
 ```
 
 ### Package Dependencies
 
 ```mermaid
 graph TD
-    A[mynacard] --> B[tlv-parser]
+    A[mynacard] --> B[@aokiapp/tlv]
     C[apdu-utils] --> D[interface]
     E[pcsc] --> D
     E --> F[pcsc-ffi-node]
-
-    B -.-> D
     A -.-> C
 ```
 
@@ -168,12 +160,6 @@ npm test
 
 # Run tests for specific package
 npm run test --workspace=@aokiapp/jsapdu-interface
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run end-to-end tests (requires hardware)
-npm run test:e2e
 ```
 
 ### Test Structure
@@ -442,7 +428,7 @@ To add support for a new SmartCard platform:
        // Initialize platform
      }
 
-     async getDeviveInfo(): Promise<SmartCardDeviceInfo[]> {
+     async getDeviceInfo(): Promise<SmartCardDeviceInfo[]> {
        // Get available devices
      }
 
@@ -673,7 +659,7 @@ For questions about contributing, reach out to the maintainers through:
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+A formal Code of Conduct is not currently published for this repository. Please use GitHub Issues/Discussions to raise any conduct-related concerns.
 
 ## License
 
