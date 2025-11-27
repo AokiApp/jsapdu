@@ -349,6 +349,13 @@ export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
   public abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
 
   /**
+   * Transmit raw command to the card
+   * @throws {SmartCardError} If transmission fails
+   * @throws {ValidationError} If command is invalid
+   */
+  public abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
+
+  /**
    * Reset the card
    * @throws {SmartCardError} If reset fails
    */

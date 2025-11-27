@@ -55,28 +55,41 @@ export class PcscCard extends SmartCard {
   }
 
   /**
-   * Transmit APDU command to the card
+   * Transmit command to the card
+   * - APDU: CommandApdu -> ResponseApdu
+   * - Raw frame: Uint8Array -> Uint8Array
    * @throws {SmartCardError} If transmission fails
+   * @throws {SmartCardError} If session is not active
    */
-  public transmit(apdu: CommandApdu): Promise<ResponseApdu> {
+  public transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  public transmit(apdu: Uint8Array): Promise<Uint8Array>;
+  public transmit(apdu: CommandApdu | Uint8Array): Promise<ResponseApdu | Uint8Array> {
     if (!this.active) {
       throw new SmartCardError("NOT_CONNECTED", "Card session is not active");
     }
 
-    // Get command bytes
-    const commandBytes = apdu.toUint8Array();
+    // Prepare command buffer with proper narrowing
+    let commandBytes: Uint8Array;
+    if (apdu instanceof CommandApdu) {
+      commandBytes = apdu.toUint8Array();
+    } else {
+      commandBytes = apdu; // Uint8Array
+    }
     const commandBuffer = Buffer.from(commandBytes);
 
-    // --- 修正ここから ---
-    // レスポンスバッファサイズをAPDUのLe値に応じて確保
+    // Prepare response buffer
     let responseBufferSize = 258;
-    if (apdu.le && apdu.le > 0) {
-      responseBufferSize = apdu.le + 2; // SW1/SW2分
-      if (responseBufferSize > 65538) responseBufferSize = 65538;
+    if (apdu instanceof CommandApdu) {
+      const le = apdu.le;
+      if (le && le > 0) {
+        responseBufferSize = Math.min(65538, le + 2); // include SW1/SW2
+      }
+    } else {
+      // For raw frames, use a generous buffer (min 258, max 65538)
+      responseBufferSize = Math.min(65538, Math.max(258, commandBuffer.length + 2));
     }
     const responseBuffer = Buffer.alloc(responseBufferSize);
     const responseLength = [responseBuffer.length];
-    // --- 修正ここまで ---
 
     // Select protocol
     const pioSendPci =
@@ -88,7 +101,7 @@ export class PcscCard extends SmartCard {
       cbPciLength: 8, // sizeof(SCARD_IO_REQUEST)
     };
 
-    // Transmit APDU (no explicit PC/SC transaction)
+    // Transmit
     const ret = SCardTransmit(
       this.cardHandle,
       pioSendPci,
@@ -104,8 +117,11 @@ export class PcscCard extends SmartCard {
     const actualLength = responseLength[0];
     const responseBytes = new Uint8Array(responseBuffer.slice(0, actualLength));
 
-    // Create ResponseApdu
-    return Promise.resolve(ResponseApdu.fromUint8Array(responseBytes));
+    // Return according to input type
+    if (apdu instanceof CommandApdu) {
+      return Promise.resolve(ResponseApdu.fromUint8Array(responseBytes));
+    }
+    return Promise.resolve(responseBytes);
   }
 
   /**
