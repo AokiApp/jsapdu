@@ -25,7 +25,6 @@ import {
   platformManager,
 } from "@aokiapp/jsapdu-rn";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
-import { CommandApdu } from "@aokiapp/jsapdu-interface";
 import HexTextInput from "../components/HexTextInput/HexTextInput";
 import HexKeyboardProvider from "../components/HexTextInput/HexKeyboardProvider";
 
@@ -494,25 +493,22 @@ function SmartCardTestScreenInner() {
     }
     try {
       const bytes = hexToBytes(cleanedHex);
-      const cmd = CommandApdu.fromUint8Array(
-        bytes as unknown as Uint8Array<ArrayBuffer>,
-      );
-      const tx = cmd.toHexString();
-      console.log("[APDU] TX:", tx);
+      console.log("[APDU] TX (raw):", cleanedHex);
 
-      const resp = await card.transmit(cmd);
-      const respBytes = resp.toUint8Array();
+      // Send raw frame to support NFC-F and ISO-DEP without APDU construction
+      const respAny = await card.transmit(bytes);
+      if (!(respAny instanceof Uint8Array)) {
+        throw new Error("Expected byte response for raw transmit");
+      }
+      const respBytes = respAny;
       const respHex = Array.from(respBytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
+        .map((b: number) => b.toString(16).padStart(2, "0"))
         .join(" ")
         .toUpperCase();
-      const sw1 = resp.sw1.toString(16).padStart(2, "0").toUpperCase();
-      const sw2 = resp.sw2.toString(16).padStart(2, "0").toUpperCase();
-      const sw = resp.sw.toString(16).toUpperCase();
-      const outLine = `${respHex}  SW=${sw1} ${sw2} (0x${sw})`;
-      console.log(`[APDU] RX: ${outLine}`);
+
+      console.log("[APDU] RX (raw):", respHex);
       setLastApduError(null);
-      setLastApduOutput(outLine);
+      setLastApduOutput(respHex);
     } catch (error) {
       console.error("[APDU] transmit() failed", error);
       setLastApduOutput(null);

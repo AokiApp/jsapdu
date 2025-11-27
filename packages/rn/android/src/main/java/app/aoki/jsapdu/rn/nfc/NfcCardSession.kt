@@ -2,6 +2,8 @@ package app.aoki.jsapdu.rn.nfc
 
 import android.nfc.TagLostException
 import android.nfc.tech.IsoDep
+import android.nfc.tech.NfcF
+import android.nfc.tech.TagTechnology
 import app.aoki.jsapdu.rn.StatusEventDispatcher
 import app.aoki.jsapdu.rn.StatusEventType
 import app.aoki.jsapdu.rn.core.ICardSession
@@ -11,27 +13,23 @@ import java.util.Timer
 import kotlin.concurrent.timer
 
 /**
- * NFC card session implementation bound to a discovered IsoDep.
- * Implements ICardSession interface for method-agnostic card communication.
- * Simplified with centralized error/event handling for readability.
+ * Unified NFC card session implementation bound to a discovered TagTechnology (IsoDep or NfcF).
+ * Implements ICardSession for method-agnostic card communication with minimal branching.
+ * - IsoDep: APDU-oriented communication (ISO-DEP)
+ * - NfcF:  raw frame communication (FeliCa)
  */
 class NfcCardSession(
   private val parent: NfcDevice,
-  private val isoDep: IsoDep
+  private val tech: TagTechnology
 ) : ICardSession {
   init {
-    // IsoDep MUST NOT already be connected at session start
-    if (isoDep.isConnected) {
-      throw IllegalStateException("SESSION_STATE_ERROR: IsoDep already connected before start")
+    // TagTechnology MUST NOT already be connected at session start
+    if (tech.isConnected) {
+      throw IllegalStateException("SESSION_STATE_ERROR: Technology already connected before start")
     }
     // Connect and verify link state
-    isoDep.connect()
-    try {
-      isoDep.timeout = 5000
-    } catch (e: Exception) {
-      onTagLost("Error setting timeout: ${e.message}")
-      throw IllegalStateException("PLATFORM_ERROR: Failed to set IsoDep timeout: ${e.message}")
-    }
+    tech.connect()
+    setTimeoutOrThrow(5000)
     watchCardPresenceStatus()
   }
 
@@ -77,6 +75,19 @@ class NfcCardSession(
     }
   }
 
+  private fun setTimeoutOrThrow(millis: Int) {
+    try {
+      when (tech) {
+        is IsoDep -> tech.timeout = millis
+        is NfcF -> tech.timeout = millis
+        else -> platformError("Unsupported TagTechnology type: ${tech.javaClass.name}")
+      }
+    } catch (e: Exception) {
+      onTagLost("Error setting timeout: ${e.message}")
+      throw IllegalStateException("PLATFORM_ERROR: Failed to set technology timeout: ${e.message}")
+    }
+  }
+
   // ---- Public API ---------------------------------------------------------------------------
 
   override fun getAtr(): ByteArray {
@@ -87,11 +98,23 @@ class NfcCardSession(
         lostDetails = "Disconnected before ATR/ATS"
       )
       try {
-        val hist = isoDep.historicalBytes
-        val hi = isoDep.hiLayerResponse
-        return when {
-          hist != null -> hist
-          hi != null -> hi
+        return when (val t = tech) {
+          is IsoDep -> {
+            val hist = t.historicalBytes
+            val hi = t.hiLayerResponse
+            when {
+              hist != null -> hist
+              hi != null -> hi
+              else -> ByteArray(0)
+            }
+          }
+          is NfcF -> {
+            try {
+              t.tag.id ?: ByteArray(0)
+            } catch (_: Exception) {
+              ByteArray(0)
+            }
+          }
           else -> ByteArray(0)
         }
       } catch (e: TagLostException) {
@@ -113,16 +136,19 @@ class NfcCardSession(
         apduFailDetails = "Not connected"
       )
       try {
-        // Emit APDU_SENT prior to transmission
+        // Emit APDU_SENT prior to transmission (logs hex even for raw FeliCa frames)
         safeEmit(
           StatusEventType.APDU_SENT,
           "CommandHex=${apdu.toHex()}"
         )
-        val response = isoDep.transceive(apdu)
-        return response
+        return when (val t = tech) {
+          is IsoDep -> t.transceive(apdu)
+          is NfcF -> t.transceive(apdu)
+          else -> throw IllegalStateException("PLATFORM_ERROR: Unsupported technology")
+        }
       } catch (e: TagLostException) {
         onTagLost("TagLost")
-        platformError("Card removed during APDU transmission")
+        platformError("Card removed during transmission")
       } catch (e: IOException) {
         onTagLost("IO during transceive: ${e.message}")
         safeEmit(StatusEventType.APDU_FAILED, "IO: ${e.message}")
@@ -142,20 +168,15 @@ class NfcCardSession(
       )
       try {
         try {
-          if (isoDep.isConnected) {
-            isoDep.close()
+          if (tech.isConnected) {
+            tech.close()
           }
         } catch (_: Exception) {
           // Ignore close errors; we'll try to reconnect below
         }
 
-        isoDep.connect()
-        try {
-          isoDep.timeout = 5000
-        } catch (e: Exception) {
-          onTagLost("Error setting timeout during reset: ${e.message}")
-          platformError("Failed to set IsoDep timeout during reset: ${e.message}")
-        }
+        tech.connect()
+        setTimeoutOrThrow(5000)
         safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session reset complete")
       } catch (e: TagLostException) {
         onTagLost("TagLost during reset")
@@ -177,7 +198,7 @@ class NfcCardSession(
       watchTimer = null
       try {
         if (isCardPresent()) {
-          isoDep.close()
+          tech.close()
         }
       } catch (_: Exception) {
         // ignore cleanup errors
@@ -188,7 +209,7 @@ class NfcCardSession(
 
   override fun isCardPresent(): Boolean {
     try {
-      val connected = isoDep.isConnected
+      val connected = tech.isConnected
       return connected
     } catch (_: Exception) {
       onTagLost("Connection lost: Card lost after connection")

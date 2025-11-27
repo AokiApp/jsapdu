@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import React, { createContext, useContext, useEffect } from "react";
+import { View, StyleSheet, Animated, BackHandler } from "react-native";
 import HexKeyboard from "./HexKeyboard";
 import {
   useHexKeyboardController,
@@ -40,6 +40,21 @@ export default function HexKeyboardProvider({
   children: React.ReactNode;
 }) {
   const controller = useHexKeyboardController();
+
+  // Android back key closes the hex keyboard instead of navigating back
+  useEffect(() => {
+    const onBackPress = () => {
+      if (controller.isOpen) {
+        controller.close();
+        return true; // consume back press
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => {
+      sub.remove();
+    };
+  }, [controller.isOpen, controller.close]);
 
   const ctxValue: HexKeyboardContextValue = {
     open: controller.open,

@@ -3,7 +3,6 @@ package app.aoki.jsapdu.rn.nfc
 import android.app.Activity
 import android.nfc.NfcAdapter
 import android.nfc.Tag
-import android.nfc.tech.IsoDep
 import android.os.Bundle
 
 /**
@@ -16,7 +15,7 @@ import android.os.Bundle
  * - Tag lost handling is not provided by ReaderCallback directly; higher layers
  *   should manage lifecycle in conjunction with disable() calls.
  */
-class NfcReaderController(private val adapter: NfcAdapter, private val onIsoDep: (IsoDep) -> Unit) {
+class NfcReaderController(private val adapter: NfcAdapter, private val onTag: (Tag) -> Unit) {
 
   // Listener interface removed; using constructor-provided callback
 
@@ -37,17 +36,10 @@ class NfcReaderController(private val adapter: NfcAdapter, private val onIsoDep:
       activity,
       NfcAdapter.ReaderCallback { tag: Tag? ->
         if (tag != null) {
-          val isoDep = IsoDep.get(tag)
-          if (isoDep != null) {
-            try {
-              // Set a reasonable default timeout for faster tag-loss detection on I/O
-              try {
-                isoDep.timeout = 5000
-              } catch (_: Exception) {}
-              onIsoDep(isoDep)
-            } catch (_: Exception) {
-              // Swallow callback exceptions to avoid crashing
-            }
+          try {
+            onTag(tag)
+          } catch (_: Exception) {
+            // Swallow callback exceptions to avoid crashing
           }
         }
       },

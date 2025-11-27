@@ -238,18 +238,34 @@ export class RnSmartCard extends SmartCard<{
    * - Concurrent transmit() calls are serialized by mutual exclusion
    * - I/O is executed on non-UI thread
    */
-  public async transmit(apdu: CommandApdu): Promise<ResponseApdu> {
+  public async transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  public async transmit(apdu: Uint8Array): Promise<Uint8Array>;
+  public async transmit(
+    apdu: CommandApdu | Uint8Array
+  ): Promise<ResponseApdu | Uint8Array> {
     this.assertNotReleased();
 
     try {
-      const apduBytes = apdu.toUint8Array();
-      const response = await this.getHybrid().transmit(
-        this.deviceHandle,
-        this.cardHandle,
-        apduBytes.buffer
-      );
-      const data = new Uint8Array(response);
-      return ResponseApdu.fromUint8Array(data);
+      if (apdu instanceof CommandApdu) {
+        const apduBytes = apdu.toUint8Array();
+        const response = await this.getHybrid().transmit(
+          this.deviceHandle,
+          this.cardHandle,
+          apduBytes.buffer
+        );
+        const data = new Uint8Array(response);
+        return ResponseApdu.fromUint8Array(data);
+      } else {
+        const frame = apdu;
+        // Ensure we pass a plain ArrayBuffer, not SharedArrayBuffer.
+        const buf = frame.slice(0).buffer;
+        const response = await this.getHybrid().transmit(
+          this.deviceHandle,
+          this.cardHandle,
+          buf
+        );
+        return new Uint8Array(response);
+      }
     } catch (error) {
       throw mapNitroError(error);
     }

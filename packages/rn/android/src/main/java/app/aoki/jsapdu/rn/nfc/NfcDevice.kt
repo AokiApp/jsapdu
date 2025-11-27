@@ -29,7 +29,7 @@ class NfcDevice(
   private var controller: NfcReaderController? = null
   private val cardPresent = AtomicBoolean(false)
 
-  @Volatile private var awaitingIsoDep: IsoDep? = null
+  @Volatile private var awaitingTech: android.nfc.tech.TagTechnology? = null
   private val enabled = AtomicBoolean(false)
 
   private val cards = ConcurrentHashMap<String, ICardSession>()
@@ -48,16 +48,12 @@ class NfcDevice(
     } catch (_: Exception) { /* suppress */ }
   }
 
-  private fun setTimeoutOrIgnore(isoDep: IsoDep, millis: Int) {
-    try {
-      isoDep.timeout = millis
-    } catch (_: Exception) { /* ignore */ }
-  }
+  // removed: setTimeoutOrIgnore (timeout handled in session classes)
 
-  private fun closeIfConnected(isoDep: IsoDep?) {
+  private fun closeIfConnected(tech: android.nfc.tech.TagTechnology?) {
     try {
-      if (isoDep != null && isoDep.isConnected) {
-        isoDep.close()
+      if (tech != null && tech.isConnected) {
+        tech.close()
       }
     } catch (_: Exception) { /* ignore close errors */ }
   }
@@ -67,11 +63,25 @@ class NfcDevice(
     val activity = parentPlatform.currentActivity()
       ?: throw IllegalStateException("PLATFORM_ERROR: No foreground Activity available for ReaderMode")
     enabled.set(true)
-    val ctrl = NfcReaderController(adapter) { isoDep ->
+    val ctrl = NfcReaderController(adapter) { tag ->
       if (!enabled.get()) return@NfcReaderController
-      awaitingIsoDep = isoDep
+      val isoDep = IsoDep.get(tag)
+      val details: String
+      if (isoDep != null) {
+        awaitingTech = isoDep
+        details = "ISO-DEP tag discovered"
+      } else {
+        val nfcF = android.nfc.tech.NfcF.get(tag)
+        if (nfcF != null) {
+          awaitingTech = nfcF
+          details = "NFC-F tag discovered"
+        } else {
+          // Unsupported tag type; ignore
+          return@NfcReaderController
+        }
+      }
       cardPresent.set(true)
-      safeEmit(StatusEventType.CARD_FOUND, "ISO-DEP tag discovered")
+      safeEmit(StatusEventType.CARD_FOUND, details)
     }
     ctrl.enable(activity)
     controller = ctrl
@@ -97,7 +107,7 @@ class NfcDevice(
       safeEmit(StatusEventType.CARD_LOST, "ReaderMode disabled")
     }
     cardPresent.set(false)
-    awaitingIsoDep = null
+    awaitingTech = null
 
     // Cleanup all card sessions
     val existingCards = cards.values.toList()
@@ -120,21 +130,20 @@ class NfcDevice(
   /** Whether an ISO-DEP card is detected in RF field */
   override fun isCardPresent(): Boolean = cardPresent.get()
 
-  /** Whether a freshly detected IsoDep is ready to start a session */
-  private fun hasPendingIsoDep(): Boolean = awaitingIsoDep != null
+  /** Whether a freshly detected TagTechnology (IsoDep or NfcF) is ready to start a session */
+  private fun hasPendingTech(): Boolean = awaitingTech != null
 
-  /** Returns latest IsoDep when present, otherwise null */
-  fun getAwaitingIsoDep(): IsoDep? = awaitingIsoDep
+  // getAwaitingIsoDep removed; awaitingTech holds IsoDep or NfcF
 
   /** Internal: mark tag lost, release card(s), and clear state */
   internal fun onTagLost() {
     // Mark no card present
     cardPresent.set(false)
 
-    // Close and clear the last IsoDep reference (best-effort)
-    val iso = awaitingIsoDep
-    awaitingIsoDep = null
-    closeIfConnected(iso)
+    // Close and clear the last TagTechnology reference (best-effort)
+    val tech = awaitingTech
+    awaitingTech = null
+    closeIfConnected(tech)
 
     // Release all active card sessions to avoid stale handles
     val handles = cards.keys.toList()
@@ -149,10 +158,10 @@ class NfcDevice(
 
   /** Start a card session and return a card handle */
   override fun startSession(): String {
-    val isoDep = awaitingIsoDep ?: throw IllegalStateException("CARD_NOT_PRESENT: No ISO-DEP card detected")
+    val tech = awaitingTech ?: throw IllegalStateException("CARD_NOT_PRESENT: No NFC card detected")
     try {
-      val card = NfcCardSession(this, isoDep)
-      awaitingIsoDep = null
+      val card = NfcCardSession(this, tech)
+      awaitingTech = null
 
       cards[card.handle] = card
       safeEmit(StatusEventType.CARD_SESSION_STARTED, "Session started", cardHandle = card.handle)
@@ -161,7 +170,7 @@ class NfcDevice(
         // Link did not come up — treat as loss
         onTagLost()
         safeEmit(StatusEventType.CARD_LOST, "isConnected=false after connect")
-        throw IllegalStateException("PLATFORM_ERROR: IsoDep connection not established at session start")
+        throw IllegalStateException("PLATFORM_ERROR: Connection not established at session start")
       }
       return card.handle
     } catch (e: TagLostException) {
@@ -188,7 +197,7 @@ class NfcDevice(
   override fun waitForCardPresence(timeout: Double) {
     val deadline = System.currentTimeMillis() + (timeout * 1000.0).toLong()
     while (System.currentTimeMillis() < deadline) {
-      if (hasPendingIsoDep()) return
+      if (hasPendingTech()) return
       try {
         Thread.sleep(50)
       } catch (_: InterruptedException) {
