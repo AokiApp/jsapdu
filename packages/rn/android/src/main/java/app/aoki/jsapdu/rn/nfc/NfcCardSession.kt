@@ -1,9 +1,9 @@
 package app.aoki.jsapdu.rn.nfc
 
 import android.nfc.TagLostException
-import android.nfc.tech.TagTechnology
 import android.nfc.tech.IsoDep
 import android.nfc.tech.NfcF
+import android.nfc.tech.TagTechnology
 import app.aoki.jsapdu.rn.StatusEventDispatcher
 import app.aoki.jsapdu.rn.StatusEventType
 import app.aoki.jsapdu.rn.core.ICardSession
@@ -59,11 +59,9 @@ class NfcCardSession(
     safeEmit(StatusEventType.CARD_LOST, details)
   }
 
-  private fun platformError(message: String): Nothing =
-    throw IllegalStateException("PLATFORM_ERROR: $message")
+  private fun platformError(message: String): Nothing = throw IllegalStateException("PLATFORM_ERROR: $message")
 
-  private fun apduError(message: String?): Nothing =
-    throw IllegalStateException("APDU_ERROR: $message")
+  private fun apduError(message: String?): Nothing = throw IllegalStateException("APDU_ERROR: $message")
 
   private fun ByteArray.toHex(): String = joinToString("") { "%02X".format(it) }
 
