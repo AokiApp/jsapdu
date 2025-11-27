@@ -29,6 +29,15 @@ PC/SC platform implementation for desktop environments.
 - [`PcscDevice`](./pcsc.md#pcscdevice) - PC/SC device implementation
 - [`PcscCard`](./pcsc.md#pcsccard) - PC/SC card communication
 
+### [@aokiapp/jsapdu-rn](./rn.md)
+
+React Native platform implementation for mobile environments.
+
+**Key Classes:**
+- W.I.P.
+
+## Auxiliary Packages
+
 ### [@aokiapp/apdu-utils](./apdu-utils.md)
 
 Utility functions for building common APDU commands.
