@@ -256,6 +256,28 @@ export class RnSmartCard extends SmartCard<{
   }
 
   /**
+   * Transmit raw command frame (e.g., FeliCa NFC-F frame).
+   * Sends bytes as-is via TagTechnology.transceive() without ISO-7816 APDU encoding.
+   * Useful for FeliCa commands like Polling, Read Without Encryption, Write Without Encryption, etc.
+   */
+  public async transmitRaw(frame: Uint8Array): Promise<Uint8Array> {
+    this.assertNotReleased();
+    try {
+      // Ensure we pass a plain ArrayBuffer, not SharedArrayBuffer.
+      // TypedArray.prototype.slice() creates a fresh copy backed by a non-shared ArrayBuffer.
+      const buf = frame.slice(0).buffer;
+      const response = await this.getHybrid().transmit(
+        this.deviceHandle,
+        this.cardHandle,
+        buf
+      );
+      return new Uint8Array(response);
+    } catch (error) {
+      throw mapNitroError(error);
+    }
+  }
+
+  /**
    * Reset the card (re-establish ISO-DEP session)
    *
    * @throws {SmartCardError} with code "CARD_NOT_PRESENT" if card is not present

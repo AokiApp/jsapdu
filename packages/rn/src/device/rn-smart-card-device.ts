@@ -313,7 +313,7 @@ export class RnSmartCardDevice extends SmartCardDevice<{
    *
    * Behavior:
    * - Blocks until card is detected or timeout
-   * - FeliCa/NDEF tags are internally suppressed (only ISO-DEP detection succeeds)
+   * - Supports ISO-DEP and NFC-F (FeliCa) tags; NDEF is ignored
    * - timeout=0 returns immediate TIMEOUT
    * - timeout<0 returns INVALID_PARAMETER
    * - Screen-off/Doze cancellation returns TIMEOUT (with device release)
