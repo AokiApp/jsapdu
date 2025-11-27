@@ -186,7 +186,7 @@ export function useHexKeyboardController(): HexKeyboardController {
     open,
     close,
     isOpen,
-    insetPx,
+    insetPx: isOpen ? insetPx : 0,
     setInsetPx,
     isActive,
     hex,
