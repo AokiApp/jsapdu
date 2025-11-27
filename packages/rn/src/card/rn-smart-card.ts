@@ -240,7 +240,9 @@ export class RnSmartCard extends SmartCard<{
    */
   public async transmit(apdu: CommandApdu): Promise<ResponseApdu>;
   public async transmit(apdu: Uint8Array): Promise<Uint8Array>;
-  public async transmit(apdu: CommandApdu | Uint8Array): Promise<ResponseApdu | Uint8Array> {
+  public async transmit(
+    apdu: CommandApdu | Uint8Array
+  ): Promise<ResponseApdu | Uint8Array> {
     this.assertNotReleased();
 
     try {
@@ -254,7 +256,7 @@ export class RnSmartCard extends SmartCard<{
         const data = new Uint8Array(response);
         return ResponseApdu.fromUint8Array(data);
       } else {
-        const frame = apdu as Uint8Array;
+        const frame = apdu;
         // Ensure we pass a plain ArrayBuffer, not SharedArrayBuffer.
         const buf = frame.slice(0).buffer;
         const response = await this.getHybrid().transmit(
@@ -268,7 +270,6 @@ export class RnSmartCard extends SmartCard<{
       throw mapNitroError(error);
     }
   }
-
 
   /**
    * Reset the card (re-establish ISO-DEP session)

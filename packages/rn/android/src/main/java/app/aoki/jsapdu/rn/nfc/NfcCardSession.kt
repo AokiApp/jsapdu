@@ -82,7 +82,7 @@ class NfcCardSession(
       when (tech) {
         is IsoDep -> tech.timeout = millis
         is NfcF -> tech.timeout = millis
-        else -> { /* no-op for unsupported techs */ }
+        else -> platformError("Unsupported TagTechnology type: ${tech.javaClass.name}")
       }
     } catch (e: Exception) {
       onTagLost("Error setting timeout: ${e.message}")

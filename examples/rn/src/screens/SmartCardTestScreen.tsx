@@ -500,8 +500,8 @@ function SmartCardTestScreenInner() {
       if (!(respAny instanceof Uint8Array)) {
         throw new Error("Expected byte response for raw transmit");
       }
-      const respBytes: Uint8Array = respAny;
-      const respHex = Array.from(respBytes as ArrayLike<number>)
+      const respBytes = respAny;
+      const respHex = Array.from(respBytes)
         .map((b: number) => b.toString(16).padStart(2, "0"))
         .join(" ")
         .toUpperCase();
