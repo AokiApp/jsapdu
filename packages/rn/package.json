@@ -53,7 +53,7 @@
     "url": "git+https://github.com/aokiapp/jsapdu.git"
   },
   "author": "AokiApp Inc. <hello+github@aoki.app> (https://aoki.app)",
-  "license": "MIT",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
   "bugs": {
     "url": "https://github.com/aokiapp/jsapdu/issues"
   },

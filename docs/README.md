@@ -1,189 +1,104 @@
 # jsapdu Documentation
 
-**The modern TypeScript library for SmartCard communication**
+Complete documentation for the jsapdu smart card library monorepo.
 
-## 🚀 Quick Start
+## User Documentation
 
-New to jsapdu? Start here:
+Quick-start guides for library consumers:
 
-- **[Getting Started](./getting-started.md)** - Installation, basic setup, and first examples
-- **[Quick Examples](#quick-examples)** - Common usage patterns
-- **[Architecture Overview](./architecture/README.md)** - Understanding jsapdu's design
-
-## 📚 Documentation Structure
-
-### Core Documentation
-
-| Document                                           | Description                  | Audience                        |
-| -------------------------------------------------- | ---------------------------- | ------------------------------- |
-| **[Getting Started](./getting-started.md)**        | Installation and basic usage | All developers                  |
-| **[Architecture Guide](./architecture/README.md)** | System design and patterns   | Architects, advanced developers |
-| **[API Reference](./api/README.md)**               | Complete API documentation   | All developers                  |
-
-### Implementation Guides
-
-| Guide                                            | Description                           | Use Case            |
-| ------------------------------------------------ | ------------------------------------- | ------------------- |
-| **[MynaCard Guide](./guides/mynacard.md)**       | Japanese government ID integration    | MynaCard developers |
-| **[Testing Guide](./guides/testing.md)**         | Testing strategies and best practices | All developers      |
-| **[Error Handling](./guides/error-handling.md)** | Comprehensive error management        | All developers      |
-
-### Developer Resources
-
-| Resource                                    | Description                          | Audience       |
-| ------------------------------------------- | ------------------------------------ | -------------- |
-| **[Contributing Guide](./CONTRIBUTING.md)** | Development workflow and standards   | Contributors   |
-| **[Examples](./examples/README.md)**        | Real-world usage examples            | All developers |
-| **[Package Naming](../PACKAGE_NAMING.md)**  | Package organization recommendations | Maintainers    |
-
-## 🏗️ Package Documentation
-
-Each package has detailed README documentation:
-
-### Core Packages
-
-- **[@aokiapp/jsapdu-interface](../packages/interface/README.md)** - Core abstractions and types
-- **[@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)** - PC/SC platform implementation
-- **[@aokiapp/apdu-utils](../packages/apdu-utils/README.md)** - APDU command utilities
-
-### Specialized Packages
-
+- **[@aokiapp/jsapdu-interface](../packages/interface/README.md)** - Core APDU and platform abstractions
+- **[@aokiapp/apdu-utils](../packages/apdu-utils/README.md)** - Ready-to-use APDU command builders
 - **[@aokiapp/mynacard](../packages/mynacard/README.md)** - Japanese MynaCard support
-- **[@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md)** - Native PC/SC bindings
+- **[@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)** - PC/SC reader support (Node.js)
+- **[@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md)** - Low-level PC/SC FFI bindings
+- **[@aokiapp/jsapdu-rn](../packages/rn/README.md)** - React Native NFC support
 
-## 💡 Quick Examples
+## Technical Documentation
 
-### Basic Card Connection
+Deep-dive documentation for contributors and advanced users:
 
-```typescript
-import { PcscPlatformManager } from "@aokiapp/jsapdu-pcsc";
+### Architecture
+- **[Package Interactions](./architecture/package-interactions.md)** - How packages work together, dependency graph, data flow patterns
 
-const manager = PcscPlatformManager.getInstance();
-await using platform = manager.getPlatform();
-await platform.init();
+### Implementation Details
 
-const devices = await platform.getDeviceInfo();
-await using device = await platform.acquireDevice(devices[0].id);
-await using card = await device.startSession();
-```
+**@aokiapp/jsapdu-interface:**
+- **[Extended APDU Support](../packages/interface/docs/extended-apdu.md)** - Automatic standard/extended APDU detection, encoding formats, compatibility
 
-### MynaCard Basic Information
+**@aokiapp/jsapdu-pcsc:**
+- **[AsyncMutex Implementation](../packages/pcsc/docs/async-mutex.md)** - Concurrency control for PC/SC operations, performance characteristics
 
-```typescript
-import {
-  KENHOJO_AP,
-  KENHOJO_AP_EF,
-  schemaKenhojoBasicFour,
-} from "@aokiapp/mynacard";
-import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
-import { SchemaParser } from "@aokiapp/tlv/parser";
+**@aokiapp/jsapdu-rn:**
+- **[Nitro Error Mapping](../packages/rn/docs/nitro-error-mapping.md)** - Android/iOS exception handling, error normalization strategy
 
-await card.transmit(selectDf(KENHOJO_AP));
-await card.transmit(verify("1234", { ef: KENHOJO_AP_EF.PIN }));
-const data = await card.transmit(readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR));
+**@aokiapp/mynacard:**
+- **[TLV Schema System](../packages/mynacard/docs/tlv-schemas.md)** - Japanese card data parsing, schema architecture, custom decoders
 
-const parser = new SchemaParser(schemaKenhojoBasicFour);
-const info = parser.parse(data.arrayBuffer());
-console.log("Name:", info.name, "Address:", info.address);
-```
+### Testing
+- **[E2E Testing Patterns](./testing/e2e-testing-patterns.md)** - Hardware testing methodology, test organization, real-world scenarios
 
-### Error Handling
-
-```typescript
-import { SmartCardError } from "@aokiapp/jsapdu-interface";
-
-try {
-  await card.transmit(command);
-} catch (error) {
-  if (error instanceof SmartCardError) {
-    switch (error.code) {
-      case "CARD_NOT_PRESENT":
-        console.log("Please insert a card");
-        break;
-      case "TIMEOUT":
-        console.log("Operation timed out");
-        break;
-      default:
-        console.log("Error:", error.getSafeMessage());
-    }
-  }
-}
-```
-
-## 🔗 Navigation Map
-
-```mermaid
-graph TD
-    A[Getting Started] --> B[Architecture Guide]
-    A --> C[API Reference]
-    A --> D[MynaCard Guide]
-
-    B --> E[Core Interfaces]
-    B --> F[Platform Implementation]
-
-    C --> G[Package APIs]
-    C --> H[Usage Examples]
-
-    D --> I[Japanese Integration]
-    D --> J[Government Standards]
-
-    K[Contributing] --> L[Testing Guide]
-    K --> M[Development Setup]
-
-    N[Examples] --> O[Basic Operations]
-    N --> P[Advanced Scenarios]
-```
-
-## 🎯 Find What You Need
+## Quick Navigation
 
 ### I want to...
 
-#### **Get Started**
+**...use smart cards in Node.js:**
+1. Start with [@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)
+2. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for commands
+3. Add [@aokiapp/mynacard](../packages/mynacard/README.md) if working with Japanese cards
 
-- [Install and setup jsapdu](./getting-started.md#installation)
-- [Connect to my first SmartCard](./getting-started.md#your-first-smartcard-connection)
-- [Understand the architecture](./architecture/README.md)
+**...use NFC in React Native:**
+1. Start with [@aokiapp/jsapdu-rn](../packages/rn/README.md)
+2. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for commands  
+3. Add [@aokiapp/mynacard](../packages/mynacard/README.md) if working with Japanese cards
 
-#### **Build Applications**
+**...build APDU commands:**
+1. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for common commands
+2. Use [@aokiapp/jsapdu-interface](../packages/interface/README.md) `CommandApdu` class for custom commands
 
-- [Work with MynaCard](./guides/mynacard.md) (Japanese government ID)
-- [Handle errors properly](./guides/error-handling.md)
-- [Build APDU commands](../packages/apdu-utils/README.md)
+**...implement a new platform:**
+1. Read [Package Interactions](./architecture/package-interactions.md) for architecture
+2. Extend base classes from [@aokiapp/jsapdu-interface](../packages/interface/README.md)
+3. Study [@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md) or [@aokiapp/jsapdu-rn](../packages/rn/README.md) as reference
 
-#### **Platform Integration**
+**...parse MynaCard data:**
+1. Use constants from [@aokiapp/mynacard](../packages/mynacard/README.md)
+2. Read [TLV Schema System](../packages/mynacard/docs/tlv-schemas.md) for parsing details
 
-- [Use PC/SC readers](../packages/pcsc/README.md)
-- [Access native PC/SC APIs](../packages/pcsc-ffi-node/README.md)
-- [Implement new platforms](./guides/extending-platforms.md)
+**...work with low-level PC/SC:**
+1. Use [@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md) for direct FFI access
+2. Study [AsyncMutex](../packages/pcsc/docs/async-mutex.md) for concurrency patterns
 
-#### **Development & Testing**
+**...understand error handling:**
+1. See error sections in each package README
+2. Read [Nitro Error Mapping](../packages/rn/docs/nitro-error-mapping.md) for React Native specifics
 
-- [Set up development environment](./CONTRIBUTING.md#development-setup)
-- [Write tests](./guides/testing.md)
-- [Contribute to the project](./CONTRIBUTING.md)
+**...write tests:**
+1. Read [E2E Testing Patterns](./testing/e2e-testing-patterns.md)
+2. Study examples in `examples/` directory
 
-#### **Reference & Troubleshooting**
+## Documentation Principles
 
-- [Complete API reference](./api/README.md)
-- [Common error codes](./guides/error-handling.md#error-codes)
-- [Troubleshooting guide](./guides/troubleshooting.md)
+**User READMEs (packages/*/README.md):**
+- Focus on "how to use"
+- Multiple practical examples
+- Concise but complete API reference
+- No internal implementation details
 
-## 📋 Documentation Standards
+**Technical Docs (packages/*/docs/ and docs/*/):**
+- Implementation details and rationale
+- Architecture and design patterns
+- Performance considerations
+- Testing strategies
+- For contributors and advanced users
 
-This documentation follows these principles:
+## Contributing
 
-- **Clarity First**: Easy to understand explanations
-- **Example-Rich**: Practical, runnable code examples
-- **Cross-Referenced**: Easy navigation between related topics
-- **Audience-Aware**: Content tailored to different skill levels
-- **Bilingual Support**: Japanese terms explained for MynaCard
+When adding new features:
+1. Update user README with usage examples
+2. Add technical documentation if implementation is non-trivial
+3. Include test examples in E2E testing guide
+4. Update package interactions diagram if adding new package
 
-## 🤝 Getting Help
+## License
 
-- **Documentation Issues**: [GitHub Issues](https://github.com/AokiApp/jsapdu/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/AokiApp/jsapdu/discussions)
-- **Contributing**: See [Contributing Guide](./CONTRIBUTING.md)
-
----
-
-**Next Steps**: [Get Started →](./getting-started.md) | [View Examples →](./examples/README.md) | [API Reference →](./api/README.md)
+This documentation is part of the jsapdu project, licensed under MIT.

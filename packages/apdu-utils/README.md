@@ -1,320 +1,396 @@
 # @aokiapp/apdu-utils
 
-Utility functions for building common APDU commands (SELECT, READ BINARY, VERIFY) used in SmartCard communication.
-
-## Overview
-
-This package provides high-level utility functions that simplify the creation of standard ISO 7816 APDU commands. Instead of manually constructing APDU bytes, you can use these utilities to build commands with proper parameter validation and formatting.
+Ready-to-use APDU commands for smart card operations.
 
 ## Installation
 
 ```bash
-npm install @aokiapp/apdu-utils @aokiapp/jsapdu-interface
+npm install @aokiapp/apdu-utils
 ```
 
 ## Quick Start
 
 ```typescript
-import {
-  selectDf,
-  selectEf,
-  readEfBinaryFull,
-  verify,
-} from "@aokiapp/apdu-utils";
-import { CommandApdu } from "@aokiapp/jsapdu-interface";
+import { selectDf, readBinary, verify } from '@aokiapp/apdu-utils';
 
-// Select application by AID
-const selectCmd = selectDf("A0000000041010", true); // Request FCI
+// Select an application
+const selectCmd = selectDf([0xA0, 0x00, 0x00, 0x01, 0x51]);
 
-// Select elementary file
-const selectFileCmd = selectEf("0001");
+// Read 256 bytes from current file
+const readCmd = readBinary(0, 256);
 
-// Read entire file
-const readCmd = readEfBinaryFull(0x01);
-
-// Verify PIN
-const verifyCmd = verify("1234", { ef: 0x11 });
-
-// All utilities return CommandApdu objects ready for transmission
-await card.transmit(selectCmd);
+// Verify PIN "1234"
+const verifyCmd = verify("1234");
 ```
 
-## SELECT Commands
+## Examples
 
-### selectDf() - Select Directory File (Application)
-
-```typescript
-import { selectDf } from "@aokiapp/apdu-utils";
-
-// Select by AID string
-const cmd1 = selectDf("A0000000041010");
-
-// Select by AID bytes
-const cmd2 = selectDf([0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10]);
-
-// Select by Uint8Array
-const aid = new Uint8Array([0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10]);
-const cmd3 = selectDf(aid);
-
-// Request File Control Information (FCI)
-const cmd4 = selectDf("A0000000041010", true); // Returns FCI
-const cmd5 = selectDf("A0000000041010", false); // No FCI (default)
-```
-
-### selectEf() - Select Elementary File
+### SELECT Commands
 
 ```typescript
-import { selectEf } from "@aokiapp/apdu-utils";
+import { select, selectDf, selectEf } from '@aokiapp/apdu-utils';
 
-// Select EF by file ID (2 bytes)
-const cmd1 = selectEf("0001");
-const cmd2 = selectEf([0x00, 0x01]);
-const cmd3 = selectEf(new Uint8Array([0x00, 0x01]));
+// Select by AID (Application ID)
+const selectApp = selectDf([0xA0, 0x00, 0x00, 0x01, 0x51, 0x43, 0x52, 0x53, 0x00]);
 
-// File ID must be exactly 2 bytes
-selectEf("00"); // ❌ Error: Invalid EF identifier
-selectEf("000102"); // ❌ Error: Invalid EF identifier
-```
+// Select MF (Master File)
+const selectMF = selectDf([0x3F, 0x00]);
 
-### select() - Generic Select Command
+// Select EF (Elementary File) by ID
+const selectFile = selectEf([0x2F, 0x01]);
 
-```typescript
-import { select } from "@aokiapp/apdu-utils";
-
-// Full control over SELECT parameters
-const cmd = select(
-  0x04, // P1: Select by name (AID)
-  0x00, // P2: First/only occurrence
-  "A0000000041010", // Data: AID
-  0x00, // Le: Request response data
-);
-```
-
-## READ BINARY Commands
-
-### readEfBinaryFull() - Read Complete Elementary File
-
-```typescript
-import { readEfBinaryFull } from "@aokiapp/apdu-utils";
-
-// Read entire EF by short file ID (0-31)
-const cmd1 = readEfBinaryFull(0x01); // Read EF with ID 1
-const cmd2 = readEfBinaryFull(0x1f); // Read EF with ID 31
-
-// Uses maximum Le (65536 bytes) to read complete file
-readEfBinaryFull(32); // ❌ Error: Invalid short EF identifier
-```
-
-### readCurrentEfBinaryFull() - Read Current Elementary File
-
-```typescript
-import { readCurrentEfBinaryFull } from "@aokiapp/apdu-utils";
-
-// Read entire currently selected EF
-const cmd = readCurrentEfBinaryFull();
-
-// Equivalent to READ BINARY with P1=00, P2=00, Le=65536
-```
-
-### readBinary() - Flexible Read Binary
-
-```typescript
-import { readBinary } from "@aokiapp/apdu-utils";
-
-// Read from specific offset and length
-const cmd1 = readBinary(0x0000, 256); // Read 256 bytes from start
-const cmd2 = readBinary(0x0100, 128); // Read 128 bytes from offset 256
-
-// Extended APDU support
-const cmd3 = readBinary(0x0000, 65536, true); // Extended APDU
-
-// Use maximum Le for given APDU type
-const cmd4 = readBinary(0x0000, 0, false, true); // Standard max (256)
-const cmd5 = readBinary(0x0000, 0, true, true); // Extended max (65536)
-
-// Advanced options
-const cmd6 = readBinary(0x0000, 256, false, false, {
-  shortEfId: 0x01, // Read from specific EF
-  isCurrentEF: true, // Read from current EF
-  useRelativeAddress8Bit: true, // Use 8-bit relative addressing
+// Select with custom options (return FCI)
+const selectWithFCI = select([0xA0, 0x00, 0x00, 0x01, 0x51], {
+  p1: 0x04,  // Select by AID
+  p2: 0x00   // Return FCI
 });
 ```
 
-## VERIFY Commands
-
-### verify() - PIN Verification
+### READ BINARY Commands
 
 ```typescript
-import { verify } from "@aokiapp/apdu-utils";
+import { readBinary, readEfBinaryFull, readCurrentEfBinaryFull } from '@aokiapp/apdu-utils';
+
+// Read 100 bytes from offset 0
+const read1 = readBinary(0, 100);
+
+// Read from offset 256 (uses extended APDU)
+const read2 = readBinary(256, 100);
+
+// Read from specific EF with short ID
+const read3 = readBinary(0, 100, { shortEf: 0x01 });
+
+// Read entire current EF (auto-detects size)
+const readAll = await readCurrentEfBinaryFull(session);
+
+// Read entire specific EF
+const readFile = await readEfBinaryFull([0x2F, 0x01], session);
+```
+
+### VERIFY Commands (PIN)
+
+```typescript
+import { verify } from '@aokiapp/apdu-utils';
+
+// Verify PIN in current DF
+const pin1 = verify("1234");
+
+// Verify PIN with specific reference (P2)
+const pin2 = verify("123456", { p2: 0x80 });
 
 // Verify PIN for specific EF
-const cmd1 = verify("1234", { ef: 0x11 }); // 4-digit PIN for EF 0x11
-const cmd2 = verify("123456", { ef: 0x18 }); // 6-digit PIN for EF 0x18
+const pin3 = verify("1234", { ef: [0x00, 0x18] });
 
-// Verify PIN for current context
-const cmd3 = verify("1234", { isCurrent: true });
+// Using binary PIN data
+const pin4 = verify([0x31, 0x32, 0x33, 0x34]);
 
-// PIN as byte array
-const cmd4 = verify([0x31, 0x32, 0x33, 0x34], { ef: 0x11 }); // "1234"
-
-// PIN as Uint8Array
-const pinBytes = new Uint8Array([0x31, 0x32, 0x33, 0x34]);
-const cmd5 = verify(pinBytes, { ef: 0x11 });
+// Using hex string
+const pin5 = verify("31323334");
 ```
 
-## Utility Functions
-
-### toUint8Array() - Data Conversion
+### Complete Example: Reading Protected File
 
 ```typescript
-import { toUint8Array } from "@aokiapp/apdu-utils";
+import { selectDf, selectEf, verify, readEfBinaryFull } from '@aokiapp/apdu-utils';
 
-// Convert hex string to bytes
-const bytes1 = toUint8Array("01020304"); // Uint8Array([1, 2, 3, 4])
-
-// Convert number array to bytes
-const bytes2 = toUint8Array([1, 2, 3, 4]); // Uint8Array([1, 2, 3, 4])
-
-// Pass through existing Uint8Array
-const existing = new Uint8Array([1, 2, 3, 4]);
-const bytes3 = toUint8Array(existing); // Same array
-```
-
-## Common Usage Patterns
-
-### Application Selection and File Reading
-
-```typescript
-import { selectDf, selectEf, readEfBinaryFull } from "@aokiapp/apdu-utils";
-
-async function readApplicationFile(card, aid, fileId) {
-  // Select application
-  const selectApp = selectDf(aid);
-  let response = await card.transmit(selectApp);
-  if (response.sw !== 0x9000) {
-    throw new Error("Failed to select application");
-  }
-
-  // Select file
-  const selectFile = selectEf(fileId);
-  response = await card.transmit(selectFile);
-  if (response.sw !== 0x9000) {
-    throw new Error("Failed to select file");
-  }
-
-  // Read complete file
-  const readFile = readEfBinaryFull(0x01);
-  response = await card.transmit(readFile);
-  if (response.sw !== 0x9000) {
-    throw new Error("Failed to read file");
-  }
-
-  return response.data;
-}
-```
-
-### PIN Verification and Protected Operations
-
-```typescript
-import { verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
-
-async function readProtectedFile(card, pin, pinEf, fileEf) {
-  // Verify PIN
-  const verifyCmd = verify(pin, { ef: pinEf });
-  let response = await card.transmit(verifyCmd);
-
-  if (response.sw !== 0x9000) {
-    const retriesLeft = response.sw2 & 0x0f;
-    throw new Error(`PIN verification failed. ${retriesLeft} retries left.`);
-  }
-
-  // Read protected file
-  const readCmd = readEfBinaryFull(fileEf);
-  response = await card.transmit(readCmd);
-
-  return response.data;
-}
-```
-
-### Japanese MynaCard Pattern
-
-```typescript
-import { selectDf, verify, readEfBinaryFull } from "@aokiapp/apdu-utils";
-import { KENHOJO_AP, KENHOJO_AP_EF } from "@aokiapp/mynacard";
-
-async function readMynaCardBasicInfo(card, pin) {
-  // Select Kenhojo application
-  await card.transmit(selectDf(KENHOJO_AP));
-
-  // Verify PIN
-  await card.transmit(verify(pin, { ef: KENHOJO_AP_EF.PIN }));
-
-  // Read basic four information
-  const response = await card.transmit(
-    readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR),
+async function readProtectedFile(session) {
+  // 1. Select application
+  const selectAppResp = await session.transmit(
+    selectDf([0xA0, 0x00, 0x00, 0x01, 0x51])
   );
+  
+  if (!selectAppResp.isSuccess()) {
+    throw new Error('Failed to select application');
+  }
 
-  return response.data;
+  // 2. Verify PIN
+  const verifyResp = await session.transmit(
+    verify("1234")
+  );
+  
+  if (!verifyResp.isSuccess()) {
+    throw new Error('PIN verification failed');
+  }
+
+  // 3. Read entire file
+  const data = await readEfBinaryFull([0x2F, 0x01], session);
+  
+  return data;
 }
 ```
+
+## API Reference
+
+### select(p1, p2, data, le?)
+
+Creates a low-level SELECT command with full control over parameters.
+
+**Parameters:**
+- `p1: number` - Selection control byte (0x00-0xFF)
+  - `0x00` = Select MF, DF or EF by file identifier
+  - `0x01` = Select child DF
+  - `0x02` = Select EF under current DF  
+  - `0x03` = Select parent DF
+  - `0x04` = Select by DF name (AID)
+  - `0x08` = Select from MF
+  - `0x09` = Select from current DF
+- `p2: number` - File control information (0x00-0xFF)
+  - `0x00` = Return FCI template
+  - `0x04` = Return FCP template
+  - `0x08` = Return FMD template
+  - `0x0C` = No response data
+- `data: Uint8Array | number[] | string` - File identifier or AID
+  - File ID: 2 bytes (e.g., [0x3F, 0x00] for MF)
+  - AID: 5-16 bytes (e.g., [0xA0, 0x00, 0x00, 0x01, 0x51])
+  - Hex string: "3F00" or "A0000001514352530000"
+- `le?: number | null` - Expected response length (0-65536)
+  - `null` = No response expected (P2=0x0C)
+  - `0` = Maximum response length (256 for standard, 65536 for extended)
+  - `1-65536` = Specific response length
+
+**Returns:** `CommandApdu` - Constructed SELECT command
+
+**Throws:** 
+- `Error` - When P2=0x0C (no response) but le is specified
+
+**Example APDU:**
+```typescript
+select(0x04, 0x00, [0xA0, 0x00, 0x00, 0x01, 0x51], 0x00)
+// → 00 A4 04 00 05 A0 00 00 01 51 00
+```
+
+---
+
+### selectDf(data, fciRequested?)
+
+Selects a Dedicated File (DF) by name or AID.
+
+**Parameters:**
+- `data: Uint8Array | number[] | string` - DF name or Application ID (AID)
+  - **Length**: 1-16 bytes for valid DF identifier
+  - **Format**: Byte array, number array, or hex string
+  - **Examples**: 
+    - MF: [0x3F, 0x00] or "3F00"
+    - JPKI: [0xA0, 0x00, 0x00, 0x01, 0x51] or "A0000001514352530000"
+- `fciRequested?: boolean` - Whether to return File Control Information
+  - `true` = Return FCI template (P2=0x00, Le=0x00)
+  - `false` = No response data (P2=0x0C, no Le) - **default**
+
+**Returns:** `CommandApdu` - SELECT DF command (CLA=0x00, INS=0xA4, P1=0x04)
+
+**Throws:** 
+- `Error("Invalid DF identifier.")` - When data length < 1 or > 16 bytes
+
+**Generated P1/P2:**
+- P1 = 0x04 (select by DF name)
+- P2 = 0x00 (return FCI) if fciRequested=true
+- P2 = 0x0C (no response) if fciRequested=false
+
+**Example APDUs:**
+```typescript
+selectDf([0xA0, 0x00, 0x00, 0x01, 0x51], true)
+// → 00 A4 04 00 05 A0 00 00 01 51 00
+
+selectDf([0xA0, 0x00, 0x00, 0x01, 0x51], false)  
+// → 00 A4 04 0C 05 A0 00 00 01 51
+```
+
+---
+
+### selectEf(data)
+
+Selects an Elementary File (EF) by file identifier.
+
+**Parameters:**
+- `data: Uint8Array | number[] | string` - EF file identifier
+  - **Length**: Must be exactly 2 bytes
+  - **Format**: Byte array, number array, or hex string
+  - **Examples**: 
+    - [0x2F, 0x01], [0x00, 0x11], "2F01", "0011"
+
+**Returns:** `CommandApdu` - SELECT EF command (CLA=0x00, INS=0xA4, P1=0x02, P2=0x0C)
+
+**Throws:** 
+- `Error("Invalid EF identifier.")` - When data length ≠ 2 bytes
+
+**Generated P1/P2:**
+- P1 = 0x02 (select EF under current DF)
+- P2 = 0x0C (no response data)
+
+**Example APDU:**
+```typescript
+selectEf([0x2F, 0x01])
+// → 00 A4 02 0C 02 2F 01
+```
+
+---
+
+### readBinary(offset, length, isExtended?, useMaxLe?, options?)
+
+Creates a READ BINARY command for reading data from the current EF.
+
+**Parameters:**
+- `offset: number` - Starting byte offset (0-65535)
+  - **Standard APDU**: 0-65535 (encoded in P1P2)
+  - **Extended APDU**: 0-65535 (uses extended addressing)
+- `length: number` - Number of bytes to read (1-65535)
+  - **Standard APDU**: 1-255 bytes maximum
+  - **Extended APDU**: 1-65535 bytes maximum  
+- `isExtended?: boolean` - Use extended APDU format
+  - `false` = Standard APDU (default)
+  - `true` = Extended APDU for large reads
+- `useMaxLe?: boolean` - Request maximum possible response
+  - `false` = Request specific length (default)
+  - `true` = Request max (256 for standard, 65536 for extended)
+- `options?: object` - Advanced addressing options
+  - `isCurrentEF?: boolean` - Force P2=0x00 (current EF addressing)
+  - `shortEfId?: number` - Use short EF identifier (0-31)
+  - `useRelativeAddress15Bit?: boolean` - 15-bit relative addressing
+  - `useRelativeAddress8Bit?: boolean` - 8-bit relative addressing
+
+**Returns:** `CommandApdu` - READ BINARY command (CLA=0x00, INS=0xB0)
+
+**Throws:**
+- `Error` - When offset or length exceeds APDU limits
+
+**P1/P2 Encoding (Standard Mode):**
+- P1 = (offset >> 8) & 0xFF (high byte of offset)
+- P2 = offset & 0xFF (low byte of offset)
+
+**P1/P2 Encoding (Short EF Mode):**
+- P1 = 0x80 | (shortEfId & 0x1F)
+- P2 = 0x00
+
+**Example APDUs:**
+```typescript
+readBinary(0x0100, 0x50)
+// → 00 B0 01 00 50
+
+readBinary(0, 100, false, false, { shortEfId: 0x01 })
+// → 00 B0 81 00 64
+```
+
+**Response:** Contains requested file data + SW1SW2 status
+
+---
+
+### readCurrentEfBinaryFull()
+
+Creates a READ BINARY command to read the entire currently selected EF.
+
+**Parameters:** None
+
+**Returns:** `CommandApdu` - READ BINARY command requesting maximum data
+- Uses P1=0x00, P2=0x00 (current EF, offset 0)
+- Uses Le=65536 (extended APDU, read all available data)
+
+**Example APDU:**
+```typescript
+readCurrentEfBinaryFull()
+// → 00 B0 00 00 00 00 00 (extended APDU with Le=65536)
+```
+
+**Usage:** Call after selecting an EF to read its complete contents.
+
+---
+
+### readEfBinaryFull(shortEfId)
+
+Creates a READ BINARY command using short EF identifier to read entire file.
+
+**Parameters:**
+- `shortEfId: number` - Short EF identifier (0-31)
+  - Maps to specific EF within current DF
+  - Eliminates need for separate SELECT EF command
+
+**Returns:** `CommandApdu` - READ BINARY with short EF addressing
+
+**Throws:** 
+- `Error("Invalid short EF identifier.")` - When shortEfId < 0 or > 31
+
+**P1/P2 Encoding:**
+- P1 = 0x80 | shortEfId (bit 7 set + EF ID in bits 4-0)
+- P2 = 0x00 (offset 0)
+- Le = 65536 (extended APDU, read maximum)
+
+**Example APDU:**
+```typescript
+readEfBinaryFull(0x01)  
+// → 00 B0 81 00 00 00 00 (extended APDU)
+```
+
+---
+
+### verify(data, options?)
+
+Creates a VERIFY command for PIN authentication.
+
+**Parameters:**
+- `data: string | Uint8Array | number[]` - PIN data (1-16 bytes)
+  - **String**: Numeric digits converted to ASCII bytes ("1234" → [0x31, 0x32, 0x33, 0x34])
+  - **Uint8Array/number[]**: Raw PIN bytes (pre-formatted)
+  - **Length**: 1-16 bytes (card-dependent)
+- `options?: object` - PIN verification options
+  - `ef?: number | string` - Target EF identifier (0-30)
+    - References specific PIN within current DF
+    - `undefined` = Use current DF global PIN (default)
+  - `isCurrent?: boolean` - Force current DF PIN usage
+    - `true` = Use P2=0x80 (current DF)
+    - Has no effect if `ef` is specified
+
+**Returns:** `CommandApdu` - VERIFY command (CLA=0x00, INS=0x20, P1=0x00)
+
+**Throws:**
+- `Error("Invalid EF identifier.")` - When ef > 30 (0x1E)
+
+**P2 Encoding:**
+- `0x80` = Current DF PIN (when ef not specified)
+- `0x80 + ef` = Specific EF PIN (when ef specified, range 0x80-0x9E)
+
+**Example APDUs:**
+```typescript
+verify("1234")
+// → 00 20 00 80 04 31 32 33 34
+
+verify("123456", { ef: 0x01 })  
+// → 00 20 00 81 06 31 32 33 34 35 36
+
+verify([0x12, 0x34, 0x56, 0x78])
+// → 00 20 00 80 04 12 34 56 78
+```
+
+**Response Status Words:**
+- `9000` = PIN verification successful
+- `63CX` = PIN verification failed, X attempts remaining
+- `6983` = PIN blocked/authentication method blocked
+- `6A86` = Incorrect P1-P2 parameters
+- `6A88` = Referenced data not found (invalid PIN reference)
+
+## Input Formats
+
+All functions accept flexible input:
+- `Uint8Array` - Direct byte array
+- `number[]` - Array of bytes  
+- `string` - Hex string (e.g., "A0000001") automatically converted
 
 ## Error Handling
 
-### Command Construction Errors
+Functions validate parameters and throw descriptive errors:
 
 ```typescript
 try {
-  const cmd = selectEf("0001234"); // Too long
+  const cmd = selectDf(""); // Empty AID
 } catch (error) {
-  console.log(error.message); // "Invalid EF identifier."
+  console.error(error.message); // "Invalid DF identifier."
 }
 
 try {
-  const cmd = readEfBinaryFull(32); // Out of range
+  const cmd = readBinary(70000, 100); // Offset too large
 } catch (error) {
-  console.log(error.message); // "Invalid short EF identifier."
+  console.error(error.message); // "Offset or length is out of range..."
 }
 ```
 
-### APDU Response Handling
+## License
 
-```typescript
-const cmd = readEfBinaryFull(0x01);
-const response = await card.transmit(cmd);
-
-switch (response.sw) {
-  case 0x9000:
-    console.log("Success");
-    break;
-  case 0x6a82:
-    console.log("File not found");
-    break;
-  case 0x6982:
-    console.log("Security status not satisfied");
-    break;
-  case 0x6a86:
-    console.log("Incorrect parameters");
-    break;
-  default:
-    console.log(`Unexpected status: ${response.sw.toString(16)}`);
-}
-```
-
-## Parameter Validation
-
-The utilities perform strict parameter validation:
-
-- **AID length**: 1-16 bytes for `selectDf()`
-- **File ID length**: Exactly 2 bytes for `selectEf()`
-- **Short EF ID**: 0-31 (5 bits) for `readEfBinaryFull()`
-- **PIN length**: 1-16 bytes for `verify()`
-- **Offset/Length**: Must fit in APDU constraints
-
-## Dependencies
-
-- [`@aokiapp/jsapdu-interface`](../interface) - CommandApdu class and constants
-
-## Related Packages
-
-- [`@aokiapp/mynacard`](../mynacard) - MynaCard-specific constants and schemas
-- [`@aokiapp/jsapdu-pcsc`](../pcsc) - PC/SC platform for command transmission
+MIT
