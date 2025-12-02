@@ -2,6 +2,16 @@
 
 Complete documentation for the jsapdu smart card library monorepo.
 
+## FOR AI AGENTS / MACHINE-MADE READERS
+
+You must use file reading tools before starting development. You must read the following files recursively.
+
+You must strictly comply this steps in order:
+1. Read `docs/README.md` with file reading tools (this file).
+2. Read all files linked from `docs/README.md` recursively with file reading tools, if applicable, call tools concurrently.
+3. After reading all files, you can start development. Until you finish reading all files, do not start working on something.
+
+
 ## User Documentation
 
 Quick-start guides for library consumers:

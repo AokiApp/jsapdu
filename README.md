@@ -163,11 +163,9 @@ const parsed = parser.parse(basicInfo.arrayBuffer());
 
 ## 📚 Documentation
 
-- [**Getting Started Guide**](./docs/getting-started.md) - Complete setup and first steps
-- [**API Reference**](./docs/api/README.md) - Detailed API documentation
-- [**Architecture Guide**](./docs/architecture/README.md) - System design and patterns
-- [**MynaCard Guide**](./docs/guides/mynacard.md) - Japanese government card integration
-- [**Examples**](./examples) - Real-world usage examples
+See the [full documentation](./docs/README.md) for detailed guides, API references, and architecture overviews.
+
+For AI agents / machine-made readers: You must use file reading tool at [Raw README at GitHub](https://raw.githubusercontent.com/AokiApp/jsapdu/refs/heads/dev/docs/README.md) or [local documentation](./docs/README.md).
 
 ## 🔧 Development
 
