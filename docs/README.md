@@ -47,6 +47,12 @@ Deep-dive documentation for contributors and advanced users:
 ### Testing
 - **[E2E Testing Patterns](./testing/e2e-testing-patterns.md)** - Hardware testing methodology, test organization, real-world scenarios
 
+### Examples
+- **[Examples Overview](../examples/README.md)** - Practical examples across platforms and use cases
+  - **[MynaCard CLI Examples](../examples/mynacard/README.md)** - Node.js command-line examples for reading Japanese MynaCard
+  - **[PC/SC FFI Examples](../examples/pcsc-ffi/README.md)** - Low-level FFI bindings usage for direct PC/SC access
+  - **[React Native NFC App](../examples/rn/README.md)** - Full-featured mobile NFC application
+
 ## Quick Navigation
 
 ### I want to...
@@ -84,7 +90,13 @@ Deep-dive documentation for contributors and advanced users:
 
 **...write tests:**
 1. Read [E2E Testing Patterns](./testing/e2e-testing-patterns.md)
-2. Study examples in `examples/` directory
+2. Study [examples](../examples/README.md) for practical usage patterns
+
+**...see working examples:**
+1. Browse [Examples Overview](../examples/README.md) for all examples
+2. Try [MynaCard CLI examples](../examples/mynacard/README.md) for Node.js
+3. Explore [PC/SC FFI examples](../examples/pcsc-ffi/README.md) for low-level access
+4. Run [React Native app](../examples/rn/README.md) for mobile NFC
 
 ## Documentation Principles
 

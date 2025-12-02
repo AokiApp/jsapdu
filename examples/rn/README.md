@@ -1,97 +1,498 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# React Native NFC Example App
 
-# Getting Started
+Full-featured React Native application demonstrating NFC smart card reading on iOS and Android using `@aokiapp/jsapdu-rn`.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Overview
 
-## Step 1: Start Metro
+This example is a complete mobile app showcasing:
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- **NFC card detection** with visual feedback
+- **MynaCard reading** with PIN entry using custom hex keyboard
+- **Multi-screen navigation** with React Navigation
+- **Event-driven architecture** for card lifecycle management
+- **Production-ready UI** with animated overlays and status indicators
+- **Cross-platform support** (iOS 7+ and Android with NFC)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Features
 
-```sh
-# Using npm
-npm start
+### Core Functionality
 
-# OR using Yarn
-yarn start
+1. **Smart Card Platform Test** - Test NFC device availability and basic operations
+2. **NFC Antenna Visualization** - Visual guide for optimal card positioning
+3. **MynaCard Reader** - Complete flow for reading Japanese Individual Number Cards:
+   - PIN entry with custom hex keyboard
+   - Card reading with progress indicators
+   - Data parsing and display
+4. **Real-time Events** - Card found/lost detection with UI updates
+
+### UI Components
+
+- **[MenuScreen](./src/screens/MenuScreen.tsx)** - Example selection menu
+- **[MynaPinScreen](./src/screens/MynaPinScreen.tsx)** - PIN entry with masked input and hex keyboard
+- **[MynaReadScreen](./src/screens/MynaReadScreen.tsx)** - Card reading with animated bottom sheet and status overlay
+- **[MynaShowScreen](./src/screens/MynaShowScreen.tsx)** - Display parsed card data
+- **[NfcAntennaScreen](./src/screens/NfcAntennaScreen.tsx)** - NFC antenna position visualization
+- **[SmartCardTestScreen](./src/screens/SmartCardTestScreen.tsx)** - Platform capability testing
+- **[HexTextInput](./src/components/HexTextInput/)** - Custom hex keyboard for PIN entry
+
+## Prerequisites
+
+### Development Environment
+
+Complete the [React Native environment setup](https://reactnative.dev/docs/environment-setup) for your platform:
+
+**For iOS:**
+- macOS with Xcode 14+
+- CocoaPods via Ruby bundler
+- iOS Simulator or iPhone 7+ physical device
+
+**For Android:**
+- Android Studio with SDK 31+
+- Android Emulator or physical device with NFC
+
+### Hardware Requirements
+
+**iOS:**
+- iPhone 7 or later (NFC capability)
+- iOS 13.0+ for Core NFC support
+
+**Android:**
+- Device with NFC hardware
+- Android 5.0+ (API level 21+)
+- NFC must be enabled in device settings
+
+### Software Dependencies
+
+- Node.js 18.0+
+- React Native 0.74+
+- TypeScript 5.0+
+
+## Installation
+
+### 1. Install Dependencies
+
+```bash
+cd examples/rn
+npm install
 ```
 
-## Step 2: Build and run your app
+### 2. iOS Setup
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Install Ruby dependencies and CocoaPods:
 
-### Android
+```bash
+# First time only: install bundler dependencies
+bundle install
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+# Install or update iOS native dependencies
+bundle exec pod install --project-directory=ios
 ```
+
+**Configure Info.plist:**
+
+Add to `ios/JsapduRnExample/Info.plist`:
+
+```xml
+<!-- NFC Permission -->
+<key>NFCReaderUsageDescription</key>
+<string>This app uses NFC to read smart cards</string>
+
+<!-- Allowed AIDs (Application IDs) -->
+<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+<array>
+  <string>A0000001514352530000</string>  <!-- Example AID -->
+  <string>D392F000260100000001</string>  <!-- JPKI Application -->
+  <string>D392F000260100000002</string>  <!-- KENHOJO Application -->
+  <string>D392F000260100000003</string>  <!-- KENKAKU Application -->
+</array>
+```
+
+**Enable NFC Capability in Xcode:**
+
+1. Open `ios/JsapduRnExample.xcworkspace` in Xcode
+2. Select project → Signing & Capabilities
+3. Click "+ Capability" → Add "Near Field Communication Tag Reading"
+4. Ensure provisioning profile supports NFC
+
+### 3. Android Setup
+
+**Add Permissions to AndroidManifest.xml:**
+
+File: `android/app/src/main/AndroidManifest.xml`
+
+```xml
+<!-- NFC Permissions -->
+<uses-permission android:name="android.permission.NFC" />
+<uses-feature android:name="android.hardware.nfc" android:required="false" />
+<uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
+```
+
+## Running the App
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+```bash
+# Start Metro bundler
+npm start
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# In another terminal, build and run iOS app
 npm run ios
 
-# OR using Yarn
-yarn ios
+# Or run on specific device
+npm run ios -- --device "Your iPhone Name"
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**Troubleshooting iOS:**
+- If build fails, try: `cd ios && pod deintegrate && pod install && cd ..`
+- For signing issues, open Xcode and configure signing settings
+- Ensure NFC capability is enabled in project settings
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### Android
 
-## Step 3: Modify your app
+```bash
+# Start Metro bundler
+npm start
 
-Now that you have successfully run the app, let's make changes!
+# In another terminal, build and run Android app
+npm run android
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+# Or run on specific device
+npm run android -- --deviceId YOUR_DEVICE_ID
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+**Troubleshooting Android:**
+- Ensure NFC is enabled: Settings → Connected devices → Connection preferences → NFC
+- If build fails, try: `cd android && ./gradlew clean && cd ..`
+- Check USB debugging is enabled for physical devices
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## App Structure
 
-## Congratulations! :tada:
+```
+rn/
+├── android/                 # Android native code
+│   └── app/src/main/
+│       ├── AndroidManifest.xml
+│       └── java/aokiapp/jsapdurn/example/
+├── ios/                     # iOS native code
+│   └── JsapduRnExample/
+│       ├── Info.plist
+│       └── AppDelegate.swift
+├── src/
+│   ├── App.tsx             # Root navigation setup
+│   ├── components/         # Reusable UI components
+│   │   └── HexTextInput/   # Custom hex keyboard
+│   ├── screens/            # Screen components
+│   │   ├── MenuScreen.tsx
+│   │   ├── MynaPinScreen.tsx
+│   │   ├── MynaReadScreen.tsx
+│   │   ├── MynaShowScreen.tsx
+│   │   ├── NfcAntennaScreen.tsx
+│   │   └── SmartCardTestScreen.tsx
+│   └── types/              # TypeScript type definitions
+│       └── myna.ts
+├── package.json
+└── tsconfig.json
+```
 
-You've successfully run and modified your React Native App. :partying_face:
+## Key Implementation Patterns
 
-### Now what?
+### 1. Platform Initialization
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```typescript
+import { platformManager } from '@aokiapp/jsapdu-rn';
 
-# Troubleshooting
+// Get singleton platform instance
+const platform = platformManager.getPlatform();
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+// Initialize NFC
+await platform.init();
 
-# Learn More
+// Get available NFC devices (usually one integrated NFC)
+const devices = await platform.getDeviceInfo();
 
-To learn more about React Native, take a look at the following resources:
+// Acquire device
+const device = await platform.acquireDevice(devices[0].id);
+```
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+### 2. Event-Driven Card Detection
+
+```typescript
+// Subscribe to device events
+const unsubscribe = device.on('CARD_FOUND', (event) => {
+  console.log('Card detected!', event);
+  // Start reading...
+});
+
+// Wait for card presence
+await device.waitForCardPresence(30000); // 30 second timeout
+
+// Cleanup
+unsubscribe();
+```
+
+### 3. Card Reading Flow
+
+```typescript
+// Start session when card is present
+const session = await device.startSession();
+
+// Send APDU commands
+const response = await session.transmit(
+  selectDf(KENHOJO_AP)
+);
+
+// Verify PIN
+const verifyResp = await session.transmit(
+  verify(pin, { ef: KENHOJO_AP_EF.PIN })
+);
+
+// Read data
+const dataResp = await session.transmit(
+  readEfBinaryFull(KENHOJO_AP_EF.BASIC_FOUR)
+);
+
+// Parse TLV data
+const parser = new SchemaParser(schemaKenhojoBasicFour);
+const parsed = parser.parse(dataResp.arrayBuffer());
+
+// Cleanup
+await session.release();
+await device.release();
+await platform.release();
+```
+
+### 4. Resource Cleanup Pattern
+
+```typescript
+let platform, device, session;
+
+try {
+  platform = platformManager.getPlatform();
+  await platform.init();
+  
+  device = await platform.acquireDevice(deviceId);
+  session = await device.startSession();
+  
+  // Operations...
+  
+} catch (error) {
+  console.error('Error:', error);
+} finally {
+  // Always cleanup in reverse order
+  await session?.release();
+  await device?.release();
+  await platform?.release();
+}
+```
+
+### 5. Navigation with Cleanup
+
+```typescript
+// Add navigation listener for back button
+navigation.addListener('beforeRemove', (e) => {
+  if (isReadingCard) {
+    // Prevent navigation and cleanup first
+    e.preventDefault();
+    cleanupResources().then(() => {
+      navigation.dispatch(e.data.action);
+    });
+  }
+});
+```
+
+## Screen Implementations
+
+### MynaReadScreen - Complete Card Reading Flow
+
+**File:** [`src/screens/MynaReadScreen.tsx`](./src/screens/MynaReadScreen.tsx)
+
+**Features:**
+- Phase-based state machine (INITIALIZING → ACQUIRING_DEVICE → WAITING_FOR_CARD → READING → COMPLETED)
+- Animated bottom sheet with glow effects
+- Real-time status updates
+- Automatic navigation after card removal
+- Comprehensive error handling
+- Event-driven card lifecycle management
+
+**Key States:**
+```typescript
+type Phase = 
+  | 'IDLE'
+  | 'INITIALIZING'
+  | 'ACQUIRING_DEVICE'
+  | 'WAITING_FOR_CARD'
+  | 'STARTING_SESSION'
+  | 'READING'
+  | 'COMPLETED';
+```
+
+**Event Handling:**
+```typescript
+// Platform events
+platform.on('PLATFORM_INITIALIZED', handler);
+platform.on('DEVICE_ACQUIRED', handler);
+
+// Device events
+device.on('CARD_FOUND', handler);
+device.on('CARD_LOST', handler);
+device.on('CARD_SESSION_STARTED', handler);
+
+// Card events
+card.on('APDU_SENT', handler);
+card.on('APDU_FAILED', handler);
+```
+
+### MynaPinScreen - PIN Entry with Hex Keyboard
+
+**File:** [`src/screens/MynaPinScreen.tsx`](./src/screens/MynaPinScreen.tsx)
+
+**Features:**
+- Custom hex keyboard (0-9, A-F)
+- Masked PIN display (asterisks)
+- Backspace support
+- Clear button
+- Auto-submission on 4-digit entry
+- Context-aware keyboard provider
+
+### NfcAntennaScreen - Positioning Guide
+
+**File:** [`src/screens/NfcAntennaScreen.tsx`](./src/screens/NfcAntennaScreen.tsx)
+
+**Features:**
+- Visual guide for NFC antenna location
+- Device-specific antenna positions
+- Animated card placement indicator
+- Helps users understand optimal card positioning
+
+## Troubleshooting
+
+### iOS Issues
+
+**"NFC not available"**
+- Requires iPhone 7 or later
+- iOS 13.0+ for Core NFC
+- Check NFC capability in Xcode signing settings
+
+**"NFC Session Failed"**
+- Verify Info.plist has `NFCReaderUsageDescription`
+- Ensure AIDs are listed in `com.apple.developer.nfc.readersession.iso7816.select-identifiers`
+- Check NFC capability is enabled in provisioning profile
+
+**"Build Failed"**
+```bash
+# Clean and rebuild
+cd ios
+pod deintegrate
+pod install
+cd ..
+npm run ios
+```
+
+### Android Issues
+
+**"NFC is disabled"**
+- Enable NFC: Settings → Connected devices → NFC
+- Verify NFC permission in AndroidManifest.xml
+
+**"Reader Mode Not Working"**
+- Requires Android 5.0+ (API 21+)
+- Some devices have limited ISO-DEP support
+- Try with different card or reader app
+
+**"Build Failed"**
+```bash
+# Clean and rebuild
+cd android
+./gradlew clean
+cd ..
+npm run android
+```
+
+### Common Runtime Errors
+
+**"Platform already initialized"**
+```typescript
+// Always release before re-initializing
+await platform.release();
+await platform.init();
+```
+
+**"Card removed during operation"**
+```typescript
+// Handle CARD_LOST event
+device.on('CARD_LOST', () => {
+  // Update UI, cleanup session
+});
+```
+
+**"PIN verification failed"**
+- Check PIN is correct (4 digits for MynaCard)
+- Monitor remaining attempts to avoid lockout
+- Parse SW1SW2 for retry count: `(sw & 0xFFF0) === 0x63C0 ? sw2 & 0x0F : null`
+
+## Development Tips
+
+### Hot Reload
+
+- Save file → Metro automatically reloads
+- Shake device or press Cmd+D (iOS) / Cmd+M (Android) for dev menu
+- Use "Reload" for state reset
+
+### Debugging
+
+**React Native Debugger:**
+```bash
+# Install globally
+npm install -g react-native-debugger
+
+# Start debugger
+react-native-debugger
+```
+
+**Chrome DevTools:**
+- Open dev menu → "Debug"
+- Navigate to `chrome://inspect`
+
+**Native Logs:**
+```bash
+# iOS
+npx react-native log-ios
+
+# Android
+npx react-native log-android
+```
+
+### Testing on Physical Devices
+
+**iOS:**
+1. Connect iPhone via USB
+2. Trust computer on device
+3. Run: `npm run ios -- --device`
+
+**Android:**
+1. Enable Developer Options + USB Debugging
+2. Connect via USB
+3. Run: `adb devices` to verify
+4. Run: `npm run android`
+
+## Related Documentation
+
+- **[Examples Overview](../README.md)** - All available examples
+- **[@aokiapp/jsapdu-rn Package](../../packages/rn/README.md)** - React Native NFC API reference
+- **[@aokiapp/mynacard Package](../../packages/mynacard/README.md)** - MynaCard constants and schemas
+- **[Nitro Error Mapping](../../packages/rn/docs/nitro-error-mapping.md)** - Error handling strategy
+- **[React Native Docs](https://reactnative.dev/docs/getting-started)** - Official React Native documentation
+
+## Contributing
+
+When modifying this example:
+1. Follow React Native best practices
+2. Use TypeScript for type safety
+3. Implement proper resource cleanup
+4. Handle both iOS and Android platforms
+5. Test on physical devices with NFC
+6. Document new screens or components
+
+## License
+
+ANAL-Tight-1.0.1 - See [LICENSE](../../LICENSE.md)
