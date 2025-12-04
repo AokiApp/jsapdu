@@ -38,7 +38,10 @@ export const schemaCertificate = Schema.constructed(
 
 export const schemaKenhojoBasicFour = Schema.constructed(
   "kenhojoBasicFour",
-  {},
+  {
+    tagClass: TagClass.Private,
+    tagNumber: 0x20,
+  },
   [
     Schema.primitive(
       "offsets",
