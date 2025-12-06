@@ -180,32 +180,12 @@ npm install
 # Build all packages
 npm run build
 
-# Run tests (includes E2E tests if hardware available)
+# Run tests
 npm test
 
-# Run only unit tests
-npm run test:unit
-
-# Run only E2E tests (requires SmartCard hardware)
+# Run E2E tests (requires SmartCard hardware)
 npm run test:e2e
-
-# Run tests without E2E (for CI environments)
-npm run test:ci
 ```
-
-### Release Process
-
-We use [Changesets](https://github.com/changesets/changesets) for version management. When making changes:
-
-```bash
-# Create a changeset to describe your changes
-npm run changeset
-
-# The release process is automated via GitHub Actions
-# See docs/RELEASE.md for detailed information
-```
-
-For full release documentation, see [RELEASE.md](./docs/RELEASE.md).
 
 ## 🤝 Contributing
 
