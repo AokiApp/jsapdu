@@ -29,7 +29,7 @@
     "test": "vitest run",
     "test:unit": "vitest run packages",
     "test:e2e": "vitest run examples/mynacard-e2e",
-    "test:ci": "CI=true vitest run",
+    "test:ci": "SKIP_E2E_TESTS=true vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "npm run -ws typecheck --if-present",

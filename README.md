@@ -180,26 +180,26 @@ npm install
 # Build all packages
 npm run build
 
-# Run tests (all tests including E2E)
+# Run all tests (including E2E - default behavior)
 npm test
 
 # Run only unit tests (packages)
 npm run test:unit
 
-# Run E2E tests (requires SmartCard hardware)
+# Run only E2E tests (requires SmartCard hardware)
 npm run test:e2e
 
-# Run tests in CI mode (skips E2E tests)
+# Run tests without E2E (for CI without hardware)
 npm run test:ci
 ```
 
 ### Testing Strategy
 
 - **Unit tests** (`packages/**/*.test.ts`): Always run in all environments
-- **E2E tests** (`examples/mynacard-e2e/*.test.ts`): Require actual SmartCard hardware
-  - Automatically skipped in CI environments unless `RUN_E2E_TESTS=true` is set
-  - Run locally with `npm run test:e2e` when hardware is available
-  - Use `npm test` to run all tests including E2E
+- **E2E tests** (`examples/mynacard-e2e/*.test.ts`): Run by default, require SmartCard hardware
+  - Default behavior: E2E tests run with `npm test` (preserves original workflow)
+  - Use `npm run test:ci` or `SKIP_E2E_TESTS=true npm test` to skip E2E tests in environments without hardware
+  - Use `npm run test:e2e` to run only E2E tests
 
 ### Release Process
 

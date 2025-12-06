@@ -6,29 +6,26 @@ E2E tests in `examples/mynacard-e2e/` test actual SmartCard hardware interaction
 
 ### Test Execution Modes
 
-1. **Local Development** (hardware available):
+1. **Default Behavior** (hardware available):
    ```bash
-   npm test              # All tests including E2E
+   npm test              # All tests including E2E (DEFAULT)
    npm run test:e2e      # Only E2E tests
    ```
 
 2. **CI Environment** (no hardware):
    ```bash
-   npm run test:ci       # Unit tests only (E2E skipped)
-   ```
-
-3. **CI with E2E** (optional, requires hardware):
-   ```bash
-   RUN_E2E_TESTS=true npm test  # Requires libpcsclite-dev
+   npm run test:ci                    # Skip E2E tests
+   SKIP_E2E_TESTS=true npm test       # Skip E2E tests (explicit)
    ```
 
 ## Environment Detection
 
-The test configuration automatically detects CI environments and skips E2E tests unless explicitly enabled:
+**Default behavior: E2E tests RUN unless explicitly skipped**
 
-- `CI=true` → E2E tests skipped (default CI behavior)
-- `CI=true RUN_E2E_TESTS=true` → E2E tests run (requires hardware setup)
-- Local (no `CI` env) → All tests run
+This preserves the original workflow where E2E tests are the primary testing method.
+
+- No env vars → E2E tests run (default for hardware-enabled environments)
+- `SKIP_E2E_TESTS=true` → E2E tests skipped (for CI without hardware)
 
 ## Future Enhancement: Mock-based E2E Testing
 
