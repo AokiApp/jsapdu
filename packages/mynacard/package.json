@@ -43,6 +43,9 @@
   "bugs": {
     "url": "https://github.com/AokiApp/jsapdu/issues"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "dependencies": {
     "@aokiapp/tlv": "^0.4.0"
   }

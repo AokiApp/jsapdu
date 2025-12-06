@@ -1,23 +1,26 @@
 {
+  "$schema": "https://turbo.build/schema.json",
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "lib/**"]
+      "outputs": ["dist/**", "lib/**"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"],
-      "outputs": []
+      "outputs": [],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
     },
     "lint": {
-      "dependsOn": ["^lint"],
-      "outputs": []
+      "outputs": [],
+      "inputs": ["src/**", "*.config.*", "package.json"]
     },
     "test": {
-      "dependsOn": ["^test"],
-      "outputs": []
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "tests/**", "test/**", "package.json", "vitest.config.*"]
     },
     "clean": {
-      "outputs": [],
       "cache": false
     }
   }
