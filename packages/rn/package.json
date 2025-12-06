@@ -1,6 +1,6 @@
 {
   "name": "@aokiapp/jsapdu-rn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Smartcard Library for React Native",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

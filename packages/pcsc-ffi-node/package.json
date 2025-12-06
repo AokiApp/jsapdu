@@ -1,6 +1,6 @@
 {
   "name": "@aokiapp/pcsc-ffi-node",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "PC/SC Foreign Function Interface (FFI) library for Node.js using Koffi",
   "type": "module",
   "main": "dist/index.js",
