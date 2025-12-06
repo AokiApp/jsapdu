@@ -20,13 +20,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
         with:
           # This allows changesets to see all commits for changelog generation
           fetch-depth: 0
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: 22
           cache: "npm"
@@ -50,7 +50,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish to GitHub Packages
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v1.5.3
         with:
           publish: npm run release
           version: npm run version
