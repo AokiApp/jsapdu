@@ -25,6 +25,9 @@ jobs:
           # This allows changesets to see all commits for changelog generation
           fetch-depth: 0
 
+      - name: Install PC/SC library
+        run: sudo apt-get update && sudo apt-get install -y libpcsclite-dev
+
       - name: Use Node.js 22.x
         uses: actions/setup-node@v6.1.0
         with:

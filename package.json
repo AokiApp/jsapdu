@@ -27,7 +27,6 @@
     "build": "turbo run build",
     "clean": "turbo run clean && turbo clean",
     "test": "vitest run",
-    "test:e2e": "vitest run examples/mynacard-e2e",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "npm run -ws typecheck --if-present",
