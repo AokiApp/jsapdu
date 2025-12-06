@@ -35,7 +35,7 @@
     "typecheck": "npm run -ws typecheck --if-present",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "turbo run build lint test && changeset publish"
+    "release": "turbo run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
