@@ -1,6 +1,6 @@
 {
   "name": "@aokiapp/apdu-utils",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Utility functions for building common APDU commands (SELECT, READ BINARY, VERIFY)",
   "type": "module",
   "main": "dist/src/index.js",
@@ -46,6 +46,6 @@
     "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-interface": "^0.0.1"
+    "@aokiapp/jsapdu-interface": "^0.0.2"
   }
 }
