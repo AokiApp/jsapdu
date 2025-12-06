@@ -187,6 +187,20 @@ npm test
 npm run test:e2e
 ```
 
+### Release Process
+
+We use [Changesets](https://github.com/changesets/changesets) for version management. When making changes:
+
+```bash
+# Create a changeset to describe your changes
+npm run changeset
+
+# The release process is automated via GitHub Actions
+# See docs/RELEASE.md for detailed information
+```
+
+For full release documentation, see [RELEASE.md](./docs/RELEASE.md).
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
