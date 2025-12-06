@@ -12,8 +12,7 @@
       "inputs": ["src/**", "tsconfig.json", "package.json"]
     },
     "lint": {
-      "outputs": [],
-      "inputs": ["src/**", "*.config.*", "package.json"]
+      "outputs": []
     },
     "test": {
       "dependsOn": ["^build"],
@@ -21,7 +20,8 @@
       "inputs": ["src/**", "tests/**", "test/**", "package.json", "vitest.config.*"]
     },
     "clean": {
-      "cache": false
+      "cache": false,
+      "outputs": []
     }
   }
 }
