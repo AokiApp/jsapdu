@@ -110,13 +110,23 @@ NODE_AUTH_TOKEN=<your_github_token> npm run release
 
 ### CI Workflow (`.github/workflows/ci.yml`)
 - Runs on all pushes and pull requests
-- Builds, lints, and tests all packages
+- Builds, lints, and tests all packages (unit tests only)
+- Skips E2E tests using `npm run test:ci`
 - Creates and uploads package artifacts
 
 ### Release Workflow (`.github/workflows/release.yml`)
 - Runs only on pushes to `main`
 - Manages version bumps and releases
+- Runs unit tests (skips E2E)
 - Publishes to GitHub Packages
+
+### Testing in CI
+
+E2E tests require SmartCard hardware and are skipped in CI:
+- CI uses `npm run test:ci` which sets `SKIP_E2E_TESTS=true`
+- Unit tests always run in CI
+- E2E tests run by default in local environments with hardware
+- Use `npm run test:e2e` to explicitly run E2E tests locally
 
 ## Package Configuration
 
