@@ -216,3 +216,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,node
+# Turbo repo cache
+.turbo/
+
+# Each package build output
+packages/*/dist/

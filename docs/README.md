@@ -1,47 +1,126 @@
 # jsapdu Documentation
 
-## Overview
+Complete documentation for the jsapdu smart card library monorepo.
 
-jsapdu is a modern TypeScript library for SmartCard communication across multiple platforms and protocols. This documentation provides comprehensive information about the library's architecture, APIs, and implementation guides.
+## FOR AI AGENTS / MACHINE-MADE READERS
 
-## Table of Contents
+You must use file reading tools before starting development. You must read the following files recursively.
 
-1. [Getting Started](./getting-started.md)
-   - Installation
-   - Basic Usage
-   - Quick Examples
+You must strictly comply this steps in order:
+1. Read `docs/README.md` with file reading tools (this file).
+2. Read all files linked from `docs/README.md` recursively with file reading tools, if applicable, call tools concurrently.
+3. After reading all files, you can start development. Until you finish reading all files, do not start working on something.
 
-2. [Architecture](./architecture/README.md)
-   - Core Concepts
-   - Platform Abstraction
-   - Component Overview
 
-3. [API Reference](./api/README.md)
-   - Core Interfaces
-   - Platform Implementations
-   - Utility Functions
+## User Documentation
 
-4. [Implementation Guides](./guides/README.md)
-   - Platform Integration
-   - Error Handling
-   - Resource Management
-   - Security Considerations
+Quick-start guides for library consumers:
 
-5. [Examples](./examples/README.md)
-   - Basic Card Operations
-   - Platform-Specific Examples
-   - Error Handling Examples
-   - Resource Management Examples
+- **[@aokiapp/jsapdu-interface](../packages/interface/README.md)** - Core APDU and platform abstractions
+- **[@aokiapp/apdu-utils](../packages/apdu-utils/README.md)** - Ready-to-use APDU command builders
+- **[@aokiapp/mynacard](../packages/mynacard/README.md)** - Japanese MynaCard support
+- **[@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)** - PC/SC reader support (Node.js)
+- **[@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md)** - Low-level PC/SC FFI bindings
+- **[@aokiapp/jsapdu-rn](../packages/rn/README.md)** - React Native NFC support
 
-6. [Contributing](./contributing.md)
-   - Development Setup
-   - Testing Guidelines
-   - Documentation Guidelines
+## Technical Documentation
 
-## Quick Links
+Deep-dive documentation for contributors and advanced users:
 
-- [API Documentation](./api/README.md)
-- [Implementation Guides](./guides/README.md)
-- [Examples](./examples/README.md)
-- [Security Guide](./guides/security.md)
-- [Resource Management](./guides/resource-management.md)
+### Architecture
+- **[Package Interactions](./architecture/package-interactions.md)** - How packages work together, dependency graph, data flow patterns
+
+### Implementation Details
+
+**@aokiapp/jsapdu-interface:**
+- **[Extended APDU Support](../packages/interface/docs/extended-apdu.md)** - Automatic standard/extended APDU detection, encoding formats, compatibility
+
+**@aokiapp/jsapdu-pcsc:**
+- **[AsyncMutex Implementation](../packages/pcsc/docs/async-mutex.md)** - Concurrency control for PC/SC operations, performance characteristics
+
+**@aokiapp/jsapdu-rn:**
+- **[Nitro Error Mapping](../packages/rn/docs/nitro-error-mapping.md)** - Android/iOS exception handling, error normalization strategy
+
+**@aokiapp/mynacard:**
+- **[TLV Schema System](../packages/mynacard/docs/tlv-schemas.md)** - Japanese card data parsing, schema architecture, custom decoders
+
+### Testing
+- **[E2E Testing Patterns](./testing/e2e-testing-patterns.md)** - Hardware testing methodology, test organization, real-world scenarios
+
+### Examples
+- **[Examples Overview](../examples/README.md)** - Practical examples across platforms and use cases
+  - **[MynaCard CLI Examples](../examples/mynacard/README.md)** - Node.js command-line examples for reading Japanese MynaCard
+  - **[PC/SC FFI Examples](../examples/pcsc-ffi/README.md)** - Low-level FFI bindings usage for direct PC/SC access
+  - **[React Native NFC App](../examples/rn/README.md)** - Full-featured mobile NFC application
+
+## Quick Navigation
+
+### I want to...
+
+**...use smart cards in Node.js:**
+1. Start with [@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md)
+2. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for commands
+3. Add [@aokiapp/mynacard](../packages/mynacard/README.md) if working with Japanese cards
+
+**...use NFC in React Native:**
+1. Start with [@aokiapp/jsapdu-rn](../packages/rn/README.md)
+2. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for commands  
+3. Add [@aokiapp/mynacard](../packages/mynacard/README.md) if working with Japanese cards
+
+**...build APDU commands:**
+1. Use [@aokiapp/apdu-utils](../packages/apdu-utils/README.md) for common commands
+2. Use [@aokiapp/jsapdu-interface](../packages/interface/README.md) `CommandApdu` class for custom commands
+
+**...implement a new platform:**
+1. Read [Package Interactions](./architecture/package-interactions.md) for architecture
+2. Extend base classes from [@aokiapp/jsapdu-interface](../packages/interface/README.md)
+3. Study [@aokiapp/jsapdu-pcsc](../packages/pcsc/README.md) or [@aokiapp/jsapdu-rn](../packages/rn/README.md) as reference
+
+**...parse MynaCard data:**
+1. Use constants from [@aokiapp/mynacard](../packages/mynacard/README.md)
+2. Read [TLV Schema System](../packages/mynacard/docs/tlv-schemas.md) for parsing details
+
+**...work with low-level PC/SC:**
+1. Use [@aokiapp/pcsc-ffi-node](../packages/pcsc-ffi-node/README.md) for direct FFI access
+2. Study [AsyncMutex](../packages/pcsc/docs/async-mutex.md) for concurrency patterns
+
+**...understand error handling:**
+1. See error sections in each package README
+2. Read [Nitro Error Mapping](../packages/rn/docs/nitro-error-mapping.md) for React Native specifics
+
+**...write tests:**
+1. Read [E2E Testing Patterns](./testing/e2e-testing-patterns.md)
+2. Study [examples](../examples/README.md) for practical usage patterns
+
+**...see working examples:**
+1. Browse [Examples Overview](../examples/README.md) for all examples
+2. Try [MynaCard CLI examples](../examples/mynacard/README.md) for Node.js
+3. Explore [PC/SC FFI examples](../examples/pcsc-ffi/README.md) for low-level access
+4. Run [React Native app](../examples/rn/README.md) for mobile NFC
+
+## Documentation Principles
+
+**User READMEs (packages/*/README.md):**
+- Focus on "how to use"
+- Multiple practical examples
+- Concise but complete API reference
+- No internal implementation details
+
+**Technical Docs (packages/*/docs/ and docs/*/):**
+- Implementation details and rationale
+- Architecture and design patterns
+- Performance considerations
+- Testing strategies
+- For contributors and advanced users
+
+## Contributing
+
+When adding new features:
+1. Update user README with usage examples
+2. Add technical documentation if implementation is non-trivial
+3. Include test examples in E2E testing guide
+4. Update package interactions diagram if adding new package
+
+## License
+
+This documentation is part of the jsapdu project, licensed under MIT.

@@ -2,14 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "rootDir": "src",
+    "module": "ESNext",
+    "rootDir": ".",
     "outDir": "dist",
     "composite": true,
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src"],
-  "references": [{ "path": "../interface" }]
+  "include": ["src", "tests"]
 }

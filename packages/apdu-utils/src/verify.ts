@@ -1,4 +1,4 @@
-import { CommandApdu } from "@aokiapp/interface";
+import { CommandApdu } from "@aokiapp/jsapdu-interface";
 
 import { toUint8Array } from "./utils.js";
 

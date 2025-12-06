@@ -1,28 +1,58 @@
 {
   "name": "jsapdu",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "type": "module",
-  "scripts": {
-    "build": "tsc -b packages/*",
-    "clean": "tsc -b packages/* --clean",
-    "test": "vitest"
+  "description": "Modern TypeScript library for SmartCard communication across multiple platforms and protocols",
+  "keywords": [
+    "smartcard",
+    "apdu",
+    "pcsc",
+    "nfc",
+    "mynacard",
+    "japan",
+    "iso7816",
+    "typescript"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean && turbo clean",
+    "test": "vitest run",
+    "test:unit": "vitest run packages",
+    "test:e2e": "vitest run examples/mynacard-e2e",
+    "test:ci": "SKIP_E2E_TESTS=true vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "npm run -ws typecheck --if-present",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo run build lint test && changeset publish"
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@eslint/js": "^9.24.0",
-    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
-    "eslint": "^9.24.0",
+    "@types/node": "^24.2.1",
+    "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "prettier": "^3.5.3",
-    "ts-node": "^10.9.2",
+    "rimraf": "^5.0.5",
+    "turbo": "^1.13.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.29.0",
     "vitest": "^3.1.1"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ]
 }

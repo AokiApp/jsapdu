@@ -1,0 +1,49 @@
+{
+  "name": "@aokiapp/pcsc-ffi-node",
+  "version": "0.0.1",
+  "description": "PC/SC Foreign Function Interface (FFI) library for Node.js using Koffi",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "node --test"
+  },
+  "keywords": [
+    "pcsc",
+    "ffi",
+    "koffi",
+    "smartcard",
+    "winscard",
+    "native",
+    "bindings"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/pcsc-ffi-node"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "koffi": "^2.6.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

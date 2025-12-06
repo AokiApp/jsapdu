@@ -1,189 +1,293 @@
-import { Schema, TagClass } from "@aokiapp/tlv-parser";
+import { Schema, TagClass } from "@aokiapp/tlv/parser";
+import { decodeOffsets, decodeText } from "./utils.js";
 
-import { decodePublicKey } from "./utils.js";
-
-function decodeText(buffer: ArrayBuffer): string {
-  return new TextDecoder("utf-8").decode(buffer);
-}
-
-function decodeOffsets(buffer: ArrayBuffer): number[] {
-  const uint8 = new Uint8Array(buffer);
-  const offsets = [];
-  for (let i = 0; i < uint8.length; i += 2) {
-    offsets.push((uint8[i] << 8) | uint8[i + 1]);
-  }
-  return offsets;
-}
+// Common decoder functions
+const decodeAsUint8Array = (buffer: ArrayBuffer) => new Uint8Array(buffer);
+const decodeAsArrayBuffer = (buffer: ArrayBuffer) => buffer;
 
 export const schemaCertificate = Schema.constructed(
   "certificate",
-  [
-    Schema.primitive(
-      "contents",
-      async (buffer) => {
-        const issuer = buffer.slice(0, 16);
-        const subject = buffer.slice(16, 32);
-        const certificate_raw = buffer.slice(32);
-        const public_key = await decodePublicKey(certificate_raw);
-        return { issuer, subject, public_key };
-      },
-      {
-        tagClass: TagClass.Application,
-        tagNumber: 0x4e,
-      },
-    ),
-    Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-      tagClass: TagClass.Application,
-      tagNumber: 0x37,
-    }),
-  ],
   {
     tagClass: TagClass.Application,
     tagNumber: 0x21,
   },
+  [
+    Schema.primitive(
+      "contents",
+      {
+        tagClass: TagClass.Application,
+        tagNumber: 0x4e,
+      },
+      (buffer: ArrayBuffer) => {
+        const issuer = buffer.slice(0, 16);
+        const subject = buffer.slice(16, 32);
+        const publicKeyRaw = buffer.slice(32);
+        return { issuer, subject, publicKeyRaw };
+      },
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Application,
+        tagNumber: 0x37,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
 );
 
-export const schemaKenhojoBasicFour = Schema.constructed("kenhojoBasicFour", [
-  Schema.primitive("offsets", decodeOffsets, {
+export const schemaKenhojoBasicFour = Schema.constructed(
+  "kenhojoBasicFour",
+  {
     tagClass: TagClass.Private,
-    tagNumber: 0x21,
-  }),
-  Schema.primitive("name", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x22,
-  }),
-  Schema.primitive("address", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x23,
-  }),
-  Schema.primitive("birth", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x24,
-  }),
-  Schema.primitive("gender", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x25,
-  }),
-]);
+    tagNumber: 0x20,
+  },
+  [
+    Schema.primitive(
+      "offsets",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x21,
+      },
+      decodeOffsets,
+    ),
+    Schema.primitive(
+      "name",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x22,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "address",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x23,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "birth",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x24,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "gender",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x25,
+      },
+      decodeText,
+    ),
+  ],
+);
 
 export const schemaKenhojoSignature = Schema.constructed(
   "kenhojoSignature",
-  [
-    Schema.primitive(
-      "kenhojoMyNumberHash",
-      (buffer) => new Uint8Array(buffer),
-      { tagClass: TagClass.Private, tagNumber: 0x31 },
-    ),
-    Schema.primitive(
-      "kenhojoBasicFourHash",
-      (buffer) => new Uint8Array(buffer),
-      { tagClass: TagClass.Private, tagNumber: 0x32 },
-    ),
-    Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-      tagClass: TagClass.Private,
-      tagNumber: 0x33,
-    }),
-  ],
   {
     tagClass: TagClass.Private,
     tagNumber: 0x30,
   },
+  [
+    Schema.primitive(
+      "kenhojoMyNumberHash",
+      { tagClass: TagClass.Private, tagNumber: 0x31 },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "kenhojoBasicFourHash",
+      { tagClass: TagClass.Private, tagNumber: 0x32 },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x33,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
 );
 
 export const schemaKenhojoAuthKey = Schema.constructed(
   "kenhojoAuthKey",
-  [
-    Schema.primitive("publicKey", decodePublicKey, {
-      tagClass: TagClass.Private,
-      tagNumber: 0x51,
-    }),
-    Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-      tagClass: TagClass.Private,
-      tagNumber: 0x52,
-    }),
-  ],
   {
     tagClass: TagClass.Private,
     tagNumber: 0x50,
   },
+  [
+    Schema.primitive(
+      "publicKeyRaw",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x51,
+      },
+      decodeAsArrayBuffer,
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x52,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
 );
 
-export const schemaKenkakuBirth = Schema.constructed("kenkakuBirth", [
-  Schema.primitive("birth", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x11,
-  }),
-  Schema.primitive("publicKey", decodePublicKey, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x12,
-  }),
-  Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x13,
-  }),
-]);
+export const schemaKenkakuBirth = Schema.constructed(
+  "kenkakuBirth",
+  {},
+  [
+    Schema.primitive(
+      "birth",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x11,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "publicKeyRaw",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x12,
+      },
+      decodeAsArrayBuffer,
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x13,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
+);
 
-export const schemaKenkakuEntries = Schema.constructed("kenkakuEntries", [
-  Schema.primitive("offsets", decodeOffsets, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x21,
-  }),
-  Schema.primitive("birth", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x22,
-  }),
-  Schema.primitive("gender", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x23,
-  }),
-  Schema.primitive("publicKey", decodePublicKey, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x24,
-  }),
-  Schema.primitive("namePng", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x25,
-  }),
-  Schema.primitive("addressPng", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x26,
-  }),
-  Schema.primitive("faceJp2", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x27,
-  }),
-  Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x28,
-  }),
-  Schema.primitive("expire", decodeText, {
-    tagClass: TagClass.Private,
-    tagNumber: 0x29,
-  }),
-  Schema.primitive("securityCodePng", (buffer) => new Uint8Array(buffer), {
-    tagClass: TagClass.Private,
-    tagNumber: 0x2a,
-  }),
-]);
+export const schemaKenkakuEntries = Schema.constructed(
+  "kenkakuEntries",
+  {},
+  [
+    Schema.primitive(
+      "offsets",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x21,
+      },
+      decodeOffsets,
+    ),
+    Schema.primitive(
+      "birth",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x22,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "gender",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x23,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "publicKeyRaw",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x24,
+      },
+      decodeAsArrayBuffer,
+    ),
+    Schema.primitive(
+      "namePng",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x25,
+      },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "addressPng",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x26,
+      },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "faceJp2",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x27,
+      },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x28,
+      },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "expire",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x29,
+      },
+      decodeText,
+    ),
+    Schema.primitive(
+      "securityCodePng",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x2a,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
+);
 
 export const schemaKenkakuMyNumber = Schema.constructed(
   "kenkakuMyNumber",
-  [
-    Schema.primitive("myNumberPng", (buffer) => new Uint8Array(buffer), {
-      tagClass: TagClass.Private,
-      tagNumber: 0x41,
-    }),
-    Schema.primitive("publicKey", decodePublicKey, {
-      tagClass: TagClass.Private,
-      tagNumber: 0x42,
-    }),
-    Schema.primitive("thisSignature", (buffer) => new Uint8Array(buffer), {
-      tagClass: TagClass.Private,
-      tagNumber: 0x43,
-    }),
-  ],
   {
     tagClass: TagClass.Private,
     tagNumber: 0x40,
   },
+  [
+    Schema.primitive(
+      "myNumberPng",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x41,
+      },
+      decodeAsUint8Array,
+    ),
+    Schema.primitive(
+      "publicKeyRaw",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x42,
+      },
+      decodeAsArrayBuffer,
+    ),
+    Schema.primitive(
+      "thisSignature",
+      {
+        tagClass: TagClass.Private,
+        tagNumber: 0x43,
+      },
+      decodeAsUint8Array,
+    ),
+  ],
 );

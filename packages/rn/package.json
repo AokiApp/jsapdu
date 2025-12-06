@@ -1,0 +1,171 @@
+{
+  "name": "@aokiapp/jsapdu-rn",
+  "version": "0.1.0",
+  "description": "Smartcard Library for React Native",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "lib",
+    "android",
+    "ios",
+    "cpp",
+    "nitrogen",
+    "nitro.json",
+    "*.podspec",
+    "react-native.config.js",
+    "!ios/build",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
+  ],
+  "scripts": {
+    "example": "yarn workspace @aokiapp/jsapdu-rn-example",
+    "test": "jest",
+    "typecheck": "tsc",
+    "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
+    "build": "bob build",
+    "nitrogen": "nitrogen",
+    "release": "release-it --only-version"
+  },
+  "keywords": [
+    "react-native",
+    "ios",
+    "android"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aokiapp/jsapdu.git"
+  },
+  "author": "AokiApp Inc. <hello+github@aoki.app> (https://aoki.app)",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "bugs": {
+    "url": "https://github.com/aokiapp/jsapdu/issues"
+  },
+  "homepage": "https://github.com/aokiapp/jsapdu#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/compat": "^1.3.2",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.35.0",
+    "@react-native/babel-preset": "0.81.1",
+    "@react-native/eslint-config": "^0.81.1",
+    "@release-it/conventional-changelog": "^10.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^19.1.0",
+    "commitlint": "^19.8.1",
+    "del-cli": "^6.0.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-ft-flow": "^3.0.11",
+    "eslint-plugin-jest": "^29.0.1",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-native": "^5.0.0",
+    "hermes-eslint": "^0.15.0",
+    "jest": "^29.7.0",
+    "nitrogen": "^0.31.1",
+    "prettier": "^3.6.2",
+    "react": "19.1.0",
+    "react-native": "0.81.1",
+    "react-native-builder-bob": "^0.40.13",
+    "react-native-nitro-modules": "^0.31.1",
+    "release-it": "^19.0.4",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
+    "@aokiapp/jsapdu-interface": "*"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "^0.31.1"
+  },
+  "jest": {
+    "preset": "react-native",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/example/node_modules",
+      "<rootDir>/lib/"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "release-it": {
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
+    "npm": {
+      "publish": true
+    },
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": {
+          "name": "angular"
+        }
+      }
+    }
+  },
+  "prettier": {
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "custom",
+        {
+          "script": "nitrogen",
+          "clean": "nitrogen/"
+        }
+      ],
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "create-react-native-library": {
+    "languages": "kotlin-swift",
+    "type": "nitro-module",
+    "version": "0.54.7"
+  },
+  "dependencies": {
+    "nanoevents": "^9.1.0"
+  }
+}

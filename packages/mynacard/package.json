@@ -1,16 +1,52 @@
 {
   "name": "@aokiapp/mynacard",
+  "version": "0.0.1",
+  "description": "Japanese MynaCard (マイナンバーカード) support with JPKI, Kenhojo, and Kenkaku applications",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
     }
   },
   "scripts": {
     "build": "tsc",
-    "clean": "tsc --build --clean"
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo node_modules",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "keywords": [
+    "mynacard",
+    "マイナンバーカード",
+    "japan",
+    "jpki",
+    "kenhojo",
+    "kenkaku",
+    "government-id",
+    "smartcard"
+  ],
+  "author": "株式会社AokiApp (AokiApp Inc.) <https://aoki.app>",
+  "license": "SEE LICENSE IN https://raw.githubusercontent.com/AokiApp/ANAL/refs/heads/main/licenses/ANAL-Tight-1.0.1.md",
+  "homepage": "https://github.com/AokiApp/jsapdu#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AokiApp/jsapdu.git",
+    "directory": "packages/mynacard"
+  },
+  "bugs": {
+    "url": "https://github.com/AokiApp/jsapdu/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "@aokiapp/tlv": "^0.4.0"
   }
 }

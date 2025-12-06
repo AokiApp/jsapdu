@@ -1,0 +1,27 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "lib/**"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": [],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "tests/**", "test/**", "package.json", "vitest.config.*"]
+    },
+    "clean": {
+      "cache": false,
+      "outputs": []
+    }
+  }
+}

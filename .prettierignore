@@ -1,0 +1,17 @@
+# Build artifacts
+packages/*/lib/
+packages/*/dist/
+packages/*/android/build/
+packages/*/android/.cxx/
+examples/*/android/
+examples/*/ios/
+
+# Dependencies
+node_modules/
+
+# Generated code
+**/generated/
+**/nitrogen/
+
+# Package lock files
+package-lock.json
