@@ -2,6 +2,9 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -11,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: 22
           cache: "npm"
@@ -33,6 +36,10 @@ jobs:
         run: npm run format -- --check
         if: always()
 
+      - name: Run tests (skip E2E)
+        run: npm run test:ci
+        if: always()
+
       - name: Pack all packages
         run: |
           mkdir -p artifacts
@@ -46,8 +53,9 @@ jobs:
           done
 
       - name: Upload npm pack artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: npm-packages
           path: artifacts/
           if-no-files-found: error
+

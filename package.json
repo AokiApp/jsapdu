@@ -27,11 +27,18 @@
     "build": "turbo run build",
     "clean": "turbo run clean && turbo clean",
     "test": "vitest run",
+    "test:unit": "vitest run packages",
+    "test:e2e": "vitest run examples/mynacard-e2e",
+    "test:ci": "SKIP_E2E_TESTS=true vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "npm run -ws typecheck --if-present"
+    "typecheck": "npm run -ws typecheck --if-present",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo run build lint test && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@eslint/js": "^9.24.0",
     "@types/node": "^24.2.1",
     "eslint": "^9.31.0",
