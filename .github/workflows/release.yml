@@ -25,7 +25,8 @@ jobs:
           # This allows changesets to see all commits for changelog generation
           fetch-depth: 0
 
-      - name: Install PC/SC library
+      - name: Install PC/SC library (for E2E tests if enabled)
+        if: env.RUN_E2E_TESTS == 'true'
         run: sudo apt-get update && sudo apt-get install -y libpcsclite-dev
 
       - name: Use Node.js 22.x
@@ -49,7 +50,7 @@ jobs:
         run: npm run format -- --check
 
       - name: Run tests
-        run: npm run test
+        run: npm run test:ci
 
       - name: Create Release Pull Request or Publish to GitHub Packages
         id: changesets
