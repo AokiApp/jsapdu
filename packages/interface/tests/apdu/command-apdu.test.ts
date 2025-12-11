@@ -27,6 +27,17 @@ describe("CommandApdu class", () => {
     );
   });
 
+  test("should create APDU command with verify", () => {
+    const CLA = 0x00;
+    const INS = 0x20;
+    const P1 = 0x00;
+    const P2 = 0x80;
+    const data = Uint8Array.from([]);
+    const le = null;
+    const command = new CommandApdu(CLA, INS, P1, P2, data, le);
+    expect(command.toUint8Array()).toEqual(Uint8Array.from([CLA, INS, P1, P2]));
+  });
+
   test("should throw error for invalid byte values", () => {
     expect(() => new CommandApdu(256, 0x00, 0x00, 0x00)).toThrowError(
       RangeError,

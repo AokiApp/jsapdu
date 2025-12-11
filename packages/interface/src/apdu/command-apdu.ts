@@ -52,16 +52,16 @@ export class CommandApdu {
    */
   public toUint8Array(): Uint8Array<ArrayBuffer> {
     const header = new Uint8Array([this.cla, this.ins, this.p1, this.p2]);
+    const hasData = this.data !== null && this.data.length > 0;
+    const dataLen = hasData ? this.data.length : 0;
     const isExtended =
-      (this.data && this.data.length > 255) || (this.le && this.le > 256);
+      (hasData && dataLen > 255) || (this.le !== null && this.le > 256);
 
     let bodyLen = 0;
-    if (this.data && this.le !== null) {
-      bodyLen = isExtended
-        ? 1 + 2 + this.data.length + 2
-        : 1 + this.data.length + 1;
-    } else if (this.data) {
-      bodyLen = isExtended ? 1 + 2 + this.data.length : 1 + this.data.length;
+    if (hasData && this.le !== null) {
+      bodyLen = isExtended ? 1 + 2 + dataLen + 2 : 1 + dataLen + 1;
+    } else if (hasData) {
+      bodyLen = isExtended ? 1 + 2 + dataLen : 1 + dataLen;
     } else if (this.le !== null) {
       bodyLen = isExtended ? 1 + 2 : 1;
     }
@@ -70,28 +70,28 @@ export class CommandApdu {
     const view = new DataView(bodyBuffer);
     let offset = 0;
 
-    if (this.data && this.le !== null) {
+    if (hasData && this.le !== null) {
       if (isExtended) {
         view.setUint8(offset++, 0x00);
-        view.setUint16(offset, this.data.length);
+        view.setUint16(offset, dataLen);
         offset += 2;
         new Uint8Array(bodyBuffer).set(this.data, offset);
-        offset += this.data.length;
+        offset += dataLen;
         view.setUint16(offset, this.le);
       } else {
-        view.setUint8(offset++, this.data.length);
+        view.setUint8(offset++, dataLen);
         new Uint8Array(bodyBuffer).set(this.data, offset);
-        offset += this.data.length;
+        offset += dataLen;
         view.setUint8(offset, this.le);
       }
-    } else if (this.data) {
+    } else if (hasData) {
       if (isExtended) {
         view.setUint8(offset++, 0x00);
-        view.setUint16(offset, this.data.length);
+        view.setUint16(offset, dataLen);
         offset += 2;
         new Uint8Array(bodyBuffer).set(this.data, offset);
       } else {
-        view.setUint8(offset++, this.data.length);
+        view.setUint8(offset++, dataLen);
         new Uint8Array(bodyBuffer).set(this.data, offset);
       }
     } else if (this.le !== null) {
