@@ -142,7 +142,10 @@ export const schemaKenhojoAuthKey = Schema.constructed(
 
 export const schemaKenkakuBirth = Schema.constructed(
   "kenkakuBirth",
-  {},
+  {
+    tagClass: TagClass.Private,
+    tagNumber: 0x10,
+  },
   [
     Schema.primitive(
       "birth",
@@ -173,7 +176,10 @@ export const schemaKenkakuBirth = Schema.constructed(
 
 export const schemaKenkakuEntries = Schema.constructed(
   "kenkakuEntries",
-  {},
+  {
+    tagClass: TagClass.Private,
+    tagNumber: 0x20,
+  },
   [
     Schema.primitive(
       "offsets",
