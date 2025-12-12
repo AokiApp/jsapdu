@@ -1,5 +1,12 @@
 # @aokiapp/apdu-utils
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [33a5137]
+  - @aokiapp/jsapdu-interface@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes

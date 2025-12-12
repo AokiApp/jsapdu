@@ -1,6 +1,6 @@
 {
   "name": "@aokiapp/jsapdu-interface",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Core abstractions and interfaces for SmartCard communication",
   "type": "module",
   "main": "dist/src/index.js",
