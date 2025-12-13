@@ -32,6 +32,7 @@ jobs:
           cache: "npm"
           registry-url: "https://npm.pkg.github.com"
           scope: "@aokiapp"
+          always-auth: true
 
       - name: Install dependencies
         run: npm ci
