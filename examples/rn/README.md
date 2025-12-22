@@ -124,7 +124,6 @@ File: `android/app/src/main/AndroidManifest.xml`
 <!-- NFC Permissions -->
 <uses-permission android:name="android.permission.NFC" />
 <uses-feature android:name="android.hardware.nfc" android:required="false" />
-<uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
 ```
 
 ## Running the App

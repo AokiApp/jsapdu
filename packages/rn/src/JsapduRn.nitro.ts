@@ -19,7 +19,6 @@ export interface DeviceInfo {
   friendlyName?: string;
   description?: string;
   supportsApdu: boolean;
-  supportsHce: boolean;
   isIntegratedDevice: boolean;
   isRemovableDevice: boolean;
   d2cProtocol: D2CProtocol;

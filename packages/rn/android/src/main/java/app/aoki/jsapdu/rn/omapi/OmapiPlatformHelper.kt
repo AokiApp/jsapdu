@@ -35,7 +35,6 @@ object OmapiPlatformHelper {
           friendlyName = "$deviceType Secure Element",
           description = "OMAPI: $readerName",
           supportsApdu = true,
-          supportsHce = false,
           isIntegratedDevice = deviceType == "eSE",
           isRemovableDevice = deviceType == "SIM",
           d2cProtocol = D2CProtocol.NFC,

@@ -480,7 +480,6 @@ Reader information and capabilities. Extends `SmartCardDeviceInfo`.
 - `friendlyName: string` - Display name (same as id for PC/SC)
 - `description: string` - Reader description
 - `supportsApdu: boolean` - Always true for PC/SC readers
-- `supportsHce: boolean` - Always false (PC/SC doesn't support HCE)
 - `isIntegratedDevice: boolean` - Always false (PC/SC readers are external)
 - `isRemovableDevice: boolean` - Always true
 - `d2cProtocol: string` - "iso7816" or "nfc" (detected from reader name)

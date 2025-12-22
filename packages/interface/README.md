@@ -76,7 +76,6 @@ class MyPlatform extends SmartCardPlatform {
       id: 'device-1',
       friendlyName: 'My Reader',
       supportsApdu: true,
-      supportsHce: false,
       isIntegratedDevice: false,
       isRemovableDevice: true,
       d2cProtocol: 'iso7816',

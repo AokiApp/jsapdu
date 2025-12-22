@@ -31,7 +31,6 @@ Add to `AndroidManifest.xml`:
 ```xml
 <uses-permission android:name="android.permission.NFC" />
 <uses-feature android:name="android.hardware.nfc" android:required="false" />
-<uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
 ```
 
 ## Quick Start
@@ -255,7 +254,6 @@ async function getAvailableDevices() {
     console.log(`  ID: ${device.id}`);
     console.log(`  Type: ${device.d2cProtocol}`);
     console.log(`  Supports APDU: ${device.supportsApdu}`);
-    console.log(`  Supports HCE: ${device.supportsHce}`);
   });
   
   // Use specific device
@@ -637,11 +635,6 @@ Detailed device description.
 Whether device supports APDU communication.
 
 **Value:** Always `true` for NFC devices in this package.
-
-#### `supportsHce: boolean`
-Whether device supports Host Card Emulation.
-
-**Value:** Currently always `false` (HCE support planned for future).
 
 #### `isIntegratedDevice: boolean`
 Whether device is built into the phone.
