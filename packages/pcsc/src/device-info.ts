@@ -54,14 +54,6 @@ export class PcscDeviceInfo extends SmartCardDeviceInfo {
   }
 
   /**
-   * Supports Host Card Emulation
-   * PC/SC readers typically don't support HCE
-   */
-  public get supportsHce(): boolean {
-    return false;
-  }
-
-  /**
    * The device is an integrated reader (phone inside)
    * PC/SC readers are typically external devices
    */

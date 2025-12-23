@@ -38,7 +38,6 @@ object NfcPlatformHelper {
         friendlyName = "Integrated NFC Reader",
         description = "Android NFC with ISO-DEP support",
         supportsApdu = true,
-        supportsHce = false,
         isIntegratedDevice = true,
         isRemovableDevice = false,
         d2cProtocol = D2CProtocol.NFC,

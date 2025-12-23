@@ -27,7 +27,6 @@ async function testPcscPlatform() {
         console.log(`  D2C Protocol: ${info.d2cProtocol}`);
         console.log(`  P2D Protocol: ${info.p2dProtocol}`);
         console.log(`  Supports APDU: ${info.supportsApdu}`);
-        console.log(`  Supports HCE: ${info.supportsHce}`);
       });
 
       if (deviceInfos.length > 0) {

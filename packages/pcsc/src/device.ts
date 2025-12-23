@@ -1,5 +1,4 @@
 import {
-  EmulatedCard,
   SmartCard,
   SmartCardDevice,
   SmartCardDeviceInfo,
@@ -202,17 +201,6 @@ export class PcscDevice extends SmartCardDevice {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
     throw new SmartCardError("TIMEOUT", "Timed out waiting for card presence");
-  }
-
-  /**
-   * Start an HCE session
-   * @throws {SmartCardError} Always throws as PC/SC doesn't support HCE
-   */
-  public startHceSession(): Promise<EmulatedCard> {
-    throw new SmartCardError(
-      "UNSUPPORTED_OPERATION",
-      "PC/SC does not support Host Card Emulation",
-    );
   }
 
   /**

@@ -260,7 +260,6 @@ function SmartCardTestScreenInner() {
       console.log(`[Plat] Device[${idx}]`, {
         id: info.id,
         supportsApdu: info.supportsApdu,
-        supportsHce: info.supportsHce,
         integrated: info.isIntegratedDevice,
         removable: info.isRemovableDevice,
         d2c: info.d2cProtocol,

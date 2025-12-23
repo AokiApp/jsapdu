@@ -332,7 +332,6 @@ export class RnSmartCardPlatform extends SmartCardPlatform<{
    *
    * Android implementation returns:
    * - apduApi: ["nfc", "androidnfc"] (both included)
-   * - supportsHce: false (initial version)
    */
   public async getDeviceInfo(): Promise<RnDeviceInfo[]> {
     this.assertInitialized();

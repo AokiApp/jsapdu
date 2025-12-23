@@ -156,11 +156,6 @@ export abstract class SmartCardDeviceInfo {
   public abstract readonly supportsApdu: boolean;
 
   /**
-   * Supports Host Card Emulation
-   */
-  public abstract readonly supportsHce: boolean;
-
-  /**
    * The device is an integrated reader (phone inside)
    */
   public abstract readonly isIntegratedDevice: boolean;
@@ -249,7 +244,7 @@ export abstract class SmartCardDevice<
   /**
    * Card acquired by the device
    */
-  protected card: SmartCard | EmulatedCard | null = null;
+  protected card: SmartCard | null = null;
 
   /**
    * Get the device information of itself
@@ -297,10 +292,6 @@ export abstract class SmartCardDevice<
    */
   public abstract waitForCardPresence(timeout: number): Promise<void>;
 
-  /**
-   * Start HCE session
-   */
-  public abstract startHceSession(): Promise<EmulatedCard>;
   /**
    * Release the device and its card session
    * @throws {SmartCardError} If release fails
@@ -389,50 +380,3 @@ export abstract class SmartCard<Events extends EventsMap = DefaultEvents> {
 }
 
 type Atr = Uint8Array;
-
-export abstract class EmulatedCard<Events extends EventsMap = DefaultEvents> {
-  protected eventEmitter = createNanoEvents<Events>();
-  /**
-   * @constructor
-   */
-  protected constructor(protected parentDevice: SmartCardDevice) {}
-
-  /**
-   * Whether acquired device session is active or not
-   */
-  public abstract isActive(): boolean;
-
-  /**
-   * Set APDU handler
-   * @throws {SmartCardError} If setting handler fails
-   */
-  public abstract setApduHandler(
-    handler: (command: Uint8Array) => Promise<Uint8Array>,
-  ): Promise<void>;
-
-  /**
-   * Release the session
-   * @throws {SmartCardError} If release fails
-   */
-  public abstract release(): Promise<void>;
-
-  /**
-   * asyncDispose, use in conjunction with `await using`
-   */
-  public async [Symbol.asyncDispose]() {
-    try {
-      await this.release();
-    } catch (error) {
-      throw fromUnknownError(error);
-    }
-  }
-
-  /**
-   * Event emitter for emulated card events
-   */
-  on<K extends keyof Events>(event: K, cb: Events[K]): () => void {
-    return this.eventEmitter.on(event, cb);
-  }
-
-  // emit is not exposed, use eventEmitter directly
-}

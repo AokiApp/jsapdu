@@ -2,7 +2,6 @@ import {
   SmartCard,
   SmartCardDevice,
   SmartCardDeviceInfo,
-  EmulatedCard,
   SmartCardError,
 } from '@aokiapp/jsapdu-interface';
 import { mapNitroError } from '../errors/error-mapper';
@@ -377,22 +376,6 @@ export class RnSmartCardDevice extends SmartCardDevice<{
     } catch (error) {
       throw mapNitroError(error);
     }
-  }
-
-  /**
-   * Start HCE (Host Card Emulation) session
-   *
-   * @throws {SmartCardError} with code "UNSUPPORTED_OPERATION" - HCE not supported in initial version
-   *
-   * @remarks
-   * HCE is planned for future implementation.
-   * This method will be implemented when HCE support is added.
-   */
-  public startHceSession(): Promise<EmulatedCard> {
-    throw new SmartCardError(
-      'UNSUPPORTED_OPERATION',
-      'HCE (Host Card Emulation) is not supported in the initial version'
-    );
   }
 
   /**

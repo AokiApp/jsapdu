@@ -14,7 +14,6 @@ import type { DeviceInfo } from '../JsapduRn.nitro';
  * For Android NFC implementation:
  * - id: "integrated-nfc-0" (example, not fixed)
  * - apduApi: ["nfc", "androidnfc"] (both included)
- * - supportsHce: false (initial version)
  * - isIntegratedDevice: true
  * - isRemovableDevice: false
  * - d2cProtocol: "nfc"
@@ -60,12 +59,6 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
    * Always true for NFC devices
    */
   public readonly supportsApdu: boolean;
-
-  /**
-   * Whether device supports Host Card Emulation
-   * false in initial version
-   */
-  public readonly supportsHce: boolean;
 
   /**
    * Whether device is integrated into the phone
@@ -122,7 +115,6 @@ export class RnDeviceInfo extends SmartCardDeviceInfo {
     this.friendlyName = info.friendlyName;
     this.description = info.description;
     this.supportsApdu = info.supportsApdu;
-    this.supportsHce = info.supportsHce;
     this.isIntegratedDevice = info.isIntegratedDevice;
     this.isRemovableDevice = info.isRemovableDevice;
     this.d2cProtocol = info.d2cProtocol;
